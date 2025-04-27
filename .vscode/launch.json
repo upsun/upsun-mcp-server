@@ -4,11 +4,12 @@
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
+
     
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Program",
+      "name": "Start MCP server",
       "skipFiles": [
         "<node_internals>/**"
       ],
@@ -17,6 +18,14 @@
       "outFiles": [
         "${workspaceFolder}/upsun-mcp/build/**/*.js"
       ]
+    },
+    { 
+      "type": "debugpy",
+      "name": "Chainlit",
+      "request": "launch",
+      "program": "${workspaceFolder}/chainlit/app.py",
+      "env": {
+      }
     }
   ]
 }
