@@ -1,0 +1,30 @@
+{
+  "name": "mcp-srv",
+  "version": "0.1.0",
+  "description": "A Model Context Protocol server example",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "mcp-srv": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod 755 build/index.js",
+    "prepare": "npm run build",
+    "watch": "tsc --watch",
+    "inspector": "npx @modelcontextprotocol/inspector build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.10.2",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "platformsh-client": "^0.2.38"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.15.2",
+    "typescript": "^5.8.3"
+  }
+}
