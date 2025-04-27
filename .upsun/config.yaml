@@ -51,9 +51,16 @@ applications:
         pip install -r requirements.txt        
 
 routes:
+  ## Chainlit
   "https://{default}/":
     type: upstream
     upstream: "chainlit:http"
   "https://www.{default}":
     type: redirect
     to: "https://{default}/"
+
+  ## MCP upsun server
+  "https://mcp.{default}/":
+    type: upstream
+    upstream: "mcp-server:http"
+
