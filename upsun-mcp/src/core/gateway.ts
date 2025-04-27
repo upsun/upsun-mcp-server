@@ -93,6 +93,7 @@ export class GatewayServer<A extends McpAdapter> {
     this.app.post(SSE_PATH, async (req, res) => {
       // Check for existing session ID
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
+      console.log('Received POST request to /mcp (Streamable transport)');
       let transport: StreamableHTTPServerTransport;
 
       if (sessionId && this.transports.streamable[sessionId]) {
@@ -139,6 +140,8 @@ export class GatewayServer<A extends McpAdapter> {
 
     // Reusable handler for GET and DELETE requests
     const handleSessionRequest = async (req: express.Request, res: express.Response) => {
+      console.log('Received GET/DELETE request to /mcp (Streamable transport)');
+
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
       if (!sessionId || !this.transports.streamable[sessionId]) {
         res
@@ -193,6 +196,7 @@ export class GatewayServer<A extends McpAdapter> {
 
     // Legacy message endpoint for older clients
     this.app.post(MSG_PATH, async (req, res) => {
+      console.log('Received POST request to /message (deprecated SSE transport)');
 
       const sessionId = req.query.sessionId as string;
       const transport = this.transports.sse[sessionId];

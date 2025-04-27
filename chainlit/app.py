@@ -7,7 +7,7 @@ client = AsyncOpenAI()
 cl.instrument_openai()
 
 settings = {
-    "model": "gpt-3.5-turbo",
+    "model": "gpt-4.1-nano",
     "temperature": 0.7,
     "max_tokens": 500,
     "top_p": 1,
@@ -49,21 +49,6 @@ async def on_message(message: cl.Message):
     # message_history.append({"role": "assistant", "content": msg.content})
     # await msg.update()
   
-  
-    # response = await client.chat.completions.create(
-    #     messages=[
-    #         {
-    #             "content": "You are a helpful bot for manage upsun projects",
-    #             "role": "system"
-    #         },
-    #         {
-    #             "content": message.content,
-    #             "role": "user"
-    #         }
-    #     ],
-    #     **settings
-    # )
-    # await cl.Message(content=response.choices[0].message.content).send()
 
 @cl.set_starters
 async def set_starters():
