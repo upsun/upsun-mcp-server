@@ -5,6 +5,7 @@ import { UpsunMcpServer } from './mcpUpsun.js';
 
 dotenv.config();
 
+const PORT = Number(String(process.env.PORT)) || 8888;
 const srv = new GatewayServer(UpsunMcpServer);
-srv.listen();
+srv.listen(PORT);
 

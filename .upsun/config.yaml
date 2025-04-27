@@ -1,0 +1,9 @@
+applications:
+  mcp-server:
+    type: 'nodejs:22'
+    hooks:
+      build: |
+        npm run build
+    web:
+      commands:
+        start: node build/index.js
