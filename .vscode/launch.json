@@ -12,10 +12,10 @@
       "skipFiles": [
         "<node_internals>/**"
       ],
-      "program": "${workspaceFolder}/src/index.ts",
+      "program": "${workspaceFolder}/upsun-mcp/src/index.ts",
       "preLaunchTask": "tsc: build - tsconfig.json",
       "outFiles": [
-        "${workspaceFolder}/build/**/*.js"
+        "${workspaceFolder}/upsun-mcp/build/**/*.js"
       ]
     }
   ]

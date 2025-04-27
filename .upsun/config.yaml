@@ -7,3 +7,5 @@ applications:
     web:
       commands:
         start: node build/index.js
+    source:
+      root: upsun-mcp
