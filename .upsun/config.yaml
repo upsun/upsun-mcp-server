@@ -17,6 +17,11 @@ applications:
 
     type: "python:3.11"
 
+    relationships:
+      mcp:
+        service: "mcp-server"
+        endpoint: "http"
+
     mounts:
       "/database":
         source: "storage"
