@@ -1,3 +1,4 @@
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 
 /**
@@ -7,6 +8,7 @@ import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
  * @interface McpAdapter
  */
 export interface McpAdapter {
+  readonly server : McpServer;
   
   connect(transport: Transport): Promise<void>;
 }

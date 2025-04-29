@@ -14,7 +14,7 @@
         "<node_internals>/**"
       ],
       "program": "${workspaceFolder}/upsun-mcp/src/index.ts",
-      "preLaunchTask": "tsc: build - tsconfig.json",
+      "preLaunchTask": "tsc: build - upsun-mcp/tsconfig.json",
       "outFiles": [
         "${workspaceFolder}/upsun-mcp/build/**/*.js"
       ]

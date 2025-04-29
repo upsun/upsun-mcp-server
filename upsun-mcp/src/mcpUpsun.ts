@@ -1,9 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import { z } from "zod";
+
 
 import { McpAdapter } from "./core/adapter.js";
-// import Client, { ClientConfiguration } from 'platformsh-client';
+import Client, { ClientConfiguration } from 'platformsh-client';
+import { registerProject } from "./command/project.js";
+import { registerEnvironment } from "./command/environment.js";
 
 /**
  * UpsunMcpServer class
@@ -15,28 +17,16 @@ export class UpsunMcpServer implements McpAdapter {
         public readonly server : McpServer = new McpServer({
           name: "upsun-server",
           version: "0.1.0"
-        })
+        }),
+        // public readonly upsunClient: Client = new Client({
+        //   api_token: "",
+        //   redirect_uri: ""
+        // } as ClientConfiguration)
       ) {
-        // const upsunClient...
 
-        this.server.tool("get-projects",
-            "List of all upsun projects",
-            { orgId: z.string() },
-            async ({ orgId }) => {
-                const projects = [
-                    { id: "azertyhex", name: "Project 1" },
-                    { id: "quertyhex", name: "Project 2" },
-                    { id: "foobarhex", name: "Project 3" },
-                ]
-
-                return {
-                    content: [{
-                      type: "text",
-                      text: JSON.stringify(projects.slice(0, 100), null, 2)
-                    }]
-                  };
-            }
-        );
+        registerProject(this);
+        registerEnvironment(this);
+        
       }
 
 

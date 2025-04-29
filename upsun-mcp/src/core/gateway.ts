@@ -5,9 +5,30 @@ import { randomUUID } from "crypto";
 
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js"
 
 import { McpAdapter } from "./adapter.js";
+
+
+
+export class LocalServer<A extends McpAdapter> {
+  public readonly server: A;
+  private readonly transport: StdioServerTransport
+
+  constructor(
+    private readonly mcpAdapterServerFactory: new () => A,
+  ) {
+    this.transport = new StdioServerTransport();
+    this.server = new this.mcpAdapterServerFactory();
+    
+  }
+
+  async listen(): Promise<void> {
+    await this.server.connect(this.transport);
+  }
+
+}
 
 /**
  * GatewayServer class
@@ -222,7 +243,8 @@ export class GatewayServer<A extends McpAdapter> {
   listen(port: number=3000): void {
     this.app.listen(port, "0.0.0.0", () => {
       console.log(`Backwards compatible MCP server listening on port ${port}`);
-  console.log(`
+      console.log(`Configure with http://localhost:${port}/sse`);
+      console.log(`
 ==============================================
 SUPPORTED TRANSPORT OPTIONS:
 
