@@ -6,7 +6,7 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
     console.debug(`Register Project Handlers`);
 
     adapter.server.tool(
-        "project-list",                 // Name of tool
+        "list-project",                 // Name of tool
         "List of all upsun projects",   // Text to indicate on LLM target and call
         { organization_id: z.string() },          // Parameter of this tool
         async ({ organization_id }) => {          // Main function
@@ -26,7 +26,7 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
     );
 
     adapter.server.tool(
-        "project-info",
+        "info-project",
         "Get information of upsun project",
         { project_id: z.string() },
         async ({ project_id }) => {
@@ -42,7 +42,7 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
     );
 
     adapter.server.tool(
-        "project-create",
+        "create-project",
         "Create a new upsun project",
         { 
             organization_id: z.string(),
@@ -63,7 +63,7 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
     );
 
     adapter.server.tool(
-        "project-delete",
+        "delete-project",
         "Delete a upsun project",
         { 
             project_id: z.string(),

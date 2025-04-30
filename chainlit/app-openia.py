@@ -33,18 +33,38 @@ async def on_message(message: cl.Message):
 
     response = await call_model_with_tools(messages)
 
-    if isinstance(response, list):
-        # tool_results = await handle_tool_calls(response)
-        for tool_call in response:
-            if tool_call.type == "function":
-                tool_name = tool_call.function.name
-                tool_input = json.loads(tool_call.function.arguments)
-                tool_use = type('', (object,), {"name": tool_name, "input": tool_input})()
+    while response.stop_reason == "tool_use":
+        tool_use = next(block for block in response.content if block.type == "tool_use")
+        tool_result = await call_tool(tool_use)
 
-                tool_results = await call_tool(tool_use)
-                await cl.Message(content=str(tool_results)).send()
-    else:
-        await cl.Message(content=response).send()
+        messages = [
+            {"role": "assistant", "content": response.content},
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": tool_use.id,
+                        "content": str(tool_result),
+                    }
+                ],
+            },
+        ]
+
+        #chat_messages.extend(messages)
+        response = await call_model_with_tools(messages)
+    # if isinstance(response, list):
+    #     # tool_results = await handle_tool_calls(response)
+    #     for tool_call in response:
+    #         if tool_call.type == "function":
+    #             tool_name = tool_call.function.name
+    #             tool_input = json.loads(tool_call.function.arguments)
+    #             tool_use = type('', (object,), {"name": tool_name, "input": tool_input})()
+
+    #             tool_results = await call_tool(tool_use)
+    #             await cl.Message(content=str(tool_results)).send()
+    # else:
+    #     await cl.Message(content=response).send()
 
     # message_history = cl.user_session.get("message_history")
     # message_history.append({"role": "user", "content": message.content})
@@ -134,7 +154,7 @@ async def call_model_with_tools(messages):
 
     choice = response.choices[0]
 
-    if choice.finish_reason == "tool_calls":
+    if response.has_tool_calls():
         logger.info('tool_calls finded')
         tool_calls = choice.message.tool_calls
         return tool_calls
@@ -183,3 +203,6 @@ def find_mcp_for_tool(tool_name):
 #         results.append(result)
 #     return results
 
+if __name__ == "__main__":
+    from chainlit.cli import run_chainlit
+    run_chainlit(__file__)

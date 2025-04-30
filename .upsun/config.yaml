@@ -38,7 +38,7 @@ applications:
 
     web:
       commands:
-        start: "chainlit run app.py --port $PORT --host 0.0.0.0"
+        start: "chainlit run app-anthropic.py --port $PORT --host 0.0.0.0"
       upstream:
         socket_family: tcp
       locations:

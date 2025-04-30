@@ -6,7 +6,7 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
     console.debug(`Register Environment Handlers`);
 
     adapter.server.tool(
-        "environment-activate",
+        "activate-environment",
         "Activate a environment of upsun projects",
         { 
             project_id: z.string(),
@@ -25,7 +25,7 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
     );
 
     adapter.server.tool(
-        "environment-deactivate",
+        "deactivate-environment",
         "Deactivate a environment of upsun projects",
         { 
             project_id: z.string(),
@@ -44,7 +44,7 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
     );
 
     adapter.server.tool(
-        "environment-list",
+        "list-environment",
         "List all environments of upsun projects",
         { project_id: z.string() },
         async ({ project_id }) => {
@@ -60,7 +60,7 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
     );
 
     adapter.server.tool(
-        "environment-logs",
+        "logs-environment",
         "Display logs of app of upsun projects",
         { 
             project_id: z.string(),
@@ -80,7 +80,7 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
     );
 
     adapter.server.tool(
-        "environment-redeploy",
+        "redeploy-environment",
         "Redeploy a environment of upsun projects",
         { 
             project_id: z.string(),

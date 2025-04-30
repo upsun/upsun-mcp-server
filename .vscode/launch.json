@@ -23,7 +23,7 @@
       "type": "debugpy",
       "name": "Chainlit",
       "request": "launch",
-      "program": "${workspaceFolder}/chainlit/app.py",
+      "program": "${workspaceFolder}/chainlit/app-anthropic.py",
       "env": {
       }
     }

@@ -10,7 +10,11 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js"
 
 import { McpAdapter } from "./adapter.js";
 
-
+const KEEP_ALIVE_INTERVAL_MS = 25000; // Send keep-alive every 25 seconds
+const HTTP_SESSION_ATTR = 'mcp-session-id';
+const HTTP_MCP_PATH = '/mcp';
+const HTTP_SSE_PATH = '/sse';
+const HTTP_MSG_PATH = '/messages';
 
 export class LocalServer<A extends McpAdapter> {
   public readonly server: A;
@@ -53,7 +57,7 @@ export class GatewayServer<A extends McpAdapter> {
     sse: {} as Record<string, SSEServerTransport>
   };
 
-  /*.sse*
+  /*
    * Constructor for the GatewayServer class.
    * @param mcpAdapterServerFactory - The implementation of the McpAdapter to be used.
    * @param app - The Express application instance (optional).
@@ -108,12 +112,11 @@ export class GatewayServer<A extends McpAdapter> {
    * The transport sessions are stored in the `transports` object, which contains a record of active sessions.
    */
   private setupStreamableTransport(): void {
-    const SSE_PATH = '/mcp';
 
     // Handle POST requests for client-to-server communication
-    this.app.post(SSE_PATH, async (req, res) => {
+    this.app.post(HTTP_MCP_PATH, async (req, res) => {
       // Check for existing session ID
-      const sessionId = req.headers['mcp-session-id'] as string | undefined;
+      const sessionId = req.headers[HTTP_SESSION_ATTR] as string | undefined;
       console.log('Received POST request to /mcp (Streamable transport)');
       let transport: StreamableHTTPServerTransport;
 
@@ -163,7 +166,7 @@ export class GatewayServer<A extends McpAdapter> {
     const handleSessionRequest = async (req: express.Request, res: express.Response) => {
       console.log('Received GET/DELETE request to /mcp (Streamable transport)');
 
-      const sessionId = req.headers['mcp-session-id'] as string | undefined;
+      const sessionId = req.headers[HTTP_SESSION_ATTR] as string | undefined;
       if (!sessionId || !this.transports.streamable[sessionId]) {
         res
           .status(400)
@@ -176,10 +179,10 @@ export class GatewayServer<A extends McpAdapter> {
     };
 
     // // Handle GET requests for server-to-client notifications via SSE
-    this.app.get(SSE_PATH, handleSessionRequest);
+    this.app.get(HTTP_MCP_PATH, handleSessionRequest);
 
     // Handle DELETE requests for session termination
-    this.app.delete(SSE_PATH, handleSessionRequest);
+    this.app.delete(HTTP_MCP_PATH, handleSessionRequest);
   }
 
   //=============================================================================
@@ -196,15 +199,13 @@ export class GatewayServer<A extends McpAdapter> {
    * It also handles the legacy message endpoint for older clients.
    */
   private setupSseTransport(): void {
-    const SSE_PATH = '/sse';
-    const MSG_PATH = '/messages';
 
     // Legacy SSE endpoint for older clients
-    this.app.get(SSE_PATH, async (req, res) => {
+    this.app.get(HTTP_SSE_PATH, async (req: express.Request, res: express.Response) => {
       console.log('Received GET request to /sse (deprecated SSE transport)');
 
       // Create SSE transport for legacy clients
-      const transport = new SSEServerTransport(MSG_PATH, res);
+      const transport = new SSEServerTransport(HTTP_MSG_PATH, res);
       this.transports.sse[transport.sessionId] = transport;
 
       res.on("close", () => {
@@ -216,7 +217,7 @@ export class GatewayServer<A extends McpAdapter> {
     });
 
     // Legacy message endpoint for older clients
-    this.app.post(MSG_PATH, async (req, res) => {
+    this.app.post(HTTP_MSG_PATH, async (req: express.Request, res: express.Response) => {
       console.log('Received POST request to /message (deprecated SSE transport)');
 
       const sessionId = req.query.sessionId as string;
@@ -229,6 +230,10 @@ export class GatewayServer<A extends McpAdapter> {
           .status(400)
           .send('No transport found for sessionId');
       }
+    });
+
+    this.app.get("/health", (_: express.Request, res: express.Response) => {
+      res.status(200).json({ status: 'healthy' });
     });
 
   }
@@ -293,5 +298,14 @@ SUPPORTED TRANSPORT OPTIONS:
       console.log('Server shutdown complete');
       process.exit(0);
     });
+
+    process.on('uncaughtException', (error) => {
+        console.error('Uncaught Exception:', error);
+    });
+    
+    process.on('unhandledRejection', (reason, promise) => {
+        console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    });
+    
   }
 }
