@@ -15,6 +15,7 @@ const HTTP_SESSION_ATTR = 'mcp-session-id';
 const HTTP_MCP_PATH = '/mcp';
 const HTTP_SSE_PATH = '/sse';
 const HTTP_MSG_PATH = '/messages';
+const HTTP_UPSUN_APIKEY_ATTR = 'upsun_api_token';
 
 export class LocalServer<A extends McpAdapter> {
   public readonly server: A;
@@ -90,8 +91,10 @@ export class GatewayServer<A extends McpAdapter> {
    * It is used to establish a connection with the transport session.
    * The instance is created using the `new` operator and is used to handle incoming requests.
    */
-  private makeInstanceAdapterMcpServer(): McpAdapter {
-    return new this.mcpAdapterServerFactory();
+  private makeInstanceAdapterMcpServer(api_key: string): McpAdapter {
+    const adapter = new this.mcpAdapterServerFactory();
+    adapter.apikey = api_key;
+    return adapter;
   }
 
   //=============================================================================
@@ -126,6 +129,9 @@ export class GatewayServer<A extends McpAdapter> {
 
       } else if (!sessionId && isInitializeRequest(req.body)) {
 
+        const api_key = this.hasAPIKey(req, res);
+        if (!api_key) { return; }
+
         // New initialization request
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
@@ -142,7 +148,7 @@ export class GatewayServer<A extends McpAdapter> {
           }
         };
 
-        const server = this.makeInstanceAdapterMcpServer();
+        const server = this.makeInstanceAdapterMcpServer(api_key);
         await server.connect(transport);
 
       } else {
@@ -204,6 +210,8 @@ export class GatewayServer<A extends McpAdapter> {
     this.app.get(HTTP_SSE_PATH, async (req: express.Request, res: express.Response) => {
       console.log('Received GET request to /sse (deprecated SSE transport)');
 
+      const api_key = this.hasAPIKey(req, res);
+
       // Create SSE transport for legacy clients
       const transport = new SSEServerTransport(HTTP_MSG_PATH, res);
       this.transports.sse[transport.sessionId] = transport;
@@ -212,7 +220,7 @@ export class GatewayServer<A extends McpAdapter> {
         delete this.transports.sse[transport.sessionId];
       });
 
-      const server = this.makeInstanceAdapterMcpServer();
+      const server = this.makeInstanceAdapterMcpServer(api_key || '');
       await server.connect(transport);
     });
 
@@ -236,6 +244,19 @@ export class GatewayServer<A extends McpAdapter> {
       res.status(200).json({ status: 'healthy' });
     });
 
+  }
+
+  private hasAPIKey(req: express.Request, res: express.Response): string | undefined {
+      let result = undefined;
+
+      if (!req.headers[HTTP_UPSUN_APIKEY_ATTR]) {
+          res.status(400).send('Missing API key');
+      } else {
+          result = req.headers[HTTP_UPSUN_APIKEY_ATTR] as string;
+          console.log(`Initialize new session from ${req.ip} with API key: ${result}`);
+      }
+      
+      return result;
   }
 
   /**

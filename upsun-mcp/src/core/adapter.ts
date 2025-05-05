@@ -8,6 +8,7 @@ import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
  * @interface McpAdapter
  */
 export interface McpAdapter {
+  apikey: string;
   readonly server : McpServer;
   
   connect(transport: Transport): Promise<void>;

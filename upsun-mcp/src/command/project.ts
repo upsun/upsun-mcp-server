@@ -1,6 +1,7 @@
-import Client, { Organization } from "platformsh-client";
+import { UpsunClient, UpsunConfig } from "upsun-sdk-node";
 import { McpAdapter } from "../core/adapter.js";
 import { z } from "zod";
+
 
 export function registerProject(adapter: McpAdapter): void {  // , cliProvider: Client
     console.debug(`Register Project Handlers`);
@@ -10,16 +11,13 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
         "List of all upsun projects",   // Text to indicate on LLM target and call
         { organization_id: z.string() },          // Parameter of this tool
         async ({ organization_id }) => {          // Main function
-            const projects = [
-                { id: "azertyhex", name: "Project 1" },
-                { id: "quertyhex", name: "Project 2" },
-                { id: "foobarhex", name: "Project 3" },
-            ]
-
+            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
+            const projects = await client.project.list(`name=${organization_id}`);
+            
             return {
                 content: [{
                     type: "text",
-                    text: JSON.stringify(projects.slice(0, 100), null, 2)
+                    text: JSON.stringify(projects, null, 2)
                 }]
             };
         }
@@ -30,7 +28,8 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
         "Get information of upsun project",
         { project_id: z.string() },
         async ({ project_id }) => {
-            const project = { id: "azertyhex", name: "Project 1", state: "enabled" };
+            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
+            const project = await client.project.info(project_id);
 
             return {
                 content: [{
@@ -51,7 +50,8 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
             defaultBranch: z.string().default("main").optional()
         },
         async ({ organization_id, region, title, defaultBranch }) => {
-            const result = { throw: "Not implemented !" };
+            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
+            const result = await client.project.create(organization_id, title); // region, defaultBranch
 
             return {
                 content: [{
@@ -69,7 +69,8 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
             project_id: z.string(),
         },
         async ({ project_id }) => {
-            const result = { throw: "Not implemented !" };
+            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
+            const result = "Not implemented (too dangerous)"; // await client.project.delete(project_id);
 
             return {
                 content: [{
