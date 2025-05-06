@@ -15,7 +15,7 @@ const HTTP_SESSION_ATTR = 'mcp-session-id';
 const HTTP_MCP_PATH = '/mcp';
 const HTTP_SSE_PATH = '/sse';
 const HTTP_MSG_PATH = '/messages';
-const HTTP_UPSUN_APIKEY_ATTR = 'upsun_api_token';
+const HTTP_UPSUN_APIKEY_ATTR = 'upsun-api-token';
 
 export class LocalServer<A extends McpAdapter> {
   public readonly server: A;
@@ -211,6 +211,7 @@ export class GatewayServer<A extends McpAdapter> {
       console.log('Received GET request to /sse (deprecated SSE transport)');
 
       const api_key = this.hasAPIKey(req, res);
+      if (!api_key) { return; }
 
       // Create SSE transport for legacy clients
       const transport = new SSEServerTransport(HTTP_MSG_PATH, res);
@@ -250,10 +251,10 @@ export class GatewayServer<A extends McpAdapter> {
       let result = undefined;
 
       if (!req.headers[HTTP_UPSUN_APIKEY_ATTR]) {
-          res.status(400).send('Missing API key');
+          res.status(400).send('Missing API key' + JSON.stringify(req.headers));
       } else {
           result = req.headers[HTTP_UPSUN_APIKEY_ATTR] as string;
-          console.log(`Initialize new session from ${req.ip} with API key: ${result}`);
+          console.log(`Initialize new session from ${req.ip} with API key: ${result.substring(0, 5)}`);
       }
       
       return result;
