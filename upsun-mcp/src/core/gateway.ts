@@ -205,10 +205,12 @@ export class GatewayServer<A extends McpAdapter> {
    * It also handles the legacy message endpoint for older clients.
    */
   private setupSseTransport(): void {
+    
 
     // Legacy SSE endpoint for older clients
     this.app.get(HTTP_SSE_PATH, async (req: express.Request, res: express.Response) => {
-      console.log('Received GET request to /sse (deprecated SSE transport)');
+      const ip = req.headers['x-forwarded-for'] || req.ip
+      console.log(`Received GET request to /sse (deprecated SSE transport) from ${ip}`);
 
       const api_key = this.hasAPIKey(req, res);
       if (!api_key) { return; }
@@ -223,16 +225,19 @@ export class GatewayServer<A extends McpAdapter> {
 
       const server = this.makeInstanceAdapterMcpServer(api_key || '');
       await server.connect(transport);
+      console.log(`New session from ${ip} with ID: ${transport.sessionId}`);
     });
 
     // Legacy message endpoint for older clients
     this.app.post(HTTP_MSG_PATH, async (req: express.Request, res: express.Response) => {
-      console.log('Received POST request to /message (deprecated SSE transport)');
+      const ip = req.headers['x-forwarded-for'] || req.ip
+      console.log(`Received POST request to /message (deprecated SSE transport) from ${ip}`);
 
       const sessionId = req.query.sessionId as string;
       const transport = this.transports.sse[sessionId];
 
       if (transport) {
+        console.log(`Message call from ${ip} with ID: ${transport.sessionId}`);
         await transport.handlePostMessage(req, res, req.body);
       } else {
         res
@@ -249,12 +254,13 @@ export class GatewayServer<A extends McpAdapter> {
 
   private hasAPIKey(req: express.Request, res: express.Response): string | undefined {
       let result = undefined;
+      const ip = req.headers['x-forwarded-for'] || req.ip
 
       if (!req.headers[HTTP_UPSUN_APIKEY_ATTR]) {
-          res.status(400).send('Missing API key' + JSON.stringify(req.headers));
+          res.status(400).send(`Missing API key for ${ip}`);
       } else {
           result = req.headers[HTTP_UPSUN_APIKEY_ATTR] as string;
-          console.log(`Initialize new session from ${req.ip} with API key: ${result.substring(0, 5)}xxxxxxxxxxxxx`);
+          console.log(`Authenticate from ${ip} with API key: ${result.substring(0, 5)}xxxxxxx`);
       }
       
       return result;

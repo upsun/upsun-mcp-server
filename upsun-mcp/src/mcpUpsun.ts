@@ -6,7 +6,8 @@ import {
   registerActivity,
   registerEnvironment,
   registerOrganization,
-  registerProject 
+  registerProject,
+  registerRoute
 } from "./command/index.js";
 
 /**
@@ -27,6 +28,7 @@ export class UpsunMcpServer implements McpAdapter {
     registerEnvironment(this);
     registerOrganization(this);
     registerProject(this);
+    registerRoute(this);
   }
 
   connect(transport: Transport): Promise<void> {
