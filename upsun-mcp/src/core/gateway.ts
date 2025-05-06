@@ -254,7 +254,7 @@ export class GatewayServer<A extends McpAdapter> {
           res.status(400).send('Missing API key' + JSON.stringify(req.headers));
       } else {
           result = req.headers[HTTP_UPSUN_APIKEY_ATTR] as string;
-          console.log(`Initialize new session from ${req.ip} with API key: ${result.substring(0, 5)}`);
+          console.log(`Initialize new session from ${req.ip} with API key: ${result.substring(0, 5)}xxxxxxxxxxxxx`);
       }
       
       return result;

@@ -11,58 +11,58 @@ applications:
       commands:
         start: node build/index.js
 
-  chainlit:
-    source:
-      root: "chainlit"
+  # chainlit:
+  #   source:
+  #     root: "chainlit"
 
-    type: "python:3.11"
+  #   type: "python:3.11"
 
-    relationships:
-      mcp:
-        service: "mcp-server"
-        endpoint: "http"
+  #   relationships:
+  #     mcp:
+  #       service: "mcp-server"
+  #       endpoint: "http"
 
-    mounts:
-      "/database":
-        source: "storage"
-        source_path: "database"
-      ".files":
-        source: "storage"
-        source_path: "files"
-      "__pycache__":
-        source: "storage"
-        source_path: "pycache"
-      ".chainlit":
-        source: "storage"
-        source_path: ".chainlit"
+  #   mounts:
+  #     "/database":
+  #       source: "storage"
+  #       source_path: "database"
+  #     ".files":
+  #       source: "storage"
+  #       source_path: "files"
+  #     "__pycache__":
+  #       source: "storage"
+  #       source_path: "pycache"
+  #     ".chainlit":
+  #       source: "storage"
+  #       source_path: ".chainlit"
 
-    web:
-      commands:
-        start: "chainlit run app-anthropic.py --port $PORT --host 0.0.0.0"
-      upstream:
-        socket_family: tcp
-      locations:
-        "/":
-          passthru: true
-        "/public":
-          passthru: true
+  #   web:
+  #     commands:
+  #       start: "chainlit run app-anthropic.py --port $PORT --host 0.0.0.0"
+  #     upstream:
+  #       socket_family: tcp
+  #     locations:
+  #       "/":
+  #         passthru: true
+  #       "/public":
+  #         passthru: true
 
-    build:
-      flavor: none
+  #   build:
+  #     flavor: none
 
-    hooks:
-      build: |
-        set -eux
-        pip install -r requirements.txt        
+  #   hooks:
+  #     build: |
+  #       set -eux
+  #       pip install -r requirements.txt        
 
 routes:
-  ## Chainlit
-  "https://{default}/":
-    type: upstream
-    upstream: "chainlit:http"
-  "https://www.{default}":
-    type: redirect
-    to: "https://{default}/"
+  # ## Chainlit
+  # "https://{default}/":
+  #   type: upstream
+  #   upstream: "chainlit:http"
+  # "https://www.{default}":
+  #   type: redirect
+  #   to: "https://{default}/"
 
   ## MCP upsun server
   "https://mcp.{default}/":
