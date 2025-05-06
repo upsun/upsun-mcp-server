@@ -66,7 +66,7 @@ export function registerOrganization(adapter: McpAdapter): void {
 
   adapter.server.tool(
     "list-organization",
-    "List all organizations on upsun",
+    "List all my organizations on upsun",
     {
       
     },

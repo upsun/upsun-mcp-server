@@ -66,12 +66,12 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
   );
 
   adapter.server.tool(
-    "list-project",                 // Name of tool
-    "List of all upsun projects",   // Text to indicate on LLM target and call
+    "list-project",                           // Name of tool
+    "List all upsun projects",             // Text to indicate on LLM target and call
     { organization_id: z.string() },          // Parameter of this tool
     async ({ organization_id }) => {          // Main function
       const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-      const projects = await client.project.list(`name=${organization_id}`);
+      const projects = await client.project.list(organization_id);
 
       return {
         content: [{
