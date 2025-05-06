@@ -1,10 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 
-
 import { McpAdapter } from "./core/adapter.js";
-import { registerProject } from "./command/project.js";
-import { registerEnvironment } from "./command/environment.js";
+import {
+  registerActivity,
+  registerEnvironment,
+  registerOrganization,
+  registerProject 
+} from "./command/index.js";
 
 /**
  * UpsunMcpServer class
@@ -12,20 +15,21 @@ import { registerEnvironment } from "./command/environment.js";
  */
 export class UpsunMcpServer implements McpAdapter {
 
-    public readonly apikey!: string;
+  public readonly apikey!: string;
 
-    constructor(
-        public readonly server : McpServer = new McpServer({
-          name: "upsun-server",
-          version: "0.1.0"
-        }),
-      ) {
-        registerProject(this);
-        registerEnvironment(this);
-        
-      }
+  constructor(
+    public readonly server: McpServer = new McpServer({
+      name: "upsun-server",
+      version: "0.1.0"
+    }),
+  ) {
+    registerActivity(this);
+    registerEnvironment(this);
+    registerOrganization(this);
+    registerProject(this);
+  }
 
-    connect(transport: Transport): Promise<void> {
-        return this.server.connect(transport);
-    }
+  connect(transport: Transport): Promise<void> {
+    return this.server.connect(transport);
+  }
 }

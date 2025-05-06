@@ -2,8 +2,9 @@ import { UpsunClient, UpsunConfig } from "upsun-sdk-node";
 import { McpAdapter } from "../core/adapter.js";
 import { z } from "zod";
 
+
 export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvider: Client
-    console.debug(`Register Environment Handlers`);
+    console.log(`Register Environment Handlers`);
 
     adapter.server.tool(
         "activate-environment",
@@ -26,15 +27,36 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
     );
 
     adapter.server.tool(
-        "deactivate-environment",
-        "Deactivate a environment of upsun projects",
+        "delete-environment",
+        "Delete a environment of upsun projects",
         { 
             project_id: z.string(),
             environment_name: z.string()
         },
         async ({ project_id, environment_name }) => {
             const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-            const result = await client.environment.pause(project_id, environment_name);
+            //const result = await client.environment.delete(project_id, environment_name);
+            const result = "Not implemented (too dangerous)";
+
+            return {
+                content: [{
+                    type: "text",
+                    text: JSON.stringify(result, null, 2)
+                }]
+            };
+        }
+    );
+
+    adapter.server.tool(
+        "info-environment",
+        "Get information of environment on upsun projects",
+        { 
+            project_id: z.string(),
+            environment_name: z.string()
+        },
+        async ({ project_id, environment_name }) => {
+            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
+            const result = await client.environment.info(project_id, environment_name);
 
             return {
                 content: [{
@@ -48,7 +70,9 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
     adapter.server.tool(
         "list-environment",
         "List all environments of upsun projects",
-        { project_id: z.string() },
+        { 
+            project_id: z.string()
+        },
         async ({ project_id }) => {
             const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
             const result = await client.environment.list(project_id);
@@ -84,10 +108,10 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
 
     adapter.server.tool(
         "merge-environment",
-        "Merge a environment of upsun projects into parent",
+        "Merge a environment to parent environment of upsun projects",
         { 
             project_id: z.string(),
-            environment_name: z.string(),
+            environment_name: z.string()
         },
         async ({ project_id, environment_name }) => {
             const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
@@ -100,7 +124,27 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
                 }]
             };
         }
-    );
+    )
+
+    adapter.server.tool(
+        "pause-environment",
+        "Pause a environment of upsun projects",
+        { 
+            project_id: z.string(),
+            environment_name: z.string()
+        },
+        async ({ project_id, environment_name }) => {
+            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
+            const result = await client.environment.pause(project_id, environment_name);
+
+            return {
+                content: [{
+                    type: "text",
+                    text: JSON.stringify(result, null, 2)
+                }]
+            };
+        }
+    )
 
     adapter.server.tool(
         "redeploy-environment",
@@ -122,5 +166,46 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
             };
         }
     );
+
+    adapter.server.tool(
+        "resume-environment",
+        "Resume a environment of upsun projects",
+        { 
+            project_id: z.string(),
+            environment_name: z.string()
+        },
+        async ({ project_id, environment_name }) => {
+            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
+            const result = await client.environment.resume(project_id, environment_name);
+
+            return {
+                content: [{
+                    type: "text",
+                    text: JSON.stringify(result, null, 2)
+                }]
+            };
+        }
+    )
+
+    adapter.server.tool(
+        "urls-environment",
+        "Get URLs of environment on upsun projects",
+        { 
+            project_id: z.string(),
+            environment_name: z.string()
+        },
+        async ({ project_id, environment_name }) => {
+            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
+            //const result = await client.environment.url(project_id, environment_name);
+            const result = "Not implemented (too dangerous)";
+
+            return {
+                content: [{
+                    type: "text",
+                    text: JSON.stringify(result, null, 2)
+                }]
+            };
+        }
+    )
 
 }
