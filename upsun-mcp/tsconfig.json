@@ -11,11 +11,16 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "resolveJsonModule": true
   },
   "ts-node": {
     "esm": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

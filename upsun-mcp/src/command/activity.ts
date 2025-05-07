@@ -1,4 +1,3 @@
-import { UpsunClient, UpsunConfig } from "upsun-sdk-node";
 import { McpAdapter } from "../core/adapter.js";
 import { z } from "zod";
 
@@ -14,8 +13,7 @@ export function registerActivity(adapter: McpAdapter): void {
             activity_id: z.string()
         },
         async ({ project_id, activity_id }) => {
-            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-            const result = await client.activity.cancel(project_id, activity_id);
+            const result = await adapter.client.activity.cancel(project_id, activity_id);
 
             return {
                 content: [{
@@ -34,8 +32,7 @@ export function registerActivity(adapter: McpAdapter): void {
             activity_id: z.string()
         },
         async ({ project_id, activity_id }) => {
-            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-            const result = await client.activity.get(project_id, activity_id);
+            const result = await adapter.client.activity.get(project_id, activity_id);
 
             return {
                 content: [{
@@ -53,8 +50,7 @@ export function registerActivity(adapter: McpAdapter): void {
             project_id: z.string()
         },
         async ({ project_id }) => {
-            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-            const result = await client.activity.list(project_id);
+            const result = await adapter.client.activity.list(project_id);
 
             return {
                 content: [{
@@ -73,8 +69,7 @@ export function registerActivity(adapter: McpAdapter): void {
             activity_id: z.string()
         },
         async ({ project_id, activity_id }) => {
-            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-            //const result = await client.activity.log(project_id, activity_id);
+            //const result = await adapter.client.activity.log(project_id, activity_id);
             const result = "Not implemented";
 
             return {

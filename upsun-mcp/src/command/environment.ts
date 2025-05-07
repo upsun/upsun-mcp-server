@@ -1,4 +1,3 @@
-import { UpsunClient, UpsunConfig } from "upsun-sdk-node";
 import { McpAdapter } from "../core/adapter.js";
 import { z } from "zod";
 
@@ -14,8 +13,7 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
             environment_name: z.string()
         },
         async ({ project_id, environment_name }) => {
-            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-            const result = await client.environment.activate(project_id, environment_name);
+            const result = await adapter.client.environment.activate(project_id, environment_name);
 
             return {
                 content: [{
@@ -34,8 +32,7 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
             environment_name: z.string()
         },
         async ({ project_id, environment_name }) => {
-            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-            //const result = await client.environment.delete(project_id, environment_name);
+            //const result = await adapter.client.environment.delete(project_id, environment_name);
             const result = "Not implemented (too dangerous)";
 
             return {
@@ -55,8 +52,7 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
             environment_name: z.string()
         },
         async ({ project_id, environment_name }) => {
-            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-            const result = await client.environment.info(project_id, environment_name);
+            const result = await adapter.client.environment.info(project_id, environment_name);
 
             return {
                 content: [{
@@ -74,8 +70,7 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
             project_id: z.string()
         },
         async ({ project_id }) => {
-            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-            const result = await client.environment.list(project_id);
+            const result = await adapter.client.environment.list(project_id);
 
             return {
                 content: [{
@@ -114,8 +109,7 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
             environment_name: z.string()
         },
         async ({ project_id, environment_name }) => {
-            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-            const result = await client.environment.merge(project_id, environment_name);
+            const result = await adapter.client.environment.merge(project_id, environment_name);
 
             return {
                 content: [{
@@ -134,8 +128,7 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
             environment_name: z.string()
         },
         async ({ project_id, environment_name }) => {
-            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-            const result = await client.environment.pause(project_id, environment_name);
+            const result = await adapter.client.environment.pause(project_id, environment_name);
 
             return {
                 content: [{
@@ -155,8 +148,7 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
             application_name: z.string()
         },
         async ({ project_id, environment_name }) => {
-            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-            const result = await client.environment.redeploy(project_id, environment_name);
+            const result = await adapter.client.environment.redeploy(project_id, environment_name);
 
             return {
                 content: [{
@@ -175,8 +167,7 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
             environment_name: z.string()
         },
         async ({ project_id, environment_name }) => {
-            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-            const result = await client.environment.resume(project_id, environment_name);
+            const result = await adapter.client.environment.resume(project_id, environment_name);
 
             return {
                 content: [{
@@ -195,8 +186,7 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
             environment_name: z.string()
         },
         async ({ project_id, environment_name }) => {
-            const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-            //const result = await client.environment.url(project_id, environment_name);
+            //const result = await adapter.client.environment.url(project_id, environment_name);
             const result = "Not implemented (too dangerous)";
 
             return {
