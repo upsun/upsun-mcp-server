@@ -9,8 +9,9 @@ import { UpsunClient } from "upsun-sdk-node";
  * @interface McpAdapter
  */
 export interface McpAdapter {
-  apikey: string;
+
   readonly server : McpServer;
   readonly client: UpsunClient;
-  connect(transport: Transport): Promise<void>;
+
+  connect(transport: Transport, apiKey: string): Promise<void>;
 }

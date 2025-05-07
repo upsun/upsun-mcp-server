@@ -186,8 +186,7 @@ export function registerEnvironment(adapter: McpAdapter): void {  // , cliProvid
             environment_name: z.string()
         },
         async ({ project_id, environment_name }) => {
-            //const result = await adapter.client.environment.url(project_id, environment_name);
-            const result = "Not implemented (too dangerous)";
+            const result = await adapter.client.environment.url(project_id, environment_name);
 
             return {
                 content: [{

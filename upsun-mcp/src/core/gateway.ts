@@ -30,7 +30,7 @@ export class LocalServer<A extends McpAdapter> {
   }
 
   async listen(): Promise<void> {
-    await this.server.connect(this.transport);
+    await this.server.connect(this.transport, process.env.UPSUN_API_KEY || '');
   }
 
 }
@@ -59,7 +59,7 @@ export class GatewayServer<A extends McpAdapter> {
   };
   readonly sseConnections = new Map<string, { res: express.Response, intervalId: NodeJS.Timeout }>();
 
-  /*
+  /**
    * Constructor for the GatewayServer class.
    * @param mcpAdapterServerFactory - The implementation of the McpAdapter to be used.
    * @param app - The Express application instance (optional).
@@ -92,10 +92,8 @@ export class GatewayServer<A extends McpAdapter> {
    * It is used to establish a connection with the transport session.
    * The instance is created using the `new` operator and is used to handle incoming requests.
    */
-  private makeInstanceAdapterMcpServer(api_key: string): McpAdapter {
-    const adapter = new this.mcpAdapterServerFactory();
-    adapter.apikey = api_key;
-    return adapter;
+  private makeInstanceAdapterMcpServer(): McpAdapter {
+    return new this.mcpAdapterServerFactory();
   }
 
   //=============================================================================
@@ -149,8 +147,8 @@ export class GatewayServer<A extends McpAdapter> {
           }
         };
 
-        const server = this.makeInstanceAdapterMcpServer(api_key);
-        await server.connect(transport);
+        const server = this.makeInstanceAdapterMcpServer();
+        await server.connect(transport, api_key);
 
       } else {
         // Invalid request
@@ -206,7 +204,6 @@ export class GatewayServer<A extends McpAdapter> {
    * It also handles the legacy message endpoint for older clients.
    */
   private setupSseTransport(): void {
-    
 
     // Legacy SSE endpoint for older clients
     this.app.get(HTTP_SSE_PATH, async (req: express.Request, res: express.Response) => {
@@ -242,12 +239,12 @@ export class GatewayServer<A extends McpAdapter> {
         if (connection) {
           clearInterval(connection.intervalId);
           this.sseConnections.delete(transport.sessionId);
-    }
+        }
       });
 
-      const server = this.makeInstanceAdapterMcpServer(api_key || '');
+      const server = this.makeInstanceAdapterMcpServer();
       try {
-      await server.connect(transport);
+      await server.connect(transport, api_key || '');
       console.log(`New session from ${ip} with ID: ${transport.sessionId}`);
       } catch (error) {
         console.error(`[SSE Connection] Error connecting server to transport for ${transport.sessionId}:`, error);

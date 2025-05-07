@@ -18,8 +18,7 @@ import {
  */
 export class UpsunMcpServer implements McpAdapter {
 
-  public readonly apikey!: string;
-  public readonly client!: UpsunClient;
+  public client!: UpsunClient;
 
   constructor(
     public readonly server: McpServer = new McpServer({
@@ -27,7 +26,6 @@ export class UpsunMcpServer implements McpAdapter {
       version: pjson.default.version
     }),
   ) {
-    this.client = new UpsunClient({ apiKey: this.apikey } as UpsunConfig);
 
     registerActivity(this);
     registerEnvironment(this);
@@ -36,7 +34,8 @@ export class UpsunMcpServer implements McpAdapter {
     registerRoute(this);
   }
 
-  connect(transport: Transport): Promise<void> {
+  connect(transport: Transport, apiKey: string): Promise<void> {
+    this.client = new UpsunClient({ apiKey } as UpsunConfig);
     return this.server.connect(transport);
   }
 }
