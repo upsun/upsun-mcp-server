@@ -57,6 +57,7 @@ export class GatewayServer<A extends McpAdapter> {
     streamable: {} as Record<string, StreamableHTTPServerTransport>,
     sse: {} as Record<string, SSEServerTransport>
   };
+  readonly sseConnections = new Map<string, { res: express.Response, intervalId: NodeJS.Timeout }>();
 
   /*
    * Constructor for the GatewayServer class.
@@ -219,13 +220,45 @@ export class GatewayServer<A extends McpAdapter> {
       const transport = new SSEServerTransport(HTTP_MSG_PATH, res);
       this.transports.sse[transport.sessionId] = transport;
 
+      // Start keep-alive ping
+      const intervalId = setInterval(() => {
+        if (this.sseConnections.has(transport.sessionId) && !res.writableEnded) {
+          res.write(': keepalive\n\n');
+        } else {
+          // Should not happen if close handler is working, but clear just in case
+          clearInterval(intervalId);
+          this.sseConnections.delete(transport.sessionId);
+        }
+      }, KEEP_ALIVE_INTERVAL_MS);
+
+      // Store connection details
+      this.sseConnections.set(transport.sessionId, { res, intervalId });
+      console.log(`[SSE Connection] Client connected: ${transport.sessionId}, starting keep-alive.`);
+
       res.on("close", () => {
         delete this.transports.sse[transport.sessionId];
+        // Clean up keep-alive interval
+        const connection = this.sseConnections.get(transport.sessionId);
+        if (connection) {
+          clearInterval(connection.intervalId);
+          this.sseConnections.delete(transport.sessionId);
+    }
       });
 
       const server = this.makeInstanceAdapterMcpServer(api_key || '');
+      try {
       await server.connect(transport);
       console.log(`New session from ${ip} with ID: ${transport.sessionId}`);
+      } catch (error) {
+        console.error(`[SSE Connection] Error connecting server to transport for ${transport.sessionId}:`, error);
+        // Ensure cleanup happens even if connect fails
+        clearInterval(intervalId);
+        this.sseConnections.delete(transport.sessionId);
+        delete this.transports.sse[transport.sessionId];
+        if (!res.writableEnded) {
+          res.status(500).end('Failed to connect MCP server to transport');
+        }
+      }
     });
 
     // Legacy message endpoint for older clients
