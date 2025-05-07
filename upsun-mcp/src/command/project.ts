@@ -1,4 +1,3 @@
-import { UpsunClient, UpsunConfig } from "upsun-sdk-node";
 import { McpAdapter } from "../core/adapter.js";
 import { z } from "zod";
 
@@ -16,8 +15,7 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
       default_branch: z.string().default("main").optional()
     },
     async ({ organization_id, region, name, default_branch }) => {
-      const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-      const result = await client.project.create(organization_id, name); // region, default_branch
+      const result = await adapter.client.project.create(organization_id, name); // region, default_branch
 
       return {
         content: [{
@@ -35,8 +33,7 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
       project_id: z.string(),
     },
     async ({ project_id }) => {
-      const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-      //const result = await client.project.delete(project_id);
+      //const result = await adapter.client.project.delete(project_id);
       const result = "Not implemented (too dangerous)";
 
       return {
@@ -53,8 +50,7 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
     "Get information of upsun project",
     { project_id: z.string() },
     async ({ project_id }) => {
-      const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-      const project = await client.project.info(project_id);
+      const project = await adapter.client.project.info(project_id);
 
       return {
         content: [{
@@ -70,8 +66,7 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
     "List all upsun projects",             // Text to indicate on LLM target and call
     { organization_id: z.string() },          // Parameter of this tool
     async ({ organization_id }) => {          // Main function
-      const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-      const projects = await client.project.list(organization_id);
+      const projects = await adapter.client.project.list(organization_id);
 
       return {
         content: [{

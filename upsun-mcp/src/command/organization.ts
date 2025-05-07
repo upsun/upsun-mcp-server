@@ -1,4 +1,3 @@
-import { UpsunClient, UpsunConfig } from "upsun-sdk-node";
 import { McpAdapter } from "../core/adapter.js";
 import { z } from "zod";
 
@@ -13,8 +12,7 @@ export function registerOrganization(adapter: McpAdapter): void {
       organization_name: z.string()
     },
     async ({ organization_name }) => {
-      const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-      const result = await client.organization.create(organization_name);
+      const result = await adapter.client.organization.create(organization_name);
 
       return {
         content: [{
@@ -32,8 +30,7 @@ export function registerOrganization(adapter: McpAdapter): void {
       organization_id: z.string()
     },
     async ({ organization_id }) => {
-      const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-      //const result = await client.organization.delete(organization_id);
+      //const result = await adapter.client.organization.delete(organization_id);
       const result = "Not implemented (too dangerous)";
 
       return {
@@ -52,8 +49,7 @@ export function registerOrganization(adapter: McpAdapter): void {
       organization_id: z.string()
     },
     async ({ organization_id }) => {
-      const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-      const result = await client.organization.info(organization_id);
+      const result = await adapter.client.organization.info(organization_id);
 
       return {
         content: [{
@@ -71,8 +67,7 @@ export function registerOrganization(adapter: McpAdapter): void {
       
     },
     async ({ }) => {
-      const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-      const result = await client.organization.list();
+      const result = await adapter.client.organization.list();
 
       return {
         content: [{

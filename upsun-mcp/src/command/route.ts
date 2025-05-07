@@ -1,9 +1,8 @@
-import { UpsunClient, UpsunConfig } from "upsun-sdk-node";
 import { McpAdapter } from "../core/adapter.js";
 import { z } from "zod";
 
 
-export function registerRoute(adapter: McpAdapter): void {  // , cliProvider: Client
+export function registerRoute(adapter: McpAdapter): void {
   console.log(`Register Route Handlers`);
 
   adapter.server.tool(
@@ -15,8 +14,7 @@ export function registerRoute(adapter: McpAdapter): void {  // , cliProvider: Cl
       route_id: z.string().optional()
     },
     async ({ project_id,environment_name, route_id }) => {
-      const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-      const result = (await client.route.get(project_id, environment_name, route_id || ''));
+      const result = (await adapter.client.route.get(project_id, environment_name, route_id || ''));
 
       return {
         content: [{
@@ -35,8 +33,7 @@ export function registerRoute(adapter: McpAdapter): void {  // , cliProvider: Cl
       environment_name: z.string()
     },
     async ({ project_id,environment_name }) => {
-      const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-      const result = (await client.route.list(project_id, environment_name));
+      const result = await adapter.client.route.list(project_id, environment_name);
 
       return {
         content: [{
@@ -54,8 +51,7 @@ export function registerRoute(adapter: McpAdapter): void {  // , cliProvider: Cl
       project_id: z.string()
     },
     async ({ project_id }) => {
-      const client = new UpsunClient({ apiKey: adapter.apikey } as UpsunConfig);
-      const result = (await client.route.web(project_id)).ui;
+      const result = (await adapter.client.route.web(project_id)).ui;
 
       return {
         content: [{
