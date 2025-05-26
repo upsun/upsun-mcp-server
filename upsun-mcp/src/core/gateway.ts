@@ -26,7 +26,6 @@ export class LocalServer<A extends McpAdapter> {
   ) {
     this.transport = new StdioServerTransport();
     this.server = new this.mcpAdapterServerFactory();
-    
   }
 
   async listen(): Promise<void> {
@@ -67,8 +66,8 @@ export class GatewayServer<A extends McpAdapter> {
    * the necessary routes for handling MCP requests.
    * It also initializes the transport sessions for both streamable HTTP and SSE.
    * @example
-   const server = new GatewayServer(MyMcpAdapter);
-   server.listen();
+    const server = new GatewayServer(MyMcpAdapter);
+    server.listen();
    * @returns {void}
    * @memberof GatewayServer
    * @template A - The type of the McpAdapter implementation.

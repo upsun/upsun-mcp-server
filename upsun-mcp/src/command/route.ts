@@ -1,4 +1,5 @@
 import { McpAdapter } from "../core/adapter.js";
+import { Response, Schema } from "../core/helper.js";
 import { z } from "zod";
 
 
@@ -9,19 +10,14 @@ export function registerRoute(adapter: McpAdapter): void {
     "get-route",
     "Get route URL of upsun project",
     {
-      project_id: z.string(),
-      environment_name: z.string(),
-      route_id: z.string().optional()
+      project_id: Schema.projectId(),
+      environment_name: Schema.environmentName(),
+      route_id: z.string().optional(),
     },
-    async ({ project_id,environment_name, route_id }) => {
+    async ({ project_id, environment_name, route_id }) => {
       const result = (await adapter.client.route.get(project_id, environment_name, route_id || ''));
 
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(result, null, 2)
-        }]
-      };
+      return Response.json(result);
     }
   );
 
@@ -29,18 +25,13 @@ export function registerRoute(adapter: McpAdapter): void {
     "list-route",
     "List routes URL of upsun project",
     {
-      project_id: z.string(),
-      environment_name: z.string()
+      project_id: Schema.projectId(),
+      environment_name: Schema.environmentName(),
     },
-    async ({ project_id,environment_name }) => {
+    async ({ project_id, environment_name }) => {
       const result = await adapter.client.route.list(project_id, environment_name);
 
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(result, null, 2)
-        }]
-      };
+      return Response.json(result);
     }
   );
 
@@ -48,17 +39,12 @@ export function registerRoute(adapter: McpAdapter): void {
     "get-console",
     "Get console URL of upsun project",
     {
-      project_id: z.string()
+      project_id: Schema.projectId(),
     },
     async ({ project_id }) => {
       const result = (await adapter.client.route.web(project_id)).ui;
 
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(result, null, 2)
-        }]
-      };
+      return Response.json(result);
     }
   );
 }

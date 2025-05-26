@@ -1,5 +1,5 @@
 import { McpAdapter } from "../core/adapter.js";
-import { z } from "zod";
+import { Response, Schema } from "../core/helper.js";
 
 
 export function registerOrganization(adapter: McpAdapter): void {
@@ -9,17 +9,12 @@ export function registerOrganization(adapter: McpAdapter): void {
     "create-organization",
     "Create a Organization on upsun",
     {
-      organization_name: z.string()
+      organization_name: Schema.organizationName(),
     },
     async ({ organization_name }) => {
       const result = await adapter.client.organization.create(organization_name);
 
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(result, null, 2)
-        }]
-      };
+      return Response.json(result);
     }
   );
 
@@ -27,18 +22,12 @@ export function registerOrganization(adapter: McpAdapter): void {
     "delete-organization",
     "Delete a Organization on upsun",
     {
-      organization_id: z.string()
+      organization_id: Schema.organizationId(),
     },
     async ({ organization_id }) => {
-      //const result = await adapter.client.organization.delete(organization_id);
-      const result = "Not implemented (too dangerous)";
+      const result = await adapter.client.organization.delete(organization_id);
 
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(result, null, 2)
-        }]
-      };
+      return Response.json(result);
     }
   );
 
@@ -46,17 +35,12 @@ export function registerOrganization(adapter: McpAdapter): void {
     "info-organization",
     "Get information of organization on upsun",
     {
-      organization_id: z.string()
+      organization_id: Schema.organizationId(),
     },
     async ({ organization_id }) => {
       const result = await adapter.client.organization.info(organization_id);
 
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(result, null, 2)
-        }]
-      };
+      return Response.json(result);
     }
   );
 
@@ -64,17 +48,12 @@ export function registerOrganization(adapter: McpAdapter): void {
     "list-organization",
     "List all my organizations on upsun",
     {
-      
+
     },
     async ({ }) => {
       const result = await adapter.client.organization.list();
 
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(result, null, 2)
-        }]
-      };
+      return Response.json(result);
     }
   );
 }

@@ -1,4 +1,5 @@
 import { McpAdapter } from "../core/adapter.js";
+import { Response, Schema } from "../core/helper.js";
 import { z } from "zod";
 
 
@@ -9,7 +10,7 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
     "create-project",
     "Create a new upsun project",
     {
-      organization_id: z.string(),
+      organization_id: Schema.organizationId(),
       region: z.string(),
       name: z.string(),
       default_branch: z.string().default("main").optional()
@@ -17,12 +18,7 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
     async ({ organization_id, region, name, default_branch }) => {
       const result = await adapter.client.project.create(organization_id, name); // region, default_branch
 
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(result, null, 2)
-        }]
-      };
+      return Response.json(result);
     }
   );
 
@@ -30,52 +26,39 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
     "delete-project",
     "Delete a upsun project",
     {
-      project_id: z.string(),
+      project_id: Schema.projectId(),
     },
     async ({ project_id }) => {
-      //const result = await adapter.client.project.delete(project_id);
-      const result = "Not implemented (too dangerous)";
+      const result = await adapter.client.project.delete(project_id);
 
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(result, null, 2)
-        }]
-      };
+      return Response.json(result);
     }
   );
 
   adapter.server.tool(
     "info-project",
     "Get information of upsun project",
-    { project_id: z.string() },
+    {
+      project_id: Schema.projectId(),
+    },
     async ({ project_id }) => {
-      const project = await adapter.client.project.info(project_id);
+      const result = await adapter.client.project.info(project_id);
 
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(project, null, 2)
-        }]
-      };
+      return Response.json(result);
     }
   );
 
   adapter.server.tool(
     "list-project",                           // Name of tool
-    "List all upsun projects",             // Text to indicate on LLM target and call
-    { organization_id: z.string() },          // Parameter of this tool
+    "List all upsun projects",                // Text to indicate on LLM target and call
+    {                                         // Parameter of this tool
+      organization_id: Schema.organizationId(),
+    },
     async ({ organization_id }) => {          // Main function
-      const projects = await adapter.client.project.list(organization_id);
+      const result = await adapter.client.project.list(organization_id);
 
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(projects, null, 2)
-        }]
-      };
+      return Response.json(result);
     }
   );
 
-  
 }

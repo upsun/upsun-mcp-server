@@ -6,10 +6,14 @@ import * as pjson from '../package.json' with { type: 'json' };
 import { McpAdapter } from "./core/adapter.js";
 import {
   registerActivity,
+  registerBackup,
+  registerCertificate,
+  registerDomain,
   registerEnvironment,
   registerOrganization,
   registerProject,
-  registerRoute
+  registerRoute,
+  registerSshKey
 } from "./command/index.js";
 
 /**
@@ -28,10 +32,14 @@ export class UpsunMcpServer implements McpAdapter {
   ) {
 
     registerActivity(this);
+    registerBackup(this);
+    registerCertificate(this);
+    registerDomain(this);
     registerEnvironment(this);
     registerOrganization(this);
     registerProject(this);
     registerRoute(this);
+    registerSshKey(this);
   }
 
   connect(transport: Transport, apiKey: string): Promise<void> {
