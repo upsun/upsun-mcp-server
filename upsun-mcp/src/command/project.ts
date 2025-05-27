@@ -1,11 +1,44 @@
+/**
+ * @fileoverview Project management command module for Upsun MCP server.
+ * 
+ * This module provides MCP tools for managing Upsun projects, including creation,
+ * deletion, information retrieval, and listing operations. Projects are the
+ * top-level containers for applications and environments in the Upsun platform.
+ */
+
 import { McpAdapter } from "../core/adapter.js";
 import { Response, Schema } from "../core/helper.js";
 import { z } from "zod";
 
-
-export function registerProject(adapter: McpAdapter): void {  // , cliProvider: Client
+/**
+ * Registers project management tools with the MCP server.
+ * 
+ * This function adds four tools to the MCP server for project operations:
+ * - create-project: Creates a new Upsun project within an organization
+ * - delete-project: Permanently deletes a project and all its resources
+ * - info-project: Retrieves detailed information about a specific project
+ * - list-project: Lists all projects within an organization
+ * 
+ * @param adapter - The MCP adapter instance to register tools with
+ * 
+ * @example
+ * ```typescript
+ * const server = new UpsunMcpServer();
+ * registerProject(server);
+ * ```
+ */
+export function registerProject(adapter: McpAdapter): void {
   console.log(`Register Project Handlers`);
 
+  /**
+   * Tool: create-project
+   * Creates a new Upsun project within the specified organization.
+   * 
+   * @param organization_id - The organization ID where the project will be created
+   * @param region - The cloud region where the project will be deployed
+   * @param name - The name of the new project
+   * @param default_branch - The default Git branch (optional, defaults to "main")
+   */
   adapter.server.tool(
     "create-project",
     "Create a new upsun project",
@@ -22,6 +55,15 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
     }
   );
 
+  /**
+   * Tool: delete-project
+   * Permanently deletes a Upsun project and all its associated resources.
+   * 
+   * @warning This operation is irreversible and will delete all environments,
+   * applications, data, and configurations associated with the project.
+   * 
+   * @param project_id - The unique identifier of the project to delete
+   */
   adapter.server.tool(
     "delete-project",
     "Delete a upsun project",
@@ -35,6 +77,15 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
     }
   );
 
+  /**
+   * Tool: info-project
+   * Retrieves detailed information about a specific Upsun project.
+   * 
+   * Returns comprehensive project details including configuration,
+   * environments, applications, and metadata.
+   * 
+   * @param project_id - The unique identifier of the project
+   */
   adapter.server.tool(
     "info-project",
     "Get information of upsun project",
@@ -48,13 +99,22 @@ export function registerProject(adapter: McpAdapter): void {  // , cliProvider: 
     }
   );
 
+  /**
+   * Tool: list-project
+   * Lists all projects within a specific organization.
+   * 
+   * Returns an array of projects with basic information such as
+   * project ID, name, status, and creation date.
+   * 
+   * @param organization_id - The organization ID to list projects from
+   */
   adapter.server.tool(
-    "list-project",                           // Name of tool
-    "List all upsun projects",                // Text to indicate on LLM target and call
-    {                                         // Parameter of this tool
+    "list-project",
+    "List all upsun projects",
+    {
       organization_id: Schema.organizationId(),
     },
-    async ({ organization_id }) => {          // Main function
+    async ({ organization_id }) => {
       const result = await adapter.client.project.list(organization_id);
 
       return Response.json(result);

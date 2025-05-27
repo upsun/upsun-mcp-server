@@ -10,17 +10,38 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js"
 
 import { McpAdapter } from "./adapter.js";
 
-const KEEP_ALIVE_INTERVAL_MS = 25000; // Send keep-alive every 25 seconds
+/** Keep-alive interval for SSE connections (25 seconds) */
+const KEEP_ALIVE_INTERVAL_MS = 25000;
+/** HTTP header name for MCP session ID */
 const HTTP_SESSION_ATTR = 'mcp-session-id';
+/** HTTP path for MCP streamable transport endpoint */
 const HTTP_MCP_PATH = '/mcp';
+/** HTTP path for legacy SSE transport endpoint */
 const HTTP_SSE_PATH = '/sse';
+/** HTTP path for legacy message endpoint */
 const HTTP_MSG_PATH = '/messages';
+/** HTTP header name for Upsun API key */
 const HTTP_UPSUN_APIKEY_ATTR = 'upsun-api-token';
 
+/**
+ * Local server implementation for stdio-based MCP communication.
+ * 
+ * This class provides a simple server that communicates via standard input/output,
+ * typically used for local development or command-line integration.
+ * 
+ * @template A - The type of McpAdapter implementation
+ */
 export class LocalServer<A extends McpAdapter> {
+  /** The MCP adapter server instance */
   public readonly server: A;
+  /** The stdio transport for local communication */
   private readonly transport: StdioServerTransport
 
+  /**
+   * Creates a new LocalServer instance.
+   * 
+   * @param mcpAdapterServerFactory - Factory function to create MCP adapter instances
+   */
   constructor(
     private readonly mcpAdapterServerFactory: new () => A,
   ) {
@@ -28,6 +49,14 @@ export class LocalServer<A extends McpAdapter> {
     this.server = new this.mcpAdapterServerFactory();
   }
 
+  /**
+   * Starts listening for stdio-based MCP communication.
+   * 
+   * Uses the UPSUN_API_KEY environment variable for authentication.
+   * 
+   * @returns Promise that resolves when the server is ready
+   * @throws Error if connection fails or API key is missing
+   */
   async listen(): Promise<void> {
     await this.server.connect(this.transport, process.env.UPSUN_API_KEY || '');
   }
@@ -35,42 +64,58 @@ export class LocalServer<A extends McpAdapter> {
 }
 
 /**
- * GatewayServer class
+ * HTTP gateway server for MCP communication.
+ * 
  * This class serves as a gateway for handling HTTP requests and managing
- * transport sessions for the Model Context Protocol (MCP).
- * It supports both streamable HTTP and Server-Sent Events (SSE) transports.
+ * transport sessions for the Model Context Protocol (MCP). It supports both
+ * the newer streamable HTTP transport (protocol version 2025-03-26) and the
+ * legacy HTTP+SSE transport (protocol version 2024-11-05) for backwards compatibility.
+ * 
+ * The server manages multiple concurrent sessions and provides proper cleanup
+ * of resources when sessions terminate.
+ * 
+ * @template A - The type of McpAdapter implementation
  */
 export class GatewayServer<A extends McpAdapter> {
 
   /**
-   * Store transports for each session type
-   * @description This object stores the transport sessions for streamable HTTP and SSE.
-   * T.ssehe `streamable` property contains a record of streamable HTTP server transports,
-   * while the `sse` property contains a record of SSE server transports.
-   * @type {object}
-   * @property {Record<string, StreamableHTTPServerTransport>} streamable - A record of streamable HTTP server transports.
-   * @property {Record<string, SSEServerTransport>} sse - A record of SSE server transports.
+   * Storage for active transport sessions by type.
+   * 
+   * This object stores the transport sessions for both streamable HTTP and SSE.
+   * Each transport type maintains its own record of active sessions keyed by session ID.
+   * 
+   * @remarks
+   * TODO: Review for more horizontal scalability - current implementation stores
+   * sessions in memory which limits scaling across multiple server instances.
    */
   readonly transports = {
-    //TODO: Review for more horizontal scalability.
+    /** Active streamable HTTP server transports (protocol version 2025-03-26) */
     streamable: {} as Record<string, StreamableHTTPServerTransport>,
+    /** Active SSE server transports (protocol version 2024-11-05) */
     sse: {} as Record<string, SSEServerTransport>
   };
+
+  /** 
+   * Active SSE connections with their keep-alive intervals.
+   * Maps session IDs to connection details including the Express response object
+   * and the keep-alive interval timer.
+   */
   readonly sseConnections = new Map<string, { res: express.Response, intervalId: NodeJS.Timeout }>();
 
   /**
-   * Constructor for the GatewayServer class.
-   * @param mcpAdapterServerFactory - The implementation of the McpAdapter to be used.
-   * @param app - The Express application instance (optional).
-   * @description This constructor initializes the Express application and sets up
-   * the necessary routes for handling MCP requests.
-   * It also initializes the transport sessions for both streamable HTTP and SSE.
+   * Creates a new GatewayServer instance.
+   * 
+   * Initializes the Express application and sets up routes for handling MCP requests
+   * via both streamable HTTP and legacy SSE transports.
+   * 
+   * @param mcpAdapterServerFactory - Factory function to create MCP adapter instances
+   * @param app - Optional Express application instance (creates new one if not provided)
+   * 
    * @example
-    const server = new GatewayServer(MyMcpAdapter);
-    server.listen();
-   * @returns {void}
-   * @memberof GatewayServer
-   * @template A - The type of the McpAdapter implementation.
+   * ```typescript
+   * const server = new GatewayServer(MyMcpAdapter);
+   * server.listen(3000);
+   * ```
    */
   constructor(
     private readonly mcpAdapterServerFactory: new () => A,
@@ -84,12 +129,13 @@ export class GatewayServer<A extends McpAdapter> {
   }
 
   /**
-   * Creates an instance of the McpAdapter implementation.
-   * @returns {McpAdapter}
-   * @memberof GatewayServer
-   * @description This method creates an instance of the McpAdapter implementation.
-   * It is used to establish a connection with the transport session.
-   * The instance is created using the `new` operator and is used to handle incoming requests.
+   * Creates a new instance of the MCP adapter implementation.
+   * 
+   * This factory method creates fresh instances of the MCP adapter for each
+   * transport session, ensuring proper isolation between different client connections.
+   * 
+   * @returns A new MCP adapter instance
+   * @private
    */
   private makeInstanceAdapterMcpServer(): McpAdapter {
     return new this.mcpAdapterServerFactory();
@@ -100,17 +146,20 @@ export class GatewayServer<A extends McpAdapter> {
   //=============================================================================
 
   /**
-   * Sets up the Streamable HTTP transport for client-to-server communication.
-   * @returns {void}
-   * @memberof GatewayServer
-   * @description This method sets up the Streamable HTTP transport for client-to-server communication.
-   * It creates an endpoint for handling POST requests and manages session IDs for transport sessions.
+   * Sets up the Streamable HTTP transport for modern MCP clients.
    * 
-   * It also handles GET and DELETE requests for server-to-client notifications and session termination.
+   * This transport supports the latest MCP protocol version (2025-03-26) and provides
+   * efficient bidirectional communication using HTTP with streaming capabilities.
    * 
-   * The Streamable HTTP transport is used for real-time communication between the server and clients.
-   * It allows for efficient handling of large data streams and supports multiple concurrent sessions.
-   * The transport sessions are stored in the `transports` object, which contains a record of active sessions.
+   * Endpoints configured:
+   * - POST /mcp: Client-to-server communication and session initialization
+   * - GET /mcp: Server-to-client notifications via streaming
+   * - DELETE /mcp: Session termination
+   * 
+   * Sessions are managed via the 'mcp-session-id' header, with automatic cleanup
+   * when connections are closed.
+   * 
+   * @private
    */
   private setupStreamableTransport(): void {
 
@@ -119,19 +168,22 @@ export class GatewayServer<A extends McpAdapter> {
       // Check for existing session ID
       const sessionId = req.headers[HTTP_SESSION_ATTR] as string | undefined;
       console.log('Received POST request to /mcp (Streamable transport)');
-      let transport: StreamableHTTPServerTransport;
 
       if (sessionId && this.transports.streamable[sessionId]) {
         // Reuse existing transport
-        transport = this.transports.streamable[sessionId];
+        const transport = this.transports.streamable[sessionId];
+        await transport.handleRequest(req, res, req.body);
 
       } else if (!sessionId && isInitializeRequest(req.body)) {
 
         const api_key = this.hasAPIKey(req, res);
         if (!api_key) { return; }
 
+        // Create the server instance first
+        const server = this.makeInstanceAdapterMcpServer();
+
         // New initialization request
-        transport = new StreamableHTTPServerTransport({
+        const transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
           onsessioninitialized: (sessionId) => {
             // Store the transport by session ID
@@ -146,8 +198,11 @@ export class GatewayServer<A extends McpAdapter> {
           }
         };
 
-        const server = this.makeInstanceAdapterMcpServer();
+        // Connect the server to the transport
         await server.connect(transport, api_key);
+        
+        // Handle the initialization request
+        await transport.handleRequest(req, res, req.body);
 
       } else {
         // Invalid request
@@ -161,12 +216,14 @@ export class GatewayServer<A extends McpAdapter> {
         });
         return;
       }
-
-      // Handle the request
-      await transport.handleRequest(req, res, req.body);
     });
 
-    // Reusable handler for GET and DELETE requests
+    /**
+     * Reusable handler for GET and DELETE requests on the MCP endpoint.
+     * 
+     * @param req - Express request object
+     * @param res - Express response object
+     */
     const handleSessionRequest = async (req: express.Request, res: express.Response) => {
       console.log('Received GET/DELETE request to /mcp (Streamable transport)');
 
@@ -182,7 +239,7 @@ export class GatewayServer<A extends McpAdapter> {
       await transport.handleRequest(req, res);
     };
 
-    // // Handle GET requests for server-to-client notifications via SSE
+    // Handle GET requests for server-to-client notifications via streaming
     this.app.get(HTTP_MCP_PATH, handleSessionRequest);
 
     // Handle DELETE requests for session termination
@@ -194,13 +251,21 @@ export class GatewayServer<A extends McpAdapter> {
   //=============================================================================
 
   /**
-   * Sets up the Server-Sent Events (SSE) transport for legacy clients.
-   * @returns {void}
-   * @memberof GatewayServer
-   * @description This method sets up the SSE transport for legacy clients.
-   * It creates an SSE endpoint and handles incoming messages from legacy clients.
-   * The SSE transport is used for server-to-client notifications.
-   * It also handles the legacy message endpoint for older clients.
+   * Sets up the legacy Server-Sent Events (SSE) transport for backwards compatibility.
+   * 
+   * This transport supports the older MCP protocol version (2024-11-05) using
+   * Server-Sent Events for server-to-client communication and regular HTTP POST
+   * for client-to-server messages.
+   * 
+   * Endpoints configured:
+   * - GET /sse: Establishes SSE connection for server-to-client notifications
+   * - POST /messages: Client-to-server communication with session ID query parameter
+   * - GET /health: Health check endpoint
+   * 
+   * Includes keep-alive mechanism to maintain SSE connections and proper cleanup
+   * when clients disconnect.
+   * 
+   * @private
    */
   private setupSseTransport(): void {
 
@@ -281,26 +346,44 @@ export class GatewayServer<A extends McpAdapter> {
 
   }
 
+  /**
+   * Validates the presence of Upsun API key in request headers.
+   * 
+   * Checks for the 'upsun-api-token' header and returns it if present.
+   * Sends a 400 Bad Request response if the API key is missing.
+   * 
+   * @param req - Express request object
+   * @param res - Express response object  
+   * @returns The API key string if present, undefined otherwise
+   * @private
+   */
   private hasAPIKey(req: express.Request, res: express.Response): string | undefined {
-      let result = undefined;
-      const ip = req.headers['x-forwarded-for'] || req.ip
+      const ip = req.headers['x-forwarded-for'] || req.ip;
 
       if (!req.headers[HTTP_UPSUN_APIKEY_ATTR]) {
           res.status(400).send(`Missing API key for ${ip}`);
+          return undefined;
       } else {
-          result = req.headers[HTTP_UPSUN_APIKEY_ATTR] as string;
-          console.log(`Authenticate from ${ip} with API key: ${result.substring(0, 5)}xxxxxxx`);
+          const apiKey = req.headers[HTTP_UPSUN_APIKEY_ATTR] as string;
+          console.log(`Authenticate from ${ip} with API key: ${apiKey.substring(0, 5)}xxxxxxx`);
+          return apiKey;
       }
-      
-      return result;
   }
 
   /**
-   * Starts the server and listens on port 3000.
-   * @returns {void}
-   * @memberof GatewayServer
-   * @description This method starts the Express server and listens for incoming requests on port 3000.
-   * It binds the server to all available network interfaces (  
+   * Starts the HTTP server and begins listening for connections.
+   * 
+   * Binds the server to all available network interfaces (0.0.0.0) and displays
+   * configuration information for both transport types. Sets up proper shutdown
+   * handling to clean up active transport sessions.
+   * 
+   * @param port - Port number to listen on (default: 3000)
+   * 
+   * @example
+   * ```typescript
+   * const server = new GatewayServer(MyMcpAdapter);
+   * server.listen(8080); // Listen on port 8080
+   * ```
    */
   listen(port: number=3000): void {
     this.app.listen(port, "0.0.0.0", () => {
