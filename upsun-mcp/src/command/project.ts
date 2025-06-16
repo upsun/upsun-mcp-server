@@ -6,6 +6,7 @@
  * top-level containers for applications and environments in the Upsun platform.
  */
 
+import { Project } from "upsun-sdk-node/dist/apis-gen/models/Project.js";
 import { McpAdapter } from "../core/adapter.js";
 import { Response, Schema } from "../core/helper.js";
 import { z } from "zod";
@@ -35,7 +36,7 @@ export function registerProject(adapter: McpAdapter): void {
    * Creates a new Upsun project within the specified organization.
    * 
    * @param organization_id - The organization ID where the project will be created
-   * @param region - The cloud region where the project will be deployed
+   * @param region_host - The cloud region where the project will be deployed
    * @param name - The name of the new project
    * @param default_branch - The default Git branch (optional, defaults to "main")
    */
@@ -44,13 +45,16 @@ export function registerProject(adapter: McpAdapter): void {
     "Create a new upsun project",
     {
       organization_id: Schema.organizationId(),
-      region: z.string(),
+      region_host: z.string().default("eu-5.platform.sh").optional(),
       name: z.string(),
       default_branch: z.string().default("main").optional()
     },
-    async ({ organization_id, region, name, default_branch }) => {
-      const result = await adapter.client.project.create(organization_id, name); // region, default_branch
+    async ({ organization_id, region_host, name, default_branch }) => {
+      //const result: Project = await adapter.client.project.create(organization_id, name); // region, default_branch
 
+      const result = {
+        id: "rydusdhjlkvpo", // Placeholder for project ID
+      }
       return Response.json(result);
     }
   );

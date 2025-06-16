@@ -4,6 +4,7 @@ import { UpsunClient, UpsunConfig } from "upsun-sdk-node";
 
 import * as pjson from '../package.json' with { type: 'json' };
 import { McpAdapter } from "./core/adapter.js";
+
 import {
   registerActivity,
   registerBackup,
@@ -15,6 +16,7 @@ import {
   registerRoute,
   registerSshKey
 } from "./command/index.js";
+import { registerConfig } from "./task/config.js";
 
 /**
  * Upsun MCP Server implementation.
@@ -72,6 +74,9 @@ export class UpsunMcpServer implements McpAdapter {
     registerProject(this);
     registerRoute(this);
     registerSshKey(this);
+
+    // Register all tasks with their respective prompts
+    registerConfig(this);
   }
 
   /**
