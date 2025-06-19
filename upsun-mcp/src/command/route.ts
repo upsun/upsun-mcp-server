@@ -96,8 +96,8 @@ export function registerRoute(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
     },
     async ({ project_id }) => {
-      const result = (await adapter.client.route.web(project_id)).ui;
-
+      // const result = (await adapter.client.route.web(project_id)).ui;
+      const result = "Not implemented";
       return Response.json(result);
     }
   );

@@ -1,5 +1,4 @@
 import { McpAdapter } from "../core/adapter.js";
-import { Response, Schema } from "../core/helper.js";
 import { z } from "zod";
 
 export function registerConfig(adapter: McpAdapter): void {
@@ -8,16 +7,16 @@ export function registerConfig(adapter: McpAdapter): void {
   adapter.server.prompt(
     "generate-config",
     "Create a configuration for upsun project",
-    { containter_name: z.string() },
-    async ({ containter_name }) => {
+    { app_name: z.string() },
+    async ({ app_name }) => {
       const result = 
 `Make this tasks (add headers at all steps):
 1. update .upsun/config.yaml file with content:
 \`\`\`yaml
 ### Fake ###
 applications:
-  ${containter_name}:
-    # configuration for the application '${containter_name}'
+  ${app_name}:
+    # configuration for the application '${app_name}'
     type: "nodejs:20"
     source:
       root: "/"
@@ -27,7 +26,7 @@ services:
 routes:
   'https://{default}/':
     type: upstream
-    upstream: "${containter_name}:http"
+    upstream: "${app_name}:http"
 \`\`\`
 2. Validate the .upsun/config.yaml file
 3. Add and commit the .upsun/config.yaml file on reporitory (without any other file/folder)
@@ -70,12 +69,12 @@ routes:
     type: upstream
     upstream: "${app_name}:http"
 \`\`\`
-3. 🚀 Validate the .upsun/config.yaml file
-4. 🔎 Check if projet is git init.
-5. 📄 Add and commit the .upsun/config.yaml file on reporitory (without any other file/folder)
-6. 💾 And push them on upsun remote (check remote url on project info)
-7. 🔎 Check last activity of upsun project to know the status of deployement
-8. 📃 Add domain '${domain_host}' to the project`;
+3. Validate the .upsun/config.yaml file
+4. Check if projet is git init.
+5. Add and commit the .upsun/config.yaml file on reporitory (without any other file/folder)
+6. And push them on upsun remote (check remote url on project info)
+7. Check last activity of upsun project to know the status of deployement
+8. Add domain '${domain_host}' to the project`;
 
       return {
         messages: [{

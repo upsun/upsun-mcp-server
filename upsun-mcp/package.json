@@ -23,7 +23,7 @@
     "@modelcontextprotocol/sdk": "^1.10.2",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "upsun-sdk-node": "^0.1.5"
+    "upsun-sdk-node": "^0.2.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",

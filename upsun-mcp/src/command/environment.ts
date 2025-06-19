@@ -267,7 +267,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
       environment_name: Schema.environmentName(),
     },
     async ({ project_id, environment_name }) => {
-      const result = await adapter.client.environment.url(project_id, environment_name);
+      const result = await adapter.client.environment.urls(project_id, environment_name);
 
       return Response.json(result);
     }

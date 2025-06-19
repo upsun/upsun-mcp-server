@@ -10,6 +10,7 @@ import { Project } from "upsun-sdk-node/dist/apis-gen/models/Project.js";
 import { McpAdapter } from "../core/adapter.js";
 import { Response, Schema } from "../core/helper.js";
 import { z } from "zod";
+import { SubscriptionStatusEnum } from "upsun-sdk-node/dist/apis-gen/models/index.js";
 
 /**
  * Registers project management tools with the MCP server.
@@ -45,17 +46,22 @@ export function registerProject(adapter: McpAdapter): void {
     "Create a new upsun project",
     {
       organization_id: Schema.organizationId(),
-      region_host: z.string().default("eu-5.platform.sh").optional(),
+      //region_host: z.string().default("eu-5.platform.sh").optional(),
       name: z.string(),
       default_branch: z.string().default("main").optional()
     },
-    async ({ organization_id, region_host, name, default_branch }) => {
-      //const result: Project = await adapter.client.project.create(organization_id, name); // region, default_branch
+    async ({ organization_id, name, default_branch }) => {
+      const region_host = "eu-5.platform.sh";
+      const subCreated = await adapter.client.project.create(organization_id, region_host, name, default_branch); // region, default_branch
 
-      const result = {
-        id: "rydusdhjlkvpo", // Placeholder for project ID
+      let prjCreated = await adapter.client.project.getSub(organization_id, subCreated.id || "");
+      while (prjCreated.status !== SubscriptionStatusEnum.Active) {
+        console.log("Waiting for project to be active...");
+        await delay(10000);
+        prjCreated = await adapter.client.project.getSub(organization_id, subCreated.id || "");
       }
-      return Response.json(result);
+      
+      return Response.json(prjCreated);
     }
   );
 
@@ -126,3 +132,7 @@ export function registerProject(adapter: McpAdapter): void {
   );
 
 }
+function delay(ms: number) {
+  return new Promise( resolve => setTimeout(resolve, ms) );
+}
+
