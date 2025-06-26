@@ -20,7 +20,7 @@
     "build"
   ],
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.10.2",
+    "@modelcontextprotocol/sdk": "^1.12.1",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "upsun-sdk-node": "^0.2.1"

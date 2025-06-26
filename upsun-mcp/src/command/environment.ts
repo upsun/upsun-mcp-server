@@ -145,7 +145,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
       environment_name: Schema.environmentName(),
       application_name: Schema.applicationName(),
     },
-    async ({ project_id }) => {
+    async ({ project_id, environment_name, application_name }) => {
       const result = { throw: "Not implemented !" };
 
       return Response.json(result);
@@ -217,7 +217,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
     {
       project_id: Schema.projectId(),
       environment_name: Schema.environmentName(),
-      application_name: Schema.applicationName(),
+      application_name: Schema.applicationName().optional(),
     },
     async ({ project_id, environment_name }) => {
       const result = await adapter.client.environment.redeploy(project_id, environment_name);

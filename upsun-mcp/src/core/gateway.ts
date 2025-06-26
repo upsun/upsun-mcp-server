@@ -358,16 +358,23 @@ export class GatewayServer<A extends McpAdapter> {
    * @private
    */
   private hasAPIKey(req: express.Request, res: express.Response): string | undefined {
-      const ip = req.headers['x-forwarded-for'] || req.ip;
+      // const ip: string = req.headers['x-forwarded-for'] || req.ip;
+      const ip:string = "ND";
+
+      // if (net.isIPv4(ip) || net.isIPv6(ip)) {
+      //     res.status(400).send(`Bad x-forwarded-for on header (TY Tomas)`);
+      //     return undefined;
+      // }
 
       if (!req.headers[HTTP_UPSUN_APIKEY_ATTR]) {
-          res.status(400).send(`Missing API key for ${ip}`);
-          return undefined;
+          res.status(400).send(`Missing API key`);
       } else {
           const apiKey = req.headers[HTTP_UPSUN_APIKEY_ATTR] as string;
           console.log(`Authenticate from ${ip} with API key: ${apiKey.substring(0, 5)}xxxxxxx`);
           return apiKey;
       }
+
+      return undefined;
   }
 
   /**
