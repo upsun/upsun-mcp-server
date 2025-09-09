@@ -9,6 +9,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js"
 
 import { McpAdapter } from "./adapter.js";
+import { mcpAuthMetadataRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
 
 /** Keep-alive interval for SSE connections (25 seconds) */
 const KEEP_ALIVE_INTERVAL_MS = 25000;
@@ -124,6 +125,115 @@ export class GatewayServer<A extends McpAdapter> {
 
     this.app.use(express.json());
 
+    // ====================== OAuth2 (metadata pour resource server) ======================
+    const authorizationUrl = process.env.OAUTH_AUTH_URL || "https://auth.upsun.com/oauth2/authorize";
+    const tokenUrl = process.env.OAUTH_TOKEN_URL || "https://auth.upsun.com/oauth2/token";
+    const revocationUrl = process.env.OAUTH_REVOCATION_URL || "https://auth.upsun.com/oauth2/revoke";
+    const issuerUrl = process.env.OAUTH_ISSUER_URL || "https://auth.upsun.com";
+    const baseUrl = process.env.OAUTH_BASE_URL || "http://127.0.0.1:3000/";
+    const scope = process.env.OAUTH_SCOPE || "openid profile email";
+
+    try {
+      // Métadonnées OAuth du serveur d'autorisation externe (Upsun)
+      const oauthMetadata = {
+        issuer: issuerUrl,
+        authorization_endpoint: authorizationUrl,
+        token_endpoint: tokenUrl,
+        revocation_endpoint: revocationUrl,
+        scopes_supported: scope.split(' '),
+        response_types_supported: ['code'],
+        grant_types_supported: ['authorization_code'],
+        token_endpoint_auth_methods_supported: ['none', 'client_secret_basic'],
+        code_challenge_methods_supported: ['S256']
+      };
+
+      // Utilise mcpAuthMetadataRouter pour un resource server
+      this.app.use(mcpAuthMetadataRouter({
+        oauthMetadata,
+        resourceServerUrl: new URL(baseUrl),
+        serviceDocumentationUrl: new URL(process.env.OAUTH_DOC_URL || 'https://docs.example.com/'),
+        scopesSupported: scope.split(' '),
+        resourceName: 'Upsun MCP Server'
+      }));
+      console.log(`[OAuth2] mcpAuthMetadataRouter actif. Resource server configuré avec issuer: ${issuerUrl}`);
+    } catch (e) {
+      console.error('[OAuth2] Échec initialisation mcpAuthMetadataRouter:', e);
+    }
+
+    // Routes manuelles pour l'authentification (nécessaires car mcpAuthMetadataRouter n'expose que les métadonnées)
+    // mcpAuthMetadataRouter expose uniquement /.well-known/oauth-authorization-server et /.well-known/oauth-protected-resource
+    this.app.get('/auth', (_req, res) => {
+      const state = randomUUID();
+      const params = new URLSearchParams({
+        response_type: 'code',
+        client_id: process.env.OAUTH_CLIENT_ID || 'mcp',
+        redirect_uri: process.env.OAUTH_REDIRECT_URI || 'http://127.0.0.1:3000/callback',
+        scope,
+        state,
+      });
+      const authUrl = `${authorizationUrl}?${params.toString()}`;
+      console.log(`[OAuth2] Redirection vers: ${authUrl}`);
+      res.redirect(authUrl);
+    });
+
+    this.app.get('/callback', async (req, res) => {
+      const code = req.query.code as string | undefined;
+      if (!code) { 
+        res.status(400).send('Missing authorization code'); 
+        return; 
+      }
+      try {
+        const body = new URLSearchParams({
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: process.env.OAUTH_REDIRECT_URI || 'http://127.0.0.1:3000/callback',
+          client_id: process.env.OAUTH_CLIENT_ID || 'mcp',
+        });
+        const clientSecret = process.env.OAUTH_CLIENT_SECRET;
+        if (clientSecret) body.append('client_secret', clientSecret);
+        
+        const response = await fetch(tokenUrl, { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, 
+          body 
+        });
+        
+        if (!response.ok) { 
+          const errorText = await response.text();
+          return res.status(500).send(`Token exchange failed: ${response.status} - ${errorText}`); 
+        }
+        
+        const tokenData: any = await response.json();
+        res.status(200).send(`Access Token obtenu:\n${tokenData.access_token}\n\nUtilisez ce header pour MCP:\nAuthorization: Bearer ${tokenData.access_token}`);
+      } catch (err: any) {
+        res.status(500).send('Callback error: ' + err.message);
+      }
+    });
+
+    // // /auth : redirige directement vers le provider Upsun (pas de route locale)
+    // this.app.get('/auth', (_req, res) => {
+    //   const state = randomUUID();
+    //   const params = new URLSearchParams({
+    //     response_type: 'code',
+    //     client_id: clientId,
+    //     redirect_uri: redirectUri,
+    //     scope,
+    //     state,
+    //   });
+    //   const authUrl = `${authorizationUrl}?${params.toString()}`;
+    //   console.log(`[OAuth2] Redirection vers: ${authUrl}`);
+    //   res.redirect(authUrl);
+    // });
+
+
+    // Debug route
+    this.app.get('/_routes', (_req, res) => {
+      // @ts-ignore
+      const stack = this.app._router?.stack || [];
+      const routes = stack.filter((l:any)=>l.route).map((l:any)=>({ path:l.route.path, methods:Object.keys(l.route.methods) }));
+      res.json(routes);
+    });
+
     this.setupStreamableTransport();
     this.setupSseTransport();
   }
@@ -175,9 +285,12 @@ export class GatewayServer<A extends McpAdapter> {
         await transport.handleRequest(req, res, req.body);
 
       } else if (!sessionId && isInitializeRequest(req.body)) {
-
-        const api_key = this.hasAPIKey(req, res);
-        if (!api_key) { return; }
+        // Cherche un Bearer token pour alimenter server.connect
+        const bearer = this.extractBearer(req);
+        if (!bearer) {
+          res.status(401).json({ error: 'missing_token', hint: 'GET /auth pour obtenir un token' });
+          return;
+        }
 
         // Create the server instance first
         const server = this.makeInstanceAdapterMcpServer();
@@ -199,7 +312,7 @@ export class GatewayServer<A extends McpAdapter> {
         };
 
         // Connect the server to the transport
-        await server.connect(transport, api_key);
+  await server.connect(transport, bearer);
         
         // Handle the initialization request
         await transport.handleRequest(req, res, req.body);
@@ -274,8 +387,11 @@ export class GatewayServer<A extends McpAdapter> {
       const ip = req.headers['x-forwarded-for'] || req.ip
       console.log(`Received GET request to /sse (deprecated SSE transport) from ${ip}`);
 
-      const api_key = this.hasAPIKey(req, res);
-      if (!api_key) { return; }
+      // TODO
+      // const api_key = this.hasAPIKey(req, res);
+      // if (!api_key) { return; }
+  const bearer = this.extractBearer(req);
+  if (!bearer) { res.status(401).end('Missing bearer token (utiliser /auth)'); return; }
 
       // Create SSE transport for legacy clients
       const transport = new SSEServerTransport(HTTP_MSG_PATH, res);
@@ -308,7 +424,7 @@ export class GatewayServer<A extends McpAdapter> {
 
       const server = this.makeInstanceAdapterMcpServer();
       try {
-      await server.connect(transport, api_key || '');
+  await server.connect(transport, bearer || '');
       console.log(`New session from ${ip} with ID: ${transport.sessionId}`);
       } catch (error) {
         console.error(`[SSE Connection] Error connecting server to transport for ${transport.sessionId}:`, error);
@@ -375,6 +491,18 @@ export class GatewayServer<A extends McpAdapter> {
       }
 
       return undefined;
+  }
+
+  /**
+   * Extrait le token Bearer de l'en-tête Authorization.
+   */
+  private extractBearer(req: express.Request): string | undefined {
+    const h = req.headers['authorization'] || req.headers['Authorization'];
+    if (typeof h === 'string' && h.startsWith('Bearer ')) {
+      const token = h.substring('Bearer '.length).trim();
+      if (token) return token;
+    }
+    return undefined;
   }
 
   /**
