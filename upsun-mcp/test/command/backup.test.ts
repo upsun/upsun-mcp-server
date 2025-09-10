@@ -34,7 +34,7 @@ describe('Backup Command Module', () => {
       
       registerBackup(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('Register Backup Handlers');
+      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register Backup Handlers');
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(5);
       
       // Verify all tools are registered

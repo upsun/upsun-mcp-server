@@ -21,6 +21,7 @@ describe('McpAdapter Interface', () => {
   
   it('should define the required properties and methods', () => {
     // Create a mock implementation of the McpAdapter interface
+    // @ts-ignore
     class MockAdapter implements McpAdapter {
       readonly server = new McpServer({
         name: "test-server",
@@ -44,6 +45,7 @@ describe('McpAdapter Interface', () => {
 
   it('should connect to transport', async () => {
     // Create a mock implementation of the McpAdapter interface
+    // @ts-ignore
     class MockAdapter implements McpAdapter {
       server: any;
       

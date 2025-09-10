@@ -405,8 +405,7 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/node,linux,macos,windows,visualstudiocode,python
 
-
-
+## Customer Ignores ##
 build
-.chainlit
-chainlit.md
+docs
+poc

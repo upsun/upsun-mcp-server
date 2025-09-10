@@ -34,7 +34,7 @@ describe('Domain Command Module', () => {
       
       registerDomain(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('Register Domain Handlers');
+      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register Domain Handlers');
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(5);
       
       // Verify all tools are registered

@@ -34,7 +34,7 @@ describe('Certificate Command Module', () => {
       
       registerCertificate(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('Register Certificate Handlers');
+      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register Certificate Handlers');
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(4);
       
       // Verify all tools are registered

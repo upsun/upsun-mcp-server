@@ -34,7 +34,7 @@ describe('SSH Key Command Module', () => {
       
       registerSshKey(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('Register SSH keys Handlers');
+      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register SSH keys Handlers');
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(3);
       
       // Verify all tools are registered

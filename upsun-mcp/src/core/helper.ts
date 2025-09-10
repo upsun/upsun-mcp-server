@@ -46,7 +46,7 @@ export class Schema {
    * @returns A Zod string schema for validating organization IDs
    */
   static organizationId(): z.ZodString {
-    return z.string(); //.length(27, "Organization ID must be 27 characters long");
+    return z.string().length(27, "Organization ID must be 27 characters long");
   }
 
   /**

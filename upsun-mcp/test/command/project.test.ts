@@ -39,10 +39,11 @@ const mockDeleteResult = {
 // Mock the Upsun client
 const mockClient = {
   project: {
-    create: jest.fn(),
-    delete: jest.fn(),
-    info: jest.fn(),
-    list: jest.fn()
+    create: jest.fn() as jest.MockedFunction<any>,
+    delete: jest.fn() as jest.MockedFunction<any>,
+    info: jest.fn() as jest.MockedFunction<any>,
+    list: jest.fn() as jest.MockedFunction<any>,
+    getSub: jest.fn() as jest.MockedFunction<any>
   }
 };
 
@@ -54,24 +55,30 @@ const mockAdapter: McpAdapter = {
   }
 } as any;
 
-describe('Project Command Module', () => {
-  let toolCallbacks: Record<string, any> = {};
+// Global toolCallbacks for all tests
+let toolCallbacks: Record<string, any> = {};
 
+describe('Project Command Module', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     toolCallbacks = {};
     
     // Setup mock server.tool to capture callbacks
+    // @ts-ignore
     mockAdapter.server.tool = jest.fn().mockImplementation((name: string, description: string, schema: any, callback: any) => {
       toolCallbacks[name] = callback;
       return mockAdapter.server;
-    });
+    }) as any;
 
     // Setup default mock responses
     mockClient.project.create.mockResolvedValue(mockCreateResult);
     mockClient.project.delete.mockResolvedValue(mockDeleteResult);
     mockClient.project.info.mockResolvedValue(mockProject);
     mockClient.project.list.mockResolvedValue(mockProjectList);
+    mockClient.project.getSub.mockResolvedValue({ 
+      ...mockProject, 
+      status: 'active' // This should match SubscriptionStatusEnum.Active
+    });
   });
 
   afterEach(() => {
@@ -80,11 +87,18 @@ describe('Project Command Module', () => {
 
   describe('registerProject function', () => {
     it('should register all project tools', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+      
+      // Reset mock call count before testing
+      jest.clearAllMocks();
+      mockAdapter.server.tool = jest.fn().mockImplementation((name: string, description: string, schema: any, callback: any) => {
+        toolCallbacks[name] = callback;
+        return mockAdapter.server;
+      }) as any;
       
       registerProject(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('Register Project Handlers');
+      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register Project Handlers');
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(4);
       
       // Verify all tools are registered
@@ -132,6 +146,107 @@ describe('Project Command Module', () => {
   });
 
   describe('create-project tool', () => {
+    it('should create project with default branch', async () => {
+      const mockSub = { id: 'sub-123', status: 'active' };
+      const mockProject = { id: 'project-123', name: 'Test Project', status: 'active' };
+      
+      (mockClient.project.create as jest.Mock).mockResolvedValue(mockSub);
+      (mockClient.project.getSub as jest.Mock).mockResolvedValue(mockProject);
+      
+      const result = await toolCallbacks['create-project']({
+        organization_id: 'org-123',
+        name: 'Test Project'
+      });
+      
+      expect(mockClient.project.create).toHaveBeenCalledWith(
+        'org-123', 
+        'eu-5.platform.sh', 
+        'Test Project', 
+        undefined
+      );
+      expect(result).toEqual({
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            id: 'project-123',
+            name: 'Test Project',
+            status: 'active'
+          }, null, 2)
+        }]
+      });
+    });
+
+    it('should create project with custom default branch', async () => {
+      const mockSub = { id: 'sub-123', status: 'active' };
+      
+      (mockClient.project.create as jest.Mock).mockResolvedValue(mockSub);
+      (mockClient.project.getSub as jest.Mock).mockResolvedValue(mockProject);
+      
+      const result = await toolCallbacks['create-project']({
+        organization_id: 'org-123',
+        name: 'Test Project',
+        default_branch: 'develop'
+      });
+      
+      expect(mockClient.project.create).toHaveBeenCalledWith(
+        'org-123', 
+        'eu-5.platform.sh', 
+        'Test Project', 
+        'develop'
+      );
+      expect(result).toEqual({
+        content: [{
+          type: 'text',
+          text: JSON.stringify(mockProject, null, 2)
+        }]
+      });
+    });
+
+    it('should wait for project to become active', async () => {
+      const mockSub = { id: 'sub-123' };
+      const mockInactiveProject = { id: 'project-123', status: 'pending' };
+      const mockActiveProject = { id: 'project-123', status: 'active' };
+      
+      (mockClient.project.create as jest.Mock).mockResolvedValue(mockSub);
+      (mockClient.project.getSub as jest.Mock)
+        .mockResolvedValueOnce(mockInactiveProject)  // First call - not active
+        .mockResolvedValueOnce(mockActiveProject);   // Second call - active
+      
+      // Mock delay function by mocking setTimeout
+      const originalSetTimeout = global.setTimeout;
+      global.setTimeout = jest.fn((callback: Function) => {
+        callback(); // Execute immediately for testing
+        return 123 as any;
+      }) as any;
+      
+      const result = await toolCallbacks['create-project']({
+        organization_id: 'org-123',
+        name: 'Test Project'
+      });
+      
+      expect(mockClient.project.getSub).toHaveBeenCalledTimes(2);
+      expect(result).toEqual({
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            id: 'project-123',
+            status: 'active'
+          }, null, 2)
+        }]
+      });
+      
+      global.setTimeout = originalSetTimeout;
+    });
+
+    it('should handle project creation errors', async () => {
+      (mockClient.project.create as jest.Mock).mockRejectedValue(new Error('Creation failed'));
+      
+      await expect(toolCallbacks['create-project']({
+        organization_id: 'org-123',
+        name: 'Test Project'
+      })).rejects.toThrow('Creation failed');
+    });
+  });
     beforeEach(() => {
       registerProject(mockAdapter);
     });
@@ -149,12 +264,14 @@ describe('Project Command Module', () => {
 
       expect(mockClient.project.create).toHaveBeenCalledWith(
         '123456789012345678901234567',
-        'New Test Project'
+        'eu-5.platform.sh',
+        'New Test Project',
+        'main'
       );
       expect(result).toEqual({
         content: [{
           type: 'text',
-          text: JSON.stringify(mockCreateResult, null, 2)
+          text: JSON.stringify({ ...mockProject, status: 'active' }, null, 2)
         }]
       });
     });
@@ -171,12 +288,14 @@ describe('Project Command Module', () => {
 
       expect(mockClient.project.create).toHaveBeenCalledWith(
         '123456789012345678901234567',
-        'New Test Project'
+        'eu-5.platform.sh',
+        'New Test Project',
+        undefined
       );
       expect(result).toEqual({
         content: [{
           type: 'text',
-          text: JSON.stringify(mockCreateResult, null, 2)
+          text: JSON.stringify({ ...mockProject, status: 'active' }, null, 2)
         }]
       });
     });
@@ -195,7 +314,9 @@ describe('Project Command Module', () => {
       await expect(callback(params)).rejects.toThrow(errorMessage);
       expect(mockClient.project.create).toHaveBeenCalledWith(
         'invalid-org-id',
-        'New Test Project'
+        'eu-5.platform.sh',
+        'New Test Project',
+        undefined
       );
     });
   });
@@ -451,4 +572,3 @@ describe('Project Command Module', () => {
       await expect(callback(params)).rejects.toThrow('Rate limit exceeded');
     });
   });
-});

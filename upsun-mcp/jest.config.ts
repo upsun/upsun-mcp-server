@@ -20,21 +20,47 @@ const config: Config.InitialOptions = {
     'src/**/*.ts',
     '!src/**/*.d.ts',
     '!src/index.ts',  // Exclure le fichier d'entrée principal
+    '!src/**/*.types.ts', // Exclure les fichiers de types
+    '!src/**/*.interface.ts', // Exclure les interfaces
   ],
   coverageReporters: [
     'text',
+    'text-summary',
     'lcov',
     'html',
-    'json-summary'
+    'json-summary',
+    'cobertura' // Pour une meilleure intégration CI
   ],
   coverageThreshold: {
     global: {
-      branches: 25,
-      functions: 60,
-      lines: 50,
-      statements: 50
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80
+    },
+    // Seuils spécifiques par dossier
+    './src/core/': {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80
+    },
+    './src/command/': {
+      branches: 80,
+      functions: 90,
+      lines: 90,
+      statements: 90
     }
-  }
+  },
+  // Configuration pour les rapports détaillés
+  verbose: true,
+  collectCoverage: false, // Par défaut false, activé via --coverage
+  coveragePathIgnorePatterns: [
+    '/node_modules/',
+    '/build/',
+    '/coverage/',
+    '\\.d\\.ts$'
+  ]
 };
 
 // Utiliser export default au lieu de module.exports pour les modules ESM

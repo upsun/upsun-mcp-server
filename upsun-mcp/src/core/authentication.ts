@@ -48,6 +48,8 @@ export interface OAuth2AuthorizationServerMetadata {
   grant_types_supported: string[];
   token_endpoint_auth_methods_supported: string[];
   code_challenge_methods_supported: string[];
+  // Hack for Dynamic Client Registration (not standard)
+  registration_endpoint: string;
 }
 
 /**
@@ -74,7 +76,8 @@ export function createAuthorizationServerMetadata(config: OAuth2Config): OAuth2A
     response_types_supported: ['code'],
     grant_types_supported: ['authorization_code'],
     token_endpoint_auth_methods_supported: ['none', 'client_secret_basic'],
-    code_challenge_methods_supported: ['S256']
+    code_challenge_methods_supported: ['S256'],
+    registration_endpoint: `${config.baseUrl}/register`
   });
 }
 
@@ -113,7 +116,7 @@ export function setupOAuth2Direct(app: express.Application, config?: OAuth2Confi
     res.json(protectedResourceMetadata);
   });
 
-  app.get('/register', (_req, res) => {
+  app.post('/register', (_req, res) => {
     res.json({
       client_id: "mcp",
       client_name: "Claude Code (test)",

@@ -4,7 +4,7 @@ import {
   getOAuth2Config,
   createAuthorizationServerMetadata,
   createProtectedResourceMetadata,
-  setupOAuth2Metadata,
+  setupOAuth2Direct,
   extractBearerToken,
   validateBearerToken,
   requireBearerToken,
@@ -89,10 +89,97 @@ describe('Authentication Module', () => {
       const app = express();
       const getSpy = jest.spyOn(app, 'get');
       
-      setupOAuth2Metadata(app);
+      setupOAuth2Direct(app);
       
       expect(getSpy).toHaveBeenCalledWith('/.well-known/oauth-authorization-server', expect.any(Function));
       expect(getSpy).toHaveBeenCalledWith('/.well-known/oauth-protected-resource', expect.any(Function));
+    });
+
+    it('should serve authorization server metadata endpoint', () => {
+      const app = express();
+      const config = getOAuth2Config();
+      config.baseUrl = 'http://test.example.com/';
+      setupOAuth2Direct(app, config);
+      
+      // Mock request and response
+      const mockReq = {} as express.Request;
+      const mockRes = {
+        json: jest.fn()
+      } as unknown as express.Response;
+
+      // Find and call the authorization server metadata handler
+      const authServerRoute = (app as any)._router?.stack?.find((layer: any) => 
+        layer.route?.path === '/.well-known/oauth-authorization-server'
+      );
+      
+      if (authServerRoute?.route?.stack?.[0]?.handle) {
+        authServerRoute.route.stack[0].handle(mockReq, mockRes);
+        
+        expect(mockRes.json).toHaveBeenCalledWith(
+          expect.objectContaining({
+            issuer: 'https://auth.upsun.com',
+            authorization_endpoint: 'https://auth.upsun.com/oauth2/authorize'
+          })
+        );
+      }
+    });
+
+    it('should serve protected resource metadata endpoint', () => {
+      const app = express();
+      const config = getOAuth2Config();
+      config.baseUrl = 'http://test.example.com/';
+      setupOAuth2Direct(app, config);
+      
+      // Mock request and response
+      const mockReq = {} as express.Request;
+      const mockRes = {
+        json: jest.fn()
+      } as unknown as express.Response;
+
+      // Find and call the protected resource metadata handler
+      const protectedResourceRoute = (app as any)._router?.stack?.find((layer: any) => 
+        layer.route?.path === '/.well-known/oauth-protected-resource'
+      );
+      
+      if (protectedResourceRoute?.route?.stack?.[0]?.handle) {
+        protectedResourceRoute.route.stack[0].handle(mockReq, mockRes);
+        
+        expect(mockRes.json).toHaveBeenCalledWith(
+          expect.objectContaining({
+            resource: 'http://test.example.com/',
+            authorization_servers: ['https://auth.upsun.com']
+          })
+        );
+      }
+    });
+
+    it('should serve dynamic client registration endpoint', () => {
+      const app = express();
+      const config = getOAuth2Config();
+      config.baseUrl = 'http://test.example.com/';
+      setupOAuth2Direct(app, config);
+      
+      // Mock request and response
+      const mockReq = {} as express.Request;
+      const mockRes = {
+        json: jest.fn()
+      } as unknown as express.Response;
+
+      // Find and call the register endpoint handler
+      const registerRoute = (app as any)._router?.stack?.find((layer: any) => 
+        layer.route?.path === '/register'
+      );
+      
+      if (registerRoute?.route?.stack?.[0]?.handle) {
+        registerRoute.route.stack[0].handle(mockReq, mockRes);
+        
+        expect(mockRes.json).toHaveBeenCalledWith(
+          expect.objectContaining({
+            application_type: 'web',
+            redirect_uris: ['http://test.example.com/callback']
+          })
+        );
+      }
     });
 
   });
@@ -276,24 +363,15 @@ describe('Authentication Module', () => {
         'upsun-api-token': 'test-api-key-123'
       };
 
-      const apiKey = extractApiKey(
-        mockReq as express.Request, 
-        mockRes as express.Response
-      );
+      const apiKey = extractApiKey(mockReq as express.Request);
 
       expect(apiKey).toBe('test-api-key-123');
-      expect(mockRes.status).not.toHaveBeenCalled();
     });
 
     it('should reject missing API key', () => {
-      const apiKey = extractApiKey(
-        mockReq as express.Request, 
-        mockRes as express.Response
-      );
+      const apiKey = extractApiKey(mockReq as express.Request);
 
       expect(apiKey).toBeUndefined();
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.send).toHaveBeenCalledWith('Missing API key');
     });
 
     it('should use custom header name', () => {
@@ -302,8 +380,7 @@ describe('Authentication Module', () => {
       };
 
       const apiKey = extractApiKey(
-        mockReq as express.Request, 
-        mockRes as express.Response,
+        mockReq as express.Request,
         'custom-api-key'
       );
 

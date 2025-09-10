@@ -1,11 +1,7 @@
 /**
  * @fileoverview Project management command module for Upsun MCP server.
- * 
- * This module provides M    async ({ project_id }) => {
-      const result = await adapter.client.project.get(project_id);
-
-      return Response.json(result);
-    }ols for managing Upsun projects, including creation,
+ *
+ * This module provides Methods for managing Upsun projects, including creation,
  * deletion, information retrieval, and listing operations. Projects are the
  * top-level containers for applications and environments in the Upsun platform.
  */
