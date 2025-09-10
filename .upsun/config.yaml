@@ -6,7 +6,9 @@ applications:
     type: 'nodejs:22'
     hooks:
       build: |
+        set -e
         npm run build
+        npm run test
     web:
       commands:
         start: node build/index.js
@@ -14,6 +16,7 @@ applications:
 
 routes:
   "https://{default}/":
+    id: 'mcp'
     type: upstream
     upstream: "mcp-server:http"
 
