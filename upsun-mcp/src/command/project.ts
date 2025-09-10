@@ -1,7 +1,7 @@
 /**
  * @fileoverview Project management command module for Upsun MCP server.
- * 
- * This module provides MCP tools for managing Upsun projects, including creation,
+ *
+ * This module provides Methods for managing Upsun projects, including creation,
  * deletion, information retrieval, and listing operations. Projects are the
  * top-level containers for applications and environments in the Upsun platform.
  */
@@ -30,7 +30,7 @@ import { SubscriptionStatusEnum } from "upsun-sdk-node/dist/apis-gen/models/inde
  * ```
  */
 export function registerProject(adapter: McpAdapter): void {
-  console.log(`Register Project Handlers`);
+  console.log(`[MCP] Register Project Handlers`);
 
   /**
    * Tool: create-project

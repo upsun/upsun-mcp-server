@@ -12,7 +12,7 @@ if (false) {
   local.listen()
 } else {
   // SSE & Streamable
-  const PORT = Number(String(process.env.PORT)) || 3001;
+  const PORT = Number(String(process.env.PORT)) || 3000;
   const srv = new GatewayServer(UpsunMcpServer);
   srv.listen(PORT);
 }

@@ -31,7 +31,7 @@ import { Response, Schema } from "../core/helper.js";
  * ```
  */
 export function registerDomain(adapter: McpAdapter): void {
-  console.log(`Register Domain Handlers`);
+  console.log(`[MCP] Register Domain Handlers`);
 
   /**
    * Tool: add-domain

@@ -84,7 +84,7 @@ describe('Organization Command Module', () => {
       
       registerOrganization(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('Register Organization Handlers');
+      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register Organization Handlers');
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(4);
       
       // Verify all tools are registered

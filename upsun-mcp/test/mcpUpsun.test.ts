@@ -74,7 +74,7 @@ jest.mock('../src/core/adapter.js', () => ({
 const { UpsunMcpServer } = await import('../src/mcpUpsun.js');
 
 describe('UpsunMcpServer', () => {
-  let server: UpsunMcpServer;
+  let server: InstanceType<typeof UpsunMcpServer>;
   const toolCallbacks: Record<string, any> = {};
   
   beforeEach(() => {
@@ -97,6 +97,7 @@ describe('UpsunMcpServer', () => {
         toolCallbacks[name] = callback;
         return mockMcpServer;
       }),
+      prompt: jest.fn().mockImplementation(() => mockMcpServer),
       connect: jest.fn(() => Promise.resolve())
     };
     
@@ -115,7 +116,10 @@ describe('UpsunMcpServer', () => {
     });
 
     it('should have the required methods', () => {
-      expect(typeof server.connect).toBe('function');
+      expect(typeof server.connectWithApiKey).toBe('function');
+      expect(typeof server.connectWithBearer).toBe('function');
+      expect(typeof server.createClient).toBe('function');
+      expect(typeof server.setCurrentBearerToken).toBe('function');
     });
 
     it('should have a server property', () => {
@@ -127,10 +131,47 @@ describe('UpsunMcpServer', () => {
     it('should initialize the Upsun client and connect to transport', async () => {
       const mockTransport = {} as Transport;
       
-      await server.connect(mockTransport, 'test-api-key');
+      await server.connectWithApiKey(mockTransport, 'test-api-key');
       
       expect(server.client).toBeDefined();
       expect(server.server.connect).toHaveBeenCalledWith(mockTransport);
+    });
+
+    it('should connect with bearer token', async () => {
+      const mockTransport = {} as Transport;
+      const bearerToken = 'test-bearer-token';
+      
+      await server.connectWithBearer(mockTransport, bearerToken);
+      
+      expect(server.client).toBeDefined();
+      expect(server.server.connect).toHaveBeenCalledWith(mockTransport);
+    });
+  });
+
+  describe('client management', () => {
+    it('should create client with API key', () => {
+      const apiKey = 'test-api-key-123';
+      const client = server.createClient(apiKey);
+      
+      expect(client).toBeDefined();
+    });
+
+    it('should set current bearer token', () => {
+      const token = 'test-bearer-token-456';
+      server.setCurrentBearerToken(token);
+      
+      expect(server.currentBearerToken).toBe(token);
+    });
+
+    it('should handle different API keys', () => {
+      const apiKey1 = 'api-key-1';
+      const apiKey2 = 'api-key-2';
+      
+      const client1 = server.createClient(apiKey1);
+      const client2 = server.createClient(apiKey2);
+      
+      expect(client1).toBeDefined();
+      expect(client2).toBeDefined();
     });
   });
 
@@ -138,7 +179,7 @@ describe('UpsunMcpServer', () => {
     beforeEach(async () => {
       // Initialize the client for tool tests
       const mockTransport = {} as Transport;
-      await server.connect(mockTransport, 'test-api-key');
+      await server.connectWithApiKey(mockTransport, 'test-api-key');
     });
 
     describe('project tools', () => {

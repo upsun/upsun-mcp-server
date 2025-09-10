@@ -1,7 +1,11 @@
 /**
  * @fileoverview Organization management command module for Upsun MCP server.
  * 
- * This module provides MCP tools for managing Upsun organizations, which are
+ * This module provides MCP too    async () => {
+      const result = await adapter.client.organization.list();
+
+      return Response.json(result);
+    }r managing Upsun organizations, which are
  * top-level entities that contain projects and manage billing, user access,
  * and resource allocation.
  */
@@ -27,7 +31,7 @@ import { Response, Schema } from "../core/helper.js";
  * ```
  */
 export function registerOrganization(adapter: McpAdapter): void {
-  console.log(`Register Organization Handlers`);
+  console.log(`[MCP] Register Organization Handlers`);
 
   /**
    * Tool: create-organization
@@ -113,9 +117,9 @@ export function registerOrganization(adapter: McpAdapter): void {
 
     },
     async ({ }) => {
-      const result = await adapter.client.organization.list();
-
-      return Response.json(result);
+        const result = await adapter.client.organization.list();
+        
+        return Response.json(result);
     }
   );
 }

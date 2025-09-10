@@ -27,7 +27,7 @@ import { z } from "zod";
  * ```
  */
 export function registerRoute(adapter: McpAdapter): void {
-  console.log(`Register Route Handlers`);
+  console.log(`[MCP] Register Route Handlers`);
 
   /**
    * Tool: get-route

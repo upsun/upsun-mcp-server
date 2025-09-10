@@ -32,7 +32,7 @@ import { z } from "zod";
  * ```
  */
 export function registerBackup(adapter: McpAdapter): void {
-  console.log(`Register Backup Handlers`);
+  console.log(`[MCP] Register Backup Handlers`);
 
   /**
    * Tool: create-backup

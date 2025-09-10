@@ -44,15 +44,16 @@ const mockUrls = [
 // Mock the Upsun client
 const mockClient = {
   environment: {
-    activate: jest.fn(),
-    delete: jest.fn(),
-    info: jest.fn(),
-    list: jest.fn(),
-    merge: jest.fn(),
-    pause: jest.fn(),
-    redeploy: jest.fn(),
-    resume: jest.fn(),
-    url: jest.fn()
+    activate: jest.fn() as any,
+    delete: jest.fn() as any,
+    info: jest.fn() as any,
+    list: jest.fn() as any,
+    merge: jest.fn() as any,
+    pause: jest.fn() as any,
+    redeploy: jest.fn() as any,
+    resume: jest.fn() as any,
+    url: jest.fn() as any,
+    urls: jest.fn() as any
   }
 };
 
@@ -72,7 +73,8 @@ describe('Environment Command Module', () => {
     toolCallbacks = {};
     
     // Setup mock server.tool to capture callbacks
-    mockAdapter.server.tool = jest.fn().mockImplementation((name: string, description: string, schema: any, callback: any) => {
+    // @ts-ignore
+    (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: string, description: string, schema: any, callback: any) => {
       toolCallbacks[name] = callback;
       return mockAdapter.server;
     });
@@ -87,6 +89,7 @@ describe('Environment Command Module', () => {
     mockClient.environment.redeploy.mockResolvedValue(mockOperationResult);
     mockClient.environment.resume.mockResolvedValue(mockOperationResult);
     mockClient.environment.url.mockResolvedValue(mockUrls);
+    mockClient.environment.urls.mockResolvedValue(mockUrls);
   });
 
   afterEach(() => {
@@ -95,11 +98,11 @@ describe('Environment Command Module', () => {
 
   describe('registerEnvironment function', () => {
     it('should register all environment tools', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
       
       registerEnvironment(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('Register Environment Handlers');
+      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register Environment Handlers');
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(10);
       
       // Verify all tools are registered
@@ -475,7 +478,7 @@ describe('Environment Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.environment.url).toHaveBeenCalledWith('test-project-13', 'main');
+      expect(mockClient.environment.urls).toHaveBeenCalledWith('test-project-13', 'main');
       expect(result).toEqual({
         content: [{
           type: 'text',
@@ -487,7 +490,7 @@ describe('Environment Command Module', () => {
     it('should handle get URLs errors', async () => {
       const callback = toolCallbacks['urls-environment'];
       const errorMessage = 'Environment URLs not available';
-      mockClient.environment.url.mockRejectedValue(new Error(errorMessage));
+      mockClient.environment.urls.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         project_id: 'test-project-13',
@@ -499,7 +502,7 @@ describe('Environment Command Module', () => {
 
     it('should handle empty URLs list', async () => {
       const callback = toolCallbacks['urls-environment'];
-      mockClient.environment.url.mockResolvedValue([]);
+      mockClient.environment.urls.mockResolvedValue([]);
 
       const params = {
         project_id: 'test-project-13',

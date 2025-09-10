@@ -30,7 +30,7 @@ import { z } from "zod";
  * ```
  */
 export function registerSshKey(adapter: McpAdapter): void {
-  console.log(`Register SSH keys Handlers`);
+  console.log(`[MCP] Register SSH keys Handlers`);
 
   /**
    * Tool: add-sshkey

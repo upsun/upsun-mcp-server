@@ -34,7 +34,7 @@ import { Response, Schema } from "../core/helper.js";
  * ```
  */
 export function registerEnvironment(adapter: McpAdapter): void {
-  console.log(`Register Environment Handlers`);
+  console.log(`[MCP] Register Environment Handlers`);
 
   /**
    * Tool: activate-environment

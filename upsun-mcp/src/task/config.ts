@@ -2,7 +2,7 @@ import { McpAdapter } from "../core/adapter.js";
 import { z } from "zod";
 
 export function registerConfig(adapter: McpAdapter): void {
-  console.log(`Register Backup Handlers`);
+  console.log(`[MCP] Register Backup Handlers`);
 
   adapter.server.prompt(
     "generate-config",

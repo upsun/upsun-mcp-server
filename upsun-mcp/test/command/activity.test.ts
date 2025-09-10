@@ -86,7 +86,7 @@ describe('Activity Command Module', () => {
       
       registerActivity(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('Register Activity Handlers');
+      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register Activity Handlers');
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(4);
       
       // Verify all tools are registered

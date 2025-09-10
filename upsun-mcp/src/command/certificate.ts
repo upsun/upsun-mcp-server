@@ -31,7 +31,7 @@ import { z } from "zod";
  * ```
  */
 export function registerCertificate(adapter: McpAdapter): void {
-  console.log(`Register Certificate Handlers`);
+  console.log(`[MCP] Register Certificate Handlers`);
 
   /**
    * Tool: add-certificate

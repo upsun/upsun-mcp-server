@@ -28,7 +28,7 @@ import { Response, Schema } from "../core/helper.js";
  * ```
  */
 export function registerActivity(adapter: McpAdapter): void {
-  console.log(`Register Activity Handlers`);
+  console.log(`[MCP] Register Activity Handlers`);
 
   /**
    * Tool: cancel-activity
