@@ -113,6 +113,19 @@ export function setupOAuth2Direct(app: express.Application, config?: OAuth2Confi
     res.json(protectedResourceMetadata);
   });
 
+  app.get('/register', (_req, res) => {
+    res.json({
+      client_id: "mcp",
+      client_name: "Claude Code (test)",
+      redirect_uris: ["http://localhost:64236/callback"],
+      grant_types: ["authorization_code", "refresh_token"],
+      response_types: ["code"],
+      token_endpoint_auth_method: ["none", 'client_secret_basic'],
+      application_type: "native",
+      scope: "offline_access"
+    });
+  });
+
   console.log(` OAuth2 metadata configured automatically`);
   console.log(`  - Authorization Server: ${oauth2Config.issuerUrl}`);
   console.log(`  - Resource Server: ${oauth2Config.baseUrl}`);
