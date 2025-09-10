@@ -58,7 +58,8 @@ export function registerCertificate(adapter: McpAdapter): void {
       chain: z.string(),
     },
     async ({ project_id, certificate, key, chain }) => {
-      const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = "TODO"; //await client.backup.create(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -84,7 +85,8 @@ export function registerCertificate(adapter: McpAdapter): void {
       certificate_id: Schema.certificateId(),
     },
     async ({ project_id, certificate_id }) => {
-      const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = "TODO"; //await client.backup.create(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -110,7 +112,8 @@ export function registerCertificate(adapter: McpAdapter): void {
       certificate_id: Schema.certificateId(),
     },
     async ({ project_id, certificate_id }) => {
-      const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = "TODO"; //await client.backup.create(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -134,7 +137,8 @@ export function registerCertificate(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
     },
     async ({ project_id }) => {
-      const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = "TODO"; //await client.backup.create(project_id, environment_name);
 
       return Response.json(result);
     }

@@ -1,7 +1,12 @@
 /**
  * @fileoverview Organization management command module for Upsun MCP server.
  * 
- * This module provides MCP tools for managing Upsun organizations, which are
+ * This module provides MCP too    async () => {
+      const client = adapter.createCurrentClient();
+      const result = await client.organization.list();
+
+      return Response.json(result);
+    }r managing Upsun organizations, which are
  * top-level entities that contain projects and manage billing, user access,
  * and resource allocation.
  */
@@ -45,7 +50,8 @@ export function registerOrganization(adapter: McpAdapter): void {
       organization_name: Schema.organizationName(),
     },
     async ({ organization_name }) => {
-      const result = await adapter.client.organization.create(organization_name);
+      const client = adapter.createCurrentClient();
+      const result = await client.organization.create(organization_name);
 
       return Response.json(result);
     }
@@ -68,7 +74,8 @@ export function registerOrganization(adapter: McpAdapter): void {
       organization_id: Schema.organizationId(),
     },
     async ({ organization_id }) => {
-      const result = await adapter.client.organization.delete(organization_id);
+      const client = adapter.createCurrentClient();
+      const result = await client.organization.delete(organization_id);
 
       return Response.json(result);
     }
@@ -90,7 +97,8 @@ export function registerOrganization(adapter: McpAdapter): void {
       organization_id: Schema.organizationId(),
     },
     async ({ organization_id }) => {
-      const result = await adapter.client.organization.info(organization_id);
+      const client = adapter.createCurrentClient();
+      const result = await client.organization.info(organization_id);
 
       return Response.json(result);
     }
@@ -113,9 +121,19 @@ export function registerOrganization(adapter: McpAdapter): void {
 
     },
     async ({ }) => {
-      const result = await adapter.client.organization.list();
-
-      return Response.json(result);
+      console.log('🏢 list-organization: Starting...');
+      try {
+        const client = adapter.createCurrentClient();
+        console.log('🏢 list-organization: Client created successfully');
+        
+        const result = await client.organization.list();
+        console.log('🏢 list-organization: API call successful, result:', result);
+        
+        return Response.json(result);
+      } catch (error) {
+        console.error('🏢 list-organization: Error occurred:', error);
+        throw error;
+      }
     }
   );
 }

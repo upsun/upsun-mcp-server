@@ -9,7 +9,6 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js"
 
 import { McpAdapter } from "./adapter.js";
-import { mcpAuthMetadataRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
 
 /** Keep-alive interval for SSE connections (25 seconds) */
 const KEEP_ALIVE_INTERVAL_MS = 25000;
@@ -91,9 +90,9 @@ export class GatewayServer<A extends McpAdapter> {
    */
   readonly transports = {
     /** Active streamable HTTP server transports (protocol version 2025-03-26) */
-    streamable: {} as Record<string, StreamableHTTPServerTransport>,
+    streamable: {} as Record<string, { transport: StreamableHTTPServerTransport, server: McpAdapter }>,
     /** Active SSE server transports (protocol version 2024-11-05) */
-    sse: {} as Record<string, SSEServerTransport>
+    sse: {} as Record<string, { transport: SSEServerTransport, server: McpAdapter }>
   };
 
   /** 
@@ -131,100 +130,44 @@ export class GatewayServer<A extends McpAdapter> {
     const revocationUrl = process.env.OAUTH_REVOCATION_URL || "https://auth.upsun.com/oauth2/revoke";
     const issuerUrl = process.env.OAUTH_ISSUER_URL || "https://auth.upsun.com";
     const baseUrl = process.env.OAUTH_BASE_URL || "http://127.0.0.1:3000/";
-    const scope = process.env.OAUTH_SCOPE || "openid profile email";
+    const scope = process.env.OAUTH_SCOPE || "offline_access";
 
-    try {
-      // Métadonnées OAuth du serveur d'autorisation externe (Upsun)
-      const oauthMetadata = {
-        issuer: issuerUrl,
-        authorization_endpoint: authorizationUrl,
-        token_endpoint: tokenUrl,
-        revocation_endpoint: revocationUrl,
-        scopes_supported: scope.split(' '),
-        response_types_supported: ['code'],
-        grant_types_supported: ['authorization_code'],
-        token_endpoint_auth_methods_supported: ['none', 'client_secret_basic'],
-        code_challenge_methods_supported: ['S256']
-      };
+    // Routes de métadonnées OAuth2 MANUELLES pour éviter que le SDK recalcule les URLs
+    
+    // Métadonnées de l'Authorization Server (Upsun)
+    const oauthMetadata = {
+      issuer: issuerUrl,                      // https://auth.upsun.com
+      authorization_endpoint: authorizationUrl, // https://auth.upsun.com/oauth2/authorize
+      token_endpoint: tokenUrl,               // https://auth.upsun.com/oauth2/token
+      revocation_endpoint: revocationUrl,     // https://auth.upsun.com/oauth2/revoke
+      scopes_supported: scope.split(' '),
+      response_types_supported: ['code'],
+      grant_types_supported: ['authorization_code'],
+      token_endpoint_auth_methods_supported: ['none', 'client_secret_basic'],
+      code_challenge_methods_supported: ['S256']
+    };
 
-      // Utilise mcpAuthMetadataRouter pour un resource server
-      this.app.use(mcpAuthMetadataRouter({
-        oauthMetadata,
-        resourceServerUrl: new URL(baseUrl),
-        serviceDocumentationUrl: new URL(process.env.OAUTH_DOC_URL || 'https://docs.example.com/'),
-        scopesSupported: scope.split(' '),
-        resourceName: 'Upsun MCP Server'
-      }));
-      console.log(`[OAuth2] mcpAuthMetadataRouter actif. Resource server configuré avec issuer: ${issuerUrl}`);
-    } catch (e) {
-      console.error('[OAuth2] Échec initialisation mcpAuthMetadataRouter:', e);
-    }
+    // Métadonnées du Resource Server (votre serveur MCP)
+    const protectedResourceMetadata = {
+      resource: baseUrl,                      // http://127.0.0.1:3000/
+      authorization_servers: [issuerUrl],     // [https://auth.upsun.com]
+      scopes_supported: scope.split(' '),
+      resource_name: 'Upsun MCP Server',
+      resource_documentation: process.env.OAUTH_DOC_URL || 'https://docs.example.com/'
+    };
 
-    // Routes manuelles pour l'authentification (nécessaires car mcpAuthMetadataRouter n'expose que les métadonnées)
-    // mcpAuthMetadataRouter expose uniquement /.well-known/oauth-authorization-server et /.well-known/oauth-protected-resource
-    this.app.get('/auth', (_req, res) => {
-      const state = randomUUID();
-      const params = new URLSearchParams({
-        response_type: 'code',
-        client_id: process.env.OAUTH_CLIENT_ID || 'mcp',
-        redirect_uri: process.env.OAUTH_REDIRECT_URI || 'http://127.0.0.1:3000/callback',
-        scope,
-        state,
-      });
-      const authUrl = `${authorizationUrl}?${params.toString()}`;
-      console.log(`[OAuth2] Redirection vers: ${authUrl}`);
-      res.redirect(authUrl);
+    // Routes manuelles pour les métadonnées (sans SDK qui recalcule)
+    this.app.get('/.well-known/oauth-authorization-server', (_req, res) => {
+      res.json(oauthMetadata);
     });
 
-    this.app.get('/callback', async (req, res) => {
-      const code = req.query.code as string | undefined;
-      if (!code) { 
-        res.status(400).send('Missing authorization code'); 
-        return; 
-      }
-      try {
-        const body = new URLSearchParams({
-          grant_type: 'authorization_code',
-          code,
-          redirect_uri: process.env.OAUTH_REDIRECT_URI || 'http://127.0.0.1:3000/callback',
-          client_id: process.env.OAUTH_CLIENT_ID || 'mcp',
-        });
-        const clientSecret = process.env.OAUTH_CLIENT_SECRET;
-        if (clientSecret) body.append('client_secret', clientSecret);
-        
-        const response = await fetch(tokenUrl, { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, 
-          body 
-        });
-        
-        if (!response.ok) { 
-          const errorText = await response.text();
-          return res.status(500).send(`Token exchange failed: ${response.status} - ${errorText}`); 
-        }
-        
-        const tokenData: any = await response.json();
-        res.status(200).send(`Access Token obtenu:\n${tokenData.access_token}\n\nUtilisez ce header pour MCP:\nAuthorization: Bearer ${tokenData.access_token}`);
-      } catch (err: any) {
-        res.status(500).send('Callback error: ' + err.message);
-      }
+    this.app.get('/.well-known/oauth-protected-resource', (_req, res) => {
+      res.json(protectedResourceMetadata);
     });
 
-    // // /auth : redirige directement vers le provider Upsun (pas de route locale)
-    // this.app.get('/auth', (_req, res) => {
-    //   const state = randomUUID();
-    //   const params = new URLSearchParams({
-    //     response_type: 'code',
-    //     client_id: clientId,
-    //     redirect_uri: redirectUri,
-    //     scope,
-    //     state,
-    //   });
-    //   const authUrl = `${authorizationUrl}?${params.toString()}`;
-    //   console.log(`[OAuth2] Redirection vers: ${authUrl}`);
-    //   res.redirect(authUrl);
-    // });
-
+    console.log(`[OAuth2] Métadonnées OAuth2 configurées manuellement`);
+    console.log(`  - Authorization Server: ${issuerUrl}`);
+    console.log(`  - Resource Server: ${baseUrl}`);
 
     // Debug route
     this.app.get('/_routes', (_req, res) => {
@@ -280,18 +223,34 @@ export class GatewayServer<A extends McpAdapter> {
       console.log('Received POST request to /mcp (Streamable transport)');
 
       if (sessionId && this.transports.streamable[sessionId]) {
-        // Reuse existing transport
-        const transport = this.transports.streamable[sessionId];
+        // Reuse existing transport - inject fresh bearer token
+        const { transport, server } = this.transports.streamable[sessionId];
+        
+        // Extract and inject fresh bearer token for each request
+        const bearer = this.extractBearer(req);
+        if (!bearer) {
+          console.log('❌ Rejecting request: No bearer token found in existing session');
+          res.status(401).json({ error: 'missing_token', hint: 'Bearer token required in Authorization header' });
+          return;
+        }
+        
+        console.log('✅ Bearer token found for existing session, updating server');
+        // Update the server with fresh bearer token
+        server.setCurrentBearerToken(bearer);
+        
         await transport.handleRequest(req, res, req.body);
 
       } else if (!sessionId && isInitializeRequest(req.body)) {
         // Cherche un Bearer token pour alimenter server.connect
+        console.log('🚀 New session initialization request');
         const bearer = this.extractBearer(req);
         if (!bearer) {
+          console.log('❌ Rejecting initialization: No bearer token found');
           res.status(401).json({ error: 'missing_token', hint: 'GET /auth pour obtenir un token' });
           return;
         }
 
+        console.log('✅ Bearer token found for initialization, creating new session');
         // Create the server instance first
         const server = this.makeInstanceAdapterMcpServer();
 
@@ -299,8 +258,8 @@ export class GatewayServer<A extends McpAdapter> {
         const transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
           onsessioninitialized: (sessionId) => {
-            // Store the transport by session ID
-            this.transports.streamable[sessionId] = transport;
+            // Store the transport and server by session ID
+            this.transports.streamable[sessionId] = { transport, server };
           }
         });
 
@@ -312,7 +271,10 @@ export class GatewayServer<A extends McpAdapter> {
         };
 
         // Connect the server to the transport
-  await server.connect(transport, bearer);
+        await server.connect(transport, bearer);
+        
+        // Set initial bearer token
+        server.setCurrentBearerToken(bearer);
         
         // Handle the initialization request
         await transport.handleRequest(req, res, req.body);
@@ -348,7 +310,7 @@ export class GatewayServer<A extends McpAdapter> {
         return;
       }
 
-      const transport = this.transports.streamable[sessionId];
+      const { transport } = this.transports.streamable[sessionId];
       await transport.handleRequest(req, res);
     };
 
@@ -395,7 +357,11 @@ export class GatewayServer<A extends McpAdapter> {
 
       // Create SSE transport for legacy clients
       const transport = new SSEServerTransport(HTTP_MSG_PATH, res);
-      this.transports.sse[transport.sessionId] = transport;
+      
+      // Create the server instance first
+      const server = this.makeInstanceAdapterMcpServer();
+      
+      this.transports.sse[transport.sessionId] = { transport, server };
 
       // Start keep-alive ping
       const intervalId = setInterval(() => {
@@ -422,10 +388,13 @@ export class GatewayServer<A extends McpAdapter> {
         }
       });
 
-      const server = this.makeInstanceAdapterMcpServer();
       try {
-  await server.connect(transport, bearer || '');
-      console.log(`New session from ${ip} with ID: ${transport.sessionId}`);
+        await server.connect(transport, bearer || '');
+        
+        // Set initial bearer token
+        server.setCurrentBearerToken(bearer);
+        
+        console.log(`New session from ${ip} with ID: ${transport.sessionId}`);
       } catch (error) {
         console.error(`[SSE Connection] Error connecting server to transport for ${transport.sessionId}:`, error);
         // Ensure cleanup happens even if connect fails
@@ -444,9 +413,21 @@ export class GatewayServer<A extends McpAdapter> {
       console.log(`Received POST request to /message (deprecated SSE transport) from ${ip}`);
 
       const sessionId = req.query.sessionId as string;
-      const transport = this.transports.sse[sessionId];
+      const transportSession = this.transports.sse[sessionId];
 
-      if (transport) {
+      if (transportSession) {
+        const { transport, server } = transportSession;
+        
+        // Extract and inject fresh bearer token for each request
+        const bearer = this.extractBearer(req);
+        if (!bearer) {
+          res.status(401).json({ error: 'missing_token', hint: 'Bearer token required in Authorization header' });
+          return;
+        }
+        
+        // Update the server with fresh bearer token
+        server.setCurrentBearerToken(bearer);
+        
         console.log(`Message call from ${ip} with ID: ${transport.sessionId}`);
         await transport.handlePostMessage(req, res, req.body);
       } else {
@@ -497,11 +478,19 @@ export class GatewayServer<A extends McpAdapter> {
    * Extrait le token Bearer de l'en-tête Authorization.
    */
   private extractBearer(req: express.Request): string | undefined {
+    console.log('=== DEBUG extractBearer ===');
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
+    
     const h = req.headers['authorization'] || req.headers['Authorization'];
+    console.log('Authorization header:', h);
+    
     if (typeof h === 'string' && h.startsWith('Bearer ')) {
       const token = h.substring('Bearer '.length).trim();
+      console.log('Extracted token:', token ? `${token.substring(0, 10)}...` : 'empty');
       if (token) return token;
     }
+    
+    console.log('No valid Bearer token found');
     return undefined;
   }
 
@@ -554,7 +543,7 @@ SUPPORTED TRANSPORT OPTIONS:
       for (const sessionId in this.transports.sse) {
         try {
           console.log(`Closing transport for session ${sessionId}`);
-          await this.transports.sse[sessionId].close();
+          await this.transports.sse[sessionId].transport.close();
           delete this.transports.sse[sessionId];
         } catch (error) {
           console.error(`Error closing transport SSE for session ${sessionId}:`, error);
@@ -564,7 +553,7 @@ SUPPORTED TRANSPORT OPTIONS:
       for (const sessionId in this.transports.streamable) {
         try {
           console.log(`Closing transport for session ${sessionId}`);
-          await this.transports.streamable[sessionId].close();
+          await this.transports.streamable[sessionId].transport.close();
           delete this.transports.streamable[sessionId];
         } catch (error) {
           console.error(`Error closing transport streamable for session ${sessionId}:`, error);

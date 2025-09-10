@@ -51,7 +51,8 @@ export function registerEnvironment(adapter: McpAdapter): void {
       environment_name: Schema.environmentName(),
     },
     async ({ project_id, environment_name }) => {
-      const result = await adapter.client.environment.activate(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = await client.environment.activate(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -75,7 +76,8 @@ export function registerEnvironment(adapter: McpAdapter): void {
       environment_name: Schema.environmentName(),
     },
     async ({ project_id, environment_name }) => {
-      const result = await adapter.client.environment.delete(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = await client.environment.delete(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -99,7 +101,8 @@ export function registerEnvironment(adapter: McpAdapter): void {
       environment_name: Schema.environmentName(),
     },
     async ({ project_id, environment_name }) => {
-      const result = await adapter.client.environment.info(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = await client.environment.info(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -121,7 +124,8 @@ export function registerEnvironment(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
     },
     async ({ project_id }) => {
-      const result = await adapter.client.environment.list(project_id);
+      const client = adapter.createCurrentClient();
+      const result = await client.environment.list(project_id);
 
       return Response.json(result);
     }
@@ -146,6 +150,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
       application_name: Schema.applicationName(),
     },
     async ({ project_id, environment_name, application_name }) => {
+      const client = adapter.createCurrentClient();
       const result = { throw: "Not implemented !" };
 
       return Response.json(result);
@@ -170,7 +175,8 @@ export function registerEnvironment(adapter: McpAdapter): void {
       environment_name: Schema.environmentName(),
     },
     async ({ project_id, environment_name }) => {
-      const result = await adapter.client.environment.merge(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = await client.environment.merge(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -194,7 +200,8 @@ export function registerEnvironment(adapter: McpAdapter): void {
       environment_name: Schema.environmentName(),
     },
     async ({ project_id, environment_name }) => {
-      const result = await adapter.client.environment.pause(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = await client.environment.pause(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -220,7 +227,8 @@ export function registerEnvironment(adapter: McpAdapter): void {
       application_name: Schema.applicationName().optional(),
     },
     async ({ project_id, environment_name }) => {
-      const result = await adapter.client.environment.redeploy(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = await client.environment.redeploy(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -243,7 +251,8 @@ export function registerEnvironment(adapter: McpAdapter): void {
       environment_name: Schema.environmentName(),
     },
     async ({ project_id, environment_name }) => {
-      const result = await adapter.client.environment.resume(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = await client.environment.resume(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -267,7 +276,8 @@ export function registerEnvironment(adapter: McpAdapter): void {
       environment_name: Schema.environmentName(),
     },
     async ({ project_id, environment_name }) => {
-      const result = await adapter.client.environment.urls(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = await client.environment.urls(project_id, environment_name);
 
       return Response.json(result);
     }

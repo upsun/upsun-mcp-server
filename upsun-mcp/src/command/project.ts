@@ -1,7 +1,12 @@
 /**
  * @fileoverview Project management command module for Upsun MCP server.
  * 
- * This module provides MCP tools for managing Upsun projects, including creation,
+ * This module provides M    async ({ project_id }) => {
+      const client = adapter.createCurrentClient();
+      const result = await client.project.get(project_id);
+
+      return Response.json(result);
+    }ols for managing Upsun projects, including creation,
  * deletion, information retrieval, and listing operations. Projects are the
  * top-level containers for applications and environments in the Upsun platform.
  */
@@ -52,13 +57,14 @@ export function registerProject(adapter: McpAdapter): void {
     },
     async ({ organization_id, name, default_branch }) => {
       const region_host = "eu-5.platform.sh";
-      const subCreated = await adapter.client.project.create(organization_id, region_host, name, default_branch); // region, default_branch
+      const client = adapter.createCurrentClient();
+      const subCreated = await client.project.create(organization_id, region_host, name, default_branch); // region, default_branch
 
-      let prjCreated = await adapter.client.project.getSub(organization_id, subCreated.id || "");
+      let prjCreated = await client.project.getSub(organization_id, subCreated.id || "");
       while (prjCreated.status !== SubscriptionStatusEnum.Active) {
         console.log("Waiting for project to be active...");
         await delay(10000);
-        prjCreated = await adapter.client.project.getSub(organization_id, subCreated.id || "");
+        prjCreated = await client.project.getSub(organization_id, subCreated.id || "");
       }
       
       return Response.json(prjCreated);
@@ -81,7 +87,8 @@ export function registerProject(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
     },
     async ({ project_id }) => {
-      const result = await adapter.client.project.delete(project_id);
+      const client = adapter.createCurrentClient();
+      const result = await client.project.delete(project_id);
 
       return Response.json(result);
     }
@@ -103,7 +110,8 @@ export function registerProject(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
     },
     async ({ project_id }) => {
-      const result = await adapter.client.project.info(project_id);
+      const client = adapter.createCurrentClient();
+      const result = await client.project.info(project_id);
 
       return Response.json(result);
     }
@@ -125,7 +133,8 @@ export function registerProject(adapter: McpAdapter): void {
       organization_id: Schema.organizationId(),
     },
     async ({ organization_id }) => {
-      const result = await adapter.client.project.list(organization_id);
+      const client = adapter.createCurrentClient();
+      const result = await client.project.list(organization_id);
 
       return Response.json(result);
     }

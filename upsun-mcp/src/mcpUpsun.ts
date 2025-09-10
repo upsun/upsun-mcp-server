@@ -43,6 +43,12 @@ export class UpsunMcpServer implements McpAdapter {
   public client!: UpsunClient;
 
   /**
+   * The current bearer token for the active request.
+   * This is set by the gateway for each request and used by tools to create fresh clients.
+   */
+  public currentBearerToken?: string;
+
+  /**
    * Creates a new UpsunMcpServer instance.
    * 
    * Initializes the MCP server with the package name and version, then registers
@@ -60,7 +66,7 @@ export class UpsunMcpServer implements McpAdapter {
   constructor(
     public readonly server: McpServer = new McpServer({
       name: "upsun-server",
-      version: pjson.default.version
+      version: pjson.default.version,
     }),
   ) {
 
@@ -77,6 +83,58 @@ export class UpsunMcpServer implements McpAdapter {
 
     // Register all tasks with their respective prompts
     registerConfig(this);
+  }
+
+  /**
+   * Creates a new Upsun client with the provided API key.
+   * This method should be called for each tool invocation to ensure fresh authentication.
+   * 
+   * @param apiKey - The API key for authenticating with Upsun platform
+   * @returns A new UpsunClient instance configured with the API key
+   * 
+   * @example
+   * ```typescript
+   * const client = server.createClient(bearerToken);
+   * const projects = await client.project.list(orgId);
+   * ```
+   */
+  createClient(apiKey: string): UpsunClient {
+    return new UpsunClient({ apiKey } as UpsunConfig);
+  }
+
+  /**
+   * Creates a new Upsun client using the current bearer token.
+   * This is a convenience method that uses the currentBearerToken property.
+   * 
+   * @returns A new UpsunClient instance configured with the current bearer token
+   * @throws Error if no current bearer token is set
+   * 
+   * @example
+   * ```typescript
+   * const client = server.createCurrentClient();
+   * const projects = await client.project.list(orgId);
+   * ```
+   */
+  createCurrentClient(): UpsunClient {
+    if (!this.currentBearerToken) {
+      throw new Error('No current bearer token set. Call setCurrentBearerToken() first.');
+    }
+    return this.createClient(this.currentBearerToken);
+  }
+
+  /**
+   * Sets the current bearer token for this adapter instance.
+   * This is called by the gateway before each tool invocation.
+   * 
+   * @param token - The bearer token to set as current
+   * 
+   * @example
+   * ```typescript
+   * server.setCurrentBearerToken('your-bearer-token');
+   * ```
+   */
+  setCurrentBearerToken(token: string): void {
+    this.currentBearerToken = token;
   }
 
   /**

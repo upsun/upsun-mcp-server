@@ -49,7 +49,8 @@ export function registerRoute(adapter: McpAdapter): void {
       route_id: z.string().optional(),
     },
     async ({ project_id, environment_name, route_id }) => {
-      const result = (await adapter.client.route.get(project_id, environment_name, route_id || ''));
+      const client = adapter.createCurrentClient();
+      const result = (await client.route.get(project_id, environment_name, route_id || ''));
 
       return Response.json(result);
     }
@@ -73,7 +74,8 @@ export function registerRoute(adapter: McpAdapter): void {
       environment_name: Schema.environmentName(),
     },
     async ({ project_id, environment_name }) => {
-      const result = await adapter.client.route.list(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = await client.route.list(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -96,7 +98,8 @@ export function registerRoute(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
     },
     async ({ project_id }) => {
-      // const result = (await adapter.client.route.web(project_id)).ui;
+      const client = adapter.createCurrentClient();
+      // const result = (await client.route.web(project_id)).ui;
       const result = "Not implemented";
       return Response.json(result);
     }

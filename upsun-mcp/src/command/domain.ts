@@ -54,7 +54,8 @@ export function registerDomain(adapter: McpAdapter): void {
       domain_name: Schema.domainName(),
     },
     async ({ project_id, domain_name }) => {
-      const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = "TODO"; //await client.backup.create(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -80,7 +81,8 @@ export function registerDomain(adapter: McpAdapter): void {
       domain_name: Schema.domainName(),
     },
     async ({ project_id, domain_name }) => {
-      const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = "TODO"; //await client.backup.create(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -106,7 +108,8 @@ export function registerDomain(adapter: McpAdapter): void {
       domain_name: Schema.domainName(),
     },
     async ({ project_id, domain_name }) => {
-      const result = "TODO"; //await adapter.client.backup.list(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = "TODO"; //await client.backup.list(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -130,7 +133,8 @@ export function registerDomain(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
     },
     async ({ project_id }) => {
-      const result = "TODO"; //await adapter.client.backup.list(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = "TODO"; //await client.backup.list(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -156,7 +160,8 @@ export function registerDomain(adapter: McpAdapter): void {
       domain_name: Schema.domainName(),
     },
     async ({ project_id, domain_name }) => {
-      const result = "TODO"; //await adapter.client.backup.list(project_id, environment_name);
+      const client = adapter.createCurrentClient();
+      const result = "TODO"; //await client.backup.list(project_id, environment_name);
 
       return Response.json(result);
     }

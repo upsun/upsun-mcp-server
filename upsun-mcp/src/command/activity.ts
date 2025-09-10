@@ -49,7 +49,8 @@ export function registerActivity(adapter: McpAdapter): void {
       activity_id: Schema.activityId(),
     },
     async ({ project_id, activity_id }) => {
-      const result = await adapter.client.activity.cancel(project_id, activity_id);
+      const client = adapter.createCurrentClient();
+      const result = await client.activity.cancel(project_id, activity_id);
 
       return Response.json(result);
     }
@@ -73,7 +74,8 @@ export function registerActivity(adapter: McpAdapter): void {
       activity_id: Schema.activityId(),
     },
     async ({ project_id, activity_id }) => {
-      const result = await adapter.client.activity.get(project_id, activity_id);
+      const client = adapter.createCurrentClient();
+      const result = await client.activity.get(project_id, activity_id);
 
       return Response.json(result);
     }
@@ -96,7 +98,8 @@ export function registerActivity(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
     },
     async ({ project_id }) => {
-      const result = await adapter.client.activity.list(project_id);
+      const client = adapter.createCurrentClient();
+      const result = await client.activity.list(project_id);
 
       return Response.json(result);
     }
@@ -121,7 +124,8 @@ export function registerActivity(adapter: McpAdapter): void {
       activity_id: Schema.activityId(),
     },
     async ({ project_id, activity_id }) => {
-      const result = await adapter.client.activity.log(project_id, activity_id);
+      const client = adapter.createCurrentClient();
+      const result = await client.activity.log(project_id, activity_id);
 
       return Response.json(result);
     }
