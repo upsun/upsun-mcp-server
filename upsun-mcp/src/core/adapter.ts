@@ -21,7 +21,6 @@ export interface McpAdapter {
   /**
    * The Upsun SDK client instance.
    * Provides access to Upsun platform APIs for managing projects, environments, etc.
-   * @deprecated Use createClient() instead to ensure fresh authentication
    */
   readonly client: UpsunClient;
 
@@ -41,15 +40,6 @@ export interface McpAdapter {
   createClient(apiKey: string): UpsunClient;
 
   /**
-   * Creates a new Upsun client using the current bearer token.
-   * This is a convenience method that uses the currentBearerToken property.
-   * 
-   * @returns A new UpsunClient instance configured with the current bearer token
-   * @throws Error if no current bearer token is set
-   */
-  createCurrentClient(): UpsunClient;
-
-  /**
    * Sets the current bearer token for this adapter instance.
    * This is called by the gateway before each tool invocation.
    * 
@@ -58,15 +48,29 @@ export interface McpAdapter {
   setCurrentBearerToken(token: string): void;
 
   /**
-   * Establishes a connection between the MCP server and transport layer.
+   * Establishes a connection between the MCP server and transport layer using a Bearer token.
    * 
    * This method initializes the MCP server with the provided transport and
-   * configures the Upsun client with the API key for authentication.
+   * configures the Upsun client with the Bearer token for authentication.
+   * 
+   * @param transport - The transport layer for MCP communication (stdio, HTTP, etc.)
+   * @param bearerToken - The Bearer token for authenticating with Upsun platform
+   * @returns A Promise that resolves when the connection is established
+   * @throws May throw errors if connection fails or Bearer token is invalid
+   */
+  connectWithBearer(transport: Transport, bearerToken: string): Promise<void>;
+
+  /**
+   * Establishes a connection between the MCP server and transport layer using an API key.
+   * 
+   * This method initializes the MCP server with the provided transport and
+   * configures the Upsun client with the API key for authentication. The API key
+   * will be processed differently than Bearer tokens (e.g., exchanged for a token).
    * 
    * @param transport - The transport layer for MCP communication (stdio, HTTP, etc.)
    * @param apiKey - The API key for authenticating with Upsun platform
    * @returns A Promise that resolves when the connection is established
    * @throws May throw errors if connection fails or API key is invalid
    */
-  connect(transport: Transport, apiKey: string): Promise<void>;
+  connectWithApiKey(transport: Transport, apiKey: string): Promise<void>;
 }

@@ -32,7 +32,7 @@ import { z } from "zod";
  * ```
  */
 export function registerBackup(adapter: McpAdapter): void {
-  console.log(`Register Backup Handlers`);
+  console.log(`[MCP] Register Backup Handlers`);
 
   /**
    * Tool: create-backup
@@ -56,8 +56,7 @@ export function registerBackup(adapter: McpAdapter): void {
       is_live: z.boolean().default(true).optional(),
     },
     async ({ project_id, environment_name, is_live }) => {
-      const client = adapter.createCurrentClient();
-      const result = "TODO"; //await client.backup.create(project_id, environment_name);
+      const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -85,8 +84,7 @@ export function registerBackup(adapter: McpAdapter): void {
       backup_id: Schema.backupId(),
     },
     async ({ project_id, environment_name, backup_id }) => {
-      const client = adapter.createCurrentClient();
-      const result = "TODO"; //await client.backup.delete(project_id, environment_name);
+      const result = "TODO"; //await adapter.client.backup.delete(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -114,8 +112,7 @@ export function registerBackup(adapter: McpAdapter): void {
       backup_id: Schema.backupId(),
     },
     async ({ project_id, environment_name, backup_id }) => {
-      const client = adapter.createCurrentClient();
-      const result = "TODO"; //await client.backup.delete(project_id, environment_name);
+      const result = "TODO"; //await adapter.client.backup.delete(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -141,8 +138,7 @@ export function registerBackup(adapter: McpAdapter): void {
       environment_name: Schema.environmentName(),
     },
     async ({ project_id, environment_name }) => {
-      const client = adapter.createCurrentClient();
-      const result = "TODO"; //await client.backup.list(project_id, environment_name);
+      const result = "TODO"; //await adapter.client.backup.list(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -177,8 +173,7 @@ export function registerBackup(adapter: McpAdapter): void {
       resources_init: z.string().default("backup").optional(),
     },
     async ({ project_id, environment_name, target_environment_name, no_code, no_resources, resources_init }) => {
-      const client = adapter.createCurrentClient();
-      const result = "TODO"; //await client.backup.list(project_id, environment_name);
+      const result = "TODO"; //await adapter.client.backup.list(project_id, environment_name);
 
       return Response.json(result);
     }

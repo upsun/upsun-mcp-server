@@ -30,7 +30,7 @@ import { z } from "zod";
  * ```
  */
 export function registerSshKey(adapter: McpAdapter): void {
-  console.log(`Register SSH keys Handlers`);
+  console.log(`[MCP] Register SSH keys Handlers`);
 
   /**
    * Tool: add-sshkey
@@ -54,8 +54,7 @@ export function registerSshKey(adapter: McpAdapter): void {
       key_id: z.string(),
     },
     async ({ user_id, ssh_key, key_id }) => {
-      const client = adapter.createCurrentClient();
-      const result = "TODO"; //await client.backup.create(project_id, environment_name);
+      const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -82,8 +81,7 @@ export function registerSshKey(adapter: McpAdapter): void {
       key_id: z.string(),
     },
     async ({ user_id, key_id }) => {
-      const client = adapter.createCurrentClient();
-      const result = "TODO"; //await client.backup.create(project_id, environment_name);
+      const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
 
       return Response.json(result);
     }
@@ -107,8 +105,7 @@ export function registerSshKey(adapter: McpAdapter): void {
       user_id: z.string(),
     },
     async ({ user_id }) => {
-      const client = adapter.createCurrentClient();
-      const result = "TODO"; //await client.backup.create(project_id, environment_name);
+      const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
 
       return Response.json(result);
     }
