@@ -6,11 +6,11 @@
  * top-level containers for applications and environments in the Upsun platform.
  */
 
-import { Project } from "upsun-sdk-node/dist/apis-gen/models/Project.js";
+import { SubscriptionStatusEnum } from "upsun-sdk-node/dist/apis-gen/models/Subscription.js";
 import { McpAdapter } from "../core/adapter.js";
 import { Response, Schema } from "../core/helper.js";
 import { z } from "zod";
-import { SubscriptionStatusEnum } from "upsun-sdk-node/dist/apis-gen/models/index.js";
+
 
 /**
  * Registers project management tools with the MCP server.
@@ -54,11 +54,11 @@ export function registerProject(adapter: McpAdapter): void {
       const region_host = "eu-5.platform.sh";
       const subCreated = await adapter.client.project.create(organization_id, region_host, name, default_branch); // region, default_branch
 
-      let prjCreated = await adapter.client.project.getSub(organization_id, subCreated.id || "");
+      let prjCreated = await adapter.client.project.getSubscription(organization_id, subCreated.id || "");
       while (prjCreated.status !== SubscriptionStatusEnum.Active) {
         console.log("Waiting for project to be active...");
         await delay(10000);
-        prjCreated = await adapter.client.project.getSub(organization_id, subCreated.id || "");
+        prjCreated = await adapter.client.project.getSubscription(organization_id, subCreated.id || "");
       }
       
       return Response.json(prjCreated);

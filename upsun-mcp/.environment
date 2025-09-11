@@ -1,1 +1,4 @@
-export OAUTH_BASE_URL=$(echo $PLATFORM_ROUTES | base64 -d | jq -r 'to_entries[] | select(.value.id == "mcp") | .value.production_url')
+#!/usr/bin/env bash
+
+OAUTH_BASE_URL=$(echo "$PLATFORM_ROUTES" | base64 -d | jq -r 'to_entries[] | select(.value.id == "mcp") | .value.production_url')
+export OAUTH_BASE_URL

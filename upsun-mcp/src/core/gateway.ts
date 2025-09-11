@@ -242,7 +242,6 @@ export class GatewayServer<A extends McpAdapter> {
         if (bearer) {
           console.log('[Web][http] Bearer token found for initialization, creating new session');
           await server.connectWithBearer(transport, bearer);
-          server.setCurrentBearerToken(bearer);
         } else if (apiKey) {
           console.log('[Web][http] API key found for initialization, creating new session');
           await server.connectWithApiKey(transport, apiKey);
@@ -370,7 +369,6 @@ export class GatewayServer<A extends McpAdapter> {
         if (bearer) {
           console.log(`[Web][SSE] New SSE session from ${ip} with Bearer token, ID: ${transport.sessionId}`);
           await server.connectWithBearer(transport, bearer);
-          server.setCurrentBearerToken(bearer);
         } else if (apiKey) {
           console.log(`[Web][SSE] New SSE session from ${ip} with API key, ID: ${transport.sessionId}`);
           await server.connectWithApiKey(transport, apiKey);

@@ -31,15 +31,6 @@ export interface McpAdapter {
   currentBearerToken?: string;
 
   /**
-   * Creates a new Upsun client with the provided API key.
-   * This should be called for each tool invocation to ensure fresh authentication.
-   * 
-   * @param apiKey - The API key for authenticating with Upsun platform
-   * @returns A new UpsunClient instance configured with the API key
-   */
-  createClient(apiKey: string): UpsunClient;
-
-  /**
    * Sets the current bearer token for this adapter instance.
    * This is called by the gateway before each tool invocation.
    * 

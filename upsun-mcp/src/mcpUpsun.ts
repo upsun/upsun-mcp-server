@@ -86,23 +86,6 @@ export class UpsunMcpServer implements McpAdapter {
   }
 
   /**
-   * Creates a new Upsun client with the provided API key.
-   * This method should be called for each tool invocation to ensure fresh authentication.
-   * 
-   * @param apiKey - The API key for authenticating with Upsun platform
-   * @returns A new UpsunClient instance configured with the API key
-   * 
-   * @example
-   * ```typescript
-   * const client = server.createClient(bearerToken);
-   * const projects = await client.project.list(orgId);
-   * ```
-   */
-  createClient(apiKey: string): UpsunClient {
-    return new UpsunClient({ apiKey } as UpsunConfig);
-  }
-
-  /**
    * Sets the current bearer token for this adapter instance.
    * This is called by the gateway before each tool invocation.
    * 
@@ -138,7 +121,8 @@ export class UpsunMcpServer implements McpAdapter {
    */
   connectWithBearer(transport: Transport, bearerToken: string): Promise<void> {
     console.log('[MCP] Connecting with Bearer token authentication');
-    this.client = new UpsunClient({ apiKey: bearerToken } as UpsunConfig);
+    this.client = new UpsunClient();
+    this.client.setBearerToken(bearerToken);
     return this.server.connect(transport);
   }
 
