@@ -8,19 +8,19 @@ const originalExit = process.exit;
 process.exit = jest.fn() as any;
 
 describe('index.ts functionality', () => {
-  // Sauvegarde des variables d'environnement d'origine
+  // Save original environment variables
   const originalEnv = process.env;
   
   beforeEach(() => {
-    // Supprimer les logs pour éviter les sorties inutiles
+    // Remove logs to avoid unnecessary output
     jest.spyOn(console, 'log').mockImplementation(() => {});
     
-    // Restaurer les variables d'environnement d'origine
+    // Restore original environment variables
     process.env = { ...originalEnv };
   });
 
   afterEach(() => {
-    // Restaurer les variables d'environnement
+    // Restore environment variables
     process.env = originalEnv;
     jest.restoreAllMocks();
   });

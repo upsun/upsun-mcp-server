@@ -118,7 +118,6 @@ describe('UpsunMcpServer', () => {
     it('should have the required methods', () => {
       expect(typeof server.connectWithApiKey).toBe('function');
       expect(typeof server.connectWithBearer).toBe('function');
-      expect(typeof server.createClient).toBe('function');
       expect(typeof server.setCurrentBearerToken).toBe('function');
     });
 
@@ -149,29 +148,11 @@ describe('UpsunMcpServer', () => {
   });
 
   describe('client management', () => {
-    it('should create client with API key', () => {
-      const apiKey = 'test-api-key-123';
-      const client = server.createClient(apiKey);
-      
-      expect(client).toBeDefined();
-    });
-
     it('should set current bearer token', () => {
       const token = 'test-bearer-token-456';
       server.setCurrentBearerToken(token);
       
       expect(server.currentBearerToken).toBe(token);
-    });
-
-    it('should handle different API keys', () => {
-      const apiKey1 = 'api-key-1';
-      const apiKey2 = 'api-key-2';
-      
-      const client1 = server.createClient(apiKey1);
-      const client2 = server.createClient(apiKey2);
-      
-      expect(client1).toBeDefined();
-      expect(client2).toBeDefined();
     });
   });
 

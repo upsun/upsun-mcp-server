@@ -15,13 +15,17 @@ const config: Config.InitialOptions = {
   testMatch: [
     '**/test/**/*.test.ts',
   ],
+  // Remove console output during tests
+  silent: true,
+  // Alternative: only for info and debug level logs
+  // verbose: false,
   coverageDirectory: 'coverage',
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
-    '!src/index.ts',  // Exclure le fichier d'entrée principal
-    '!src/**/*.types.ts', // Exclure les fichiers de types
-    '!src/**/*.interface.ts', // Exclure les interfaces
+    '!src/index.ts',  // Exclude main entry file
+    '!src/**/*.types.ts', // Exclude type files
+    '!src/**/*.interface.ts', // Exclude interface files
   ],
   coverageReporters: [
     'text',
@@ -29,7 +33,7 @@ const config: Config.InitialOptions = {
     'lcov',
     'html',
     'json-summary',
-    'cobertura' // Pour une meilleure intégration CI
+    'cobertura' // For better CI integration
   ],
   coverageThreshold: {
     global: {
@@ -38,7 +42,7 @@ const config: Config.InitialOptions = {
       lines: 60,       // Current: 67.94%, set below to allow fluctuation  
       statements: 60   // Current: 68.19%, set below to allow fluctuation
     },
-    // Seuils spécifiques par dossier - ajustés selon les métriques réelles
+    // Specific thresholds per folder - adjusted according to real metrics
     './src/core/': {
       branches: 35,    // gateway.ts has 10.2%, need low threshold
       functions: 55,   // Current: 62.22%, set slightly below
@@ -52,9 +56,9 @@ const config: Config.InitialOptions = {
       statements: 95   // Commands are well tested (100%)
     }
   },
-  // Configuration pour les rapports détaillés
+  // Configuration for detailed reports
   verbose: true,
-  collectCoverage: false, // Par défaut false, activé via --coverage
+  collectCoverage: false, // Default false, enabled via --coverage
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/build/',
@@ -63,5 +67,5 @@ const config: Config.InitialOptions = {
   ]
 };
 
-// Utiliser export default au lieu de module.exports pour les modules ESM
+// Use export default instead of module.exports for ESM modules
 export default config;
