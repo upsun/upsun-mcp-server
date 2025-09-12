@@ -1,0 +1,24 @@
+name: 'Setup Node.js Project'
+description: 'Setup Node.js, cache dependencies and install them for the project'
+
+inputs:
+  node-version:
+    description: 'Node.js version to use'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+      
+    - name: Setup Node.js ${{ inputs.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+        cache-dependency-path: upsun-mcp/package-lock.json
+        
+    - name: Install dependencies
+      shell: bash
+      run: |
+        cd upsun-mcp
+        npm ci

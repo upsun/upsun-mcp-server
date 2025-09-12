@@ -203,12 +203,10 @@ export class GatewayServer<A extends McpAdapter> {
 
         if (!bearer && !apiKey) {
           httpLog.warn('Rejecting request: No bearer token or API key found in existing session');
-          res
-            .status(401)
-            .json({
-              error: 'missing_token',
-              hint: 'Bearer token (Authorization header) or API key (upsun-api-token header) required',
-            });
+          res.status(401).json({
+            error: 'missing_token',
+            hint: 'Bearer token (Authorization header) or API key (upsun-api-token header) required',
+          });
           return;
         }
 
@@ -227,12 +225,10 @@ export class GatewayServer<A extends McpAdapter> {
 
         if (!bearer && !apiKey) {
           httpLog.warn('Rejecting initialization: No bearer token or API key found');
-          res
-            .status(401)
-            .json({
-              error: 'missing_token',
-              hint: 'Bearer token (Authorization header) or API key (upsun-api-token header) required for initialization',
-            });
+          res.status(401).json({
+            error: 'missing_token',
+            hint: 'Bearer token (Authorization header) or API key (upsun-api-token header) required for initialization',
+          });
           return;
         }
 
@@ -424,12 +420,10 @@ export class GatewayServer<A extends McpAdapter> {
         const bearer = extractBearerToken(req);
         const apiKey = extractApiKey(req);
         if (!bearer && !apiKey) {
-          res
-            .status(401)
-            .json({
-              error: 'missing_token',
-              hint: 'Bearer token required in Authorization header',
-            });
+          res.status(401).json({
+            error: 'missing_token',
+            hint: 'Bearer token required in Authorization header',
+          });
           return;
         }
 
