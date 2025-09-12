@@ -136,6 +136,7 @@ export class Response {
    * @param json - The object to serialize as JSON
    * @returns A CallToolResult object containing the JSON string
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static json(json: any): CallToolResult {
     return {
       content: [{

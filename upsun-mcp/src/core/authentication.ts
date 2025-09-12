@@ -227,6 +227,7 @@ export function requireBearerToken(req: express.Request, res: express.Response, 
   }
 
   // Attach token to request for later use
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (req as any).bearerToken = validation.token;
   next();
 }

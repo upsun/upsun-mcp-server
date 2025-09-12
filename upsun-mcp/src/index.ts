@@ -5,8 +5,10 @@ import { UpsunMcpServer } from './mcpUpsun.js';
 
 dotenv.config();
 
+const typeInstance = process.env.TYPE_ENV || 'remote';
+
 //TODO: Use argument for select start mode
-if (false) {
+if (typeInstance === 'local') {
   // STDIO
   const local = new LocalServer(UpsunMcpServer);
   local.listen()
