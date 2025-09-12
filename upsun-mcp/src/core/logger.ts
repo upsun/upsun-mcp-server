@@ -20,7 +20,7 @@ export interface Logger {
 }
 
 // Configure logging level based on environment
-const getLogLevel = (): LogLevel => {
+export const getLogLevel = (): LogLevel => {
   const env = process.env.NODE_ENV || 'development';
   const logLevel = process.env.LOG_LEVEL?.toUpperCase();
 
@@ -51,7 +51,7 @@ const getLogLevel = (): LogLevel => {
 };
 
 // Convert our LogLevel to Pino level
-const toPinoLevel = (level: LogLevel): pino.LevelWithSilent => {
+export const toPinoLevel = (level: LogLevel): pino.LevelWithSilent => {
   switch (level) {
     case LogLevel.DEBUG:
       return 'debug';

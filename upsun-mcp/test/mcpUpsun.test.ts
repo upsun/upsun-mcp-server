@@ -1,3 +1,19 @@
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+
+describe('UpsunMcpServer', () => {
+  it('should use default MCP server if none provided', async () => {
+    const { UpsunMcpServer } = await import('../src/mcpUpsun.js');
+    const server = new UpsunMcpServer();
+    expect(server.server).toBeInstanceOf(McpServer);
+  });
+
+  it('should use provided MCP server instance', async () => {
+    const { UpsunMcpServer } = await import('../src/mcpUpsun.js');
+    const customServer = new McpServer({ name: 'custom', version: '1.2.3' });
+    const server = new UpsunMcpServer(customServer);
+    expect(server.server).toBe(customServer);
+  });
+});
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 

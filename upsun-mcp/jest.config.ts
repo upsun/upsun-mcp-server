@@ -38,23 +38,23 @@ const config: Config.InitialOptions = {
   ],
   coverageThreshold: {
     global: {
-      // branches: 40,    // Temporarily disabled due to Jest calculation issue
-      functions: 80, // Current: 84.25%, keep current good level
-      lines: 60, // Current: 67.94%, set below to allow fluctuation
-      statements: 60, // Current: 68.19%, set below to allow fluctuation
+      branches: 50,
+      functions: 80,
+      lines: 70,
+      statements: 70,
     },
     // Specific thresholds per folder - adjusted according to real metrics
     './src/core/': {
-      branches: 35, // gateway.ts has 10.2%, need low threshold
-      functions: 55, // Current: 62.22%, set slightly below
-      lines: 35, // Current: 42.12%, set below
-      statements: 35, // Current: 42.66%, set below
+      branches: 55,
+      functions: 60,
+      lines: 50,
+      statements: 50,
     },
     './src/command/': {
-      branches: 60, // Commands have good coverage (66.66%)
-      functions: 95, // Keep high standard for business logic (100%)
-      lines: 95, // Commands are well tested (100%)
-      statements: 95, // Commands are well tested (100%)
+      branches: 60,
+      functions: 95,
+      lines: 95,
+      statements: 95,
     },
   },
   // Configuration for detailed reports
