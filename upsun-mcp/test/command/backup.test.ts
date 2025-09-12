@@ -2,6 +2,18 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
 import { McpAdapter } from "../../src/core/adapter.js";
 import { registerBackup } from "../../src/command/backup.js";
 
+// Mock the logger module
+const mockLogger = {
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn()
+};
+
+jest.mock('../../src/core/logger.js', () => ({
+  createLogger: jest.fn(() => mockLogger)
+}));
+
 // Mock the adapter
 const mockAdapter: McpAdapter = {
   client: {},
@@ -15,6 +27,12 @@ describe('Backup Command Module', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Reset logger mocks
+    mockLogger.debug.mockClear();
+    mockLogger.info.mockClear();
+    mockLogger.warn.mockClear();
+    mockLogger.error.mockClear();
     toolCallbacks = {};
     
     // Setup mock server.tool to capture callbacks
@@ -30,11 +48,10 @@ describe('Backup Command Module', () => {
 
   describe('registerBackup function', () => {
     it('should register all backup tools', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      
       
       registerBackup(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register Backup Handlers');
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(5);
       
       // Verify all tools are registered
@@ -44,7 +61,7 @@ describe('Backup Command Module', () => {
       expect(toolCallbacks['list-backup']).toBeDefined();
       expect(toolCallbacks['restore-backup']).toBeDefined();
       
-      consoleSpy.mockRestore();
+      
     });
 
     it('should register tools with correct names and descriptions', () => {

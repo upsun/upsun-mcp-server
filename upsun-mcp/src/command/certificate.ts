@@ -9,6 +9,10 @@
 import { McpAdapter } from "../core/adapter.js";
 import { Response, Schema } from "../core/helper.js";
 import { z } from "zod";
+import { createLogger } from '../core/logger.js';
+
+// Create logger for certificate operations
+const log = createLogger('MCP:Tool:certificate-commands');
 
 /**
  * Registers certificate management tools with the MCP server.
@@ -31,7 +35,7 @@ import { z } from "zod";
  * ```
  */
 export function registerCertificate(adapter: McpAdapter): void {
-  console.log(`[MCP] Register Certificate Handlers`);
+  log.info('Register Certificate Handlers');
 
   /**
    * Tool: add-certificate
@@ -58,7 +62,8 @@ export function registerCertificate(adapter: McpAdapter): void {
       chain: z.string(),
     },
     async ({ project_id, certificate, key, chain }) => {
-      const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
+      log.debug(`Add Certificate in Project ${project_id}`);
+      const result = "TODO"; //await adapter.client.certificate.add(project_id, certificate, key, chain);
 
       return Response.json(result);
     }
@@ -84,7 +89,8 @@ export function registerCertificate(adapter: McpAdapter): void {
       certificate_id: Schema.certificateId(),
     },
     async ({ project_id, certificate_id }) => {
-      const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
+      log.debug(`Delete Certificate ${certificate_id} in Project ${project_id}`);
+      const result = "TODO"; //await adapter.client.certificate.delete(project_id, certificate_id);
 
       return Response.json(result);
     }
@@ -110,7 +116,8 @@ export function registerCertificate(adapter: McpAdapter): void {
       certificate_id: Schema.certificateId(),
     },
     async ({ project_id, certificate_id }) => {
-      const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
+      log.debug(`Get Certificate ${certificate_id} in Project ${project_id}`);
+      const result = "TODO"; //await adapter.client.certificate.get(project_id, certificate_id);
 
       return Response.json(result);
     }
@@ -134,7 +141,8 @@ export function registerCertificate(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
     },
     async ({ project_id }) => {
-      const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
+      log.debug(`List Certificates in Project ${project_id}`);
+      const result = "TODO"; //await adapter.client.certificate.list(project_id);
 
       return Response.json(result);
     }

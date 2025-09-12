@@ -1,8 +1,12 @@
 import { McpAdapter } from "../core/adapter.js";
 import { z } from "zod";
+import { createLogger } from '../core/logger.js';
+
+// Create logger for config operations
+const log = createLogger('MCP:tasks');
 
 export function registerConfig(adapter: McpAdapter): void {
-  console.log(`[MCP] Register Backup Handlers`);
+  log.info('Register Config Handlers');
 
   adapter.server.prompt(
     "generate-config",

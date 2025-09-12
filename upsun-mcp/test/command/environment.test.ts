@@ -2,6 +2,18 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
 import { McpAdapter } from "../../src/core/adapter.js";
 import { registerEnvironment } from "../../src/command/environment.js";
 
+// Mock the logger module
+const mockLogger = {
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn()
+};
+
+jest.mock('../../src/core/logger.js', () => ({
+  createLogger: jest.fn(() => mockLogger)
+}));
+
 // Mock data for testing
 const mockEnvironment = {
   id: 'env-main',
@@ -72,6 +84,12 @@ describe('Environment Command Module', () => {
     jest.clearAllMocks();
     toolCallbacks = {};
     
+    // Reset logger mocks
+    mockLogger.debug.mockClear();
+    mockLogger.info.mockClear();
+    mockLogger.warn.mockClear();
+    mockLogger.error.mockClear();
+    
     // Setup mock server.tool to capture callbacks
     // @ts-ignore
     (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: string, description: string, schema: any, callback: any) => {
@@ -98,11 +116,8 @@ describe('Environment Command Module', () => {
 
   describe('registerEnvironment function', () => {
     it('should register all environment tools', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-      
       registerEnvironment(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register Environment Handlers');
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(10);
       
       // Verify all tools are registered
@@ -116,8 +131,6 @@ describe('Environment Command Module', () => {
       expect(toolCallbacks['redeploy-environment']).toBeDefined();
       expect(toolCallbacks['resume-environment']).toBeDefined();
       expect(toolCallbacks['urls-environment']).toBeDefined();
-      
-      consoleSpy.mockRestore();
     });
 
     it('should register tools with correct names and descriptions', () => {

@@ -8,6 +8,10 @@
  */
 
 import { McpAdapter } from "../core/adapter.js";
+import { createLogger } from '../core/logger.js';
+
+// Create logger for activity operations
+const log = createLogger('MCP:Tool:activity-commands');
 import { Response, Schema } from "../core/helper.js";
 
 /**
@@ -28,7 +32,7 @@ import { Response, Schema } from "../core/helper.js";
  * ```
  */
 export function registerActivity(adapter: McpAdapter): void {
-  console.log(`[MCP] Register Activity Handlers`);
+  log.info('Register Activity Handlers');
 
   /**
    * Tool: cancel-activity
@@ -49,6 +53,7 @@ export function registerActivity(adapter: McpAdapter): void {
       activity_id: Schema.activityId(),
     },
     async ({ project_id, activity_id }) => {
+      log.debug(`Cancel Activity ${activity_id} in Project ${project_id}`);
       const result = await adapter.client.activity.cancel(project_id, activity_id);
 
       return Response.json(result);
@@ -73,6 +78,7 @@ export function registerActivity(adapter: McpAdapter): void {
       activity_id: Schema.activityId(),
     },
     async ({ project_id, activity_id }) => {
+      log.debug(`Get Activity ${activity_id} in Project ${project_id}`);
       const result = await adapter.client.activity.get(project_id, activity_id);
 
       return Response.json(result);
@@ -96,6 +102,7 @@ export function registerActivity(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
     },
     async ({ project_id }) => {
+      log.debug(`List Activities in Project ${project_id}`);
       const result = await adapter.client.activity.list(project_id);
 
       return Response.json(result);
@@ -121,6 +128,7 @@ export function registerActivity(adapter: McpAdapter): void {
       activity_id: Schema.activityId(),
     },
     async ({ project_id, activity_id }) => {
+      log.debug(`Get Logs for Activity ${activity_id} in Project ${project_id}`);
       const result = await adapter.client.activity.log(project_id, activity_id);
 
       return Response.json(result);

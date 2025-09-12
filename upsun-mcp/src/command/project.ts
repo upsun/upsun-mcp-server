@@ -8,6 +8,10 @@
 
 import { SubscriptionStatusEnum } from "upsun-sdk-node/dist/apis-gen/models/Subscription.js";
 import { McpAdapter } from "../core/adapter.js";
+import { createLogger } from '../core/logger.js';
+
+// Create logger for project operations
+const log = createLogger('MCP:Tool:project-commands');
 import { Response, Schema } from "../core/helper.js";
 import { z } from "zod";
 
@@ -30,7 +34,7 @@ import { z } from "zod";
  * ```
  */
 export function registerProject(adapter: McpAdapter): void {
-  console.log(`[MCP] Register Project Handlers`);
+  log.info('Register Project Handlers');
 
   /**
    * Tool: create-project
@@ -51,12 +55,13 @@ export function registerProject(adapter: McpAdapter): void {
       default_branch: z.string().default("main").optional()
     },
     async ({ organization_id, name, default_branch }) => {
+      log.debug(`Create Project: ${name} in Organization: ${organization_id}`);
       const region_host = "eu-5.platform.sh";
       const subCreated = await adapter.client.project.create(organization_id, region_host, name, default_branch); // region, default_branch
 
       let prjCreated = await adapter.client.project.getSubscription(organization_id, subCreated.id || "");
       while (prjCreated.status !== SubscriptionStatusEnum.Active) {
-        console.log("Waiting for project to be active...");
+        log.info("Waiting for project to be active...");
         await delay(10000);
         prjCreated = await adapter.client.project.getSubscription(organization_id, subCreated.id || "");
       }
@@ -81,6 +86,7 @@ export function registerProject(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
     },
     async ({ project_id }) => {
+      log.debug(`Delete Project: ${project_id}`);
       const result = await adapter.client.project.delete(project_id);
 
       return Response.json(result);
@@ -103,6 +109,7 @@ export function registerProject(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
     },
     async ({ project_id }) => {
+      log.debug(`Get Information of Project: ${project_id}`);
       const result = await adapter.client.project.info(project_id);
 
       return Response.json(result);
@@ -125,14 +132,15 @@ export function registerProject(adapter: McpAdapter): void {
       organization_id: Schema.organizationId(),
     },
     async ({ organization_id }) => {
+      log.debug(`List all my projects in Organization: ${organization_id}`);
       const result = await adapter.client.project.list(organization_id);
 
       return Response.json(result);
     }
   );
-
 }
-function delay(ms: number) {
+
+function delay(ms: number): Promise<void> {
   return new Promise( resolve => setTimeout(resolve, ms) );
 }
 

@@ -8,6 +8,11 @@
 
 import { McpAdapter } from "../core/adapter.js";
 import { Response, Schema } from "../core/helper.js";
+import { z } from "zod";
+import { createLogger } from '../core/logger.js';
+
+// Create logger for domain operations
+const log = createLogger('MCP:Tool:domain-commands');
 
 /**
  * Registers domain management tools with the MCP server.
@@ -31,7 +36,7 @@ import { Response, Schema } from "../core/helper.js";
  * ```
  */
 export function registerDomain(adapter: McpAdapter): void {
-  console.log(`[MCP] Register Domain Handlers`);
+  log.info('Register Domain Handlers');
 
   /**
    * Tool: add-domain
@@ -54,7 +59,8 @@ export function registerDomain(adapter: McpAdapter): void {
       domain_name: Schema.domainName(),
     },
     async ({ project_id, domain_name }) => {
-      const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
+      log.debug(`Add Domain ${domain_name} to Project ${project_id}`);
+      const result = "TODO"; //await adapter.client.domain.add(project_id, domain_name);
 
       return Response.json(result);
     }
@@ -80,7 +86,8 @@ export function registerDomain(adapter: McpAdapter): void {
       domain_name: Schema.domainName(),
     },
     async ({ project_id, domain_name }) => {
-      const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
+      log.debug(`Delete Domain ${domain_name} from Project ${project_id}`);
+      const result = "TODO"; //await adapter.client.domain.delete(project_id, domain_name);
 
       return Response.json(result);
     }
@@ -106,7 +113,8 @@ export function registerDomain(adapter: McpAdapter): void {
       domain_name: Schema.domainName(),
     },
     async ({ project_id, domain_name }) => {
-      const result = "TODO"; //await adapter.client.backup.list(project_id, environment_name);
+      log.debug(`Get Domain ${domain_name} in Project ${project_id}`);
+      const result = "TODO"; //await adapter.client.domain.get(project_id, domain_name);
 
       return Response.json(result);
     }
@@ -130,7 +138,8 @@ export function registerDomain(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
     },
     async ({ project_id }) => {
-      const result = "TODO"; //await adapter.client.backup.list(project_id, environment_name);
+      log.debug(`List Domains in Project ${project_id}`);
+      const result = "TODO"; //await adapter.client.domain.list(project_id);
 
       return Response.json(result);
     }
@@ -156,7 +165,8 @@ export function registerDomain(adapter: McpAdapter): void {
       domain_name: Schema.domainName(),
     },
     async ({ project_id, domain_name }) => {
-      const result = "TODO"; //await adapter.client.backup.list(project_id, environment_name);
+      log.debug(`Update Domain ${domain_name} in Project ${project_id}`);
+      const result = "TODO"; //await adapter.client.domain.update(project_id, domain_name);
 
       return Response.json(result);
     }

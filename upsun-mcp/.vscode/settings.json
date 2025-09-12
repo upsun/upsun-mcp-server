@@ -1,9 +1,0 @@
-{
-  "typescript.preferences.includePackageJsonAutoImports": "on",
-  "typescript.preferences.allowIncompleteCompletions": true,
-  "typescript.suggest.includeAutomaticOptionalChainCompletions": true,
-  "files.associations": {
-    "*.test.ts": "typescript"
-  },
-  "typescript.preferences.includeCompletionsForModuleExports": true
-}

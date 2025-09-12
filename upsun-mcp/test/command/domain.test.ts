@@ -2,6 +2,18 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
 import { McpAdapter } from "../../src/core/adapter.js";
 import { registerDomain } from "../../src/command/domain.js";
 
+// Mock the logger module
+const mockLogger = {
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn()
+};
+
+jest.mock('../../src/core/logger.js', () => ({
+  createLogger: jest.fn(() => mockLogger)
+}));
+
 // Mock the adapter
 const mockAdapter: McpAdapter = {
   client: {},
@@ -17,8 +29,14 @@ describe('Domain Command Module', () => {
     jest.clearAllMocks();
     toolCallbacks = {};
     
+    // Reset logger mocks
+    mockLogger.debug.mockClear();
+    mockLogger.info.mockClear();
+    mockLogger.warn.mockClear();
+    mockLogger.error.mockClear();
+    
     // Setup mock server.tool to capture callbacks
-    mockAdapter.server.tool = jest.fn().mockImplementation((name: string, description: string, schema: any, callback: any) => {
+    (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: string, description: string, schema: any, callback: any) => {
       toolCallbacks[name] = callback;
       return mockAdapter.server;
     });
@@ -30,11 +48,8 @@ describe('Domain Command Module', () => {
 
   describe('registerDomain function', () => {
     it('should register all domain tools', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      
       registerDomain(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register Domain Handlers');
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(5);
       
       // Verify all tools are registered
@@ -43,8 +58,6 @@ describe('Domain Command Module', () => {
       expect(toolCallbacks['get-domain']).toBeDefined();
       expect(toolCallbacks['list-domain']).toBeDefined();
       expect(toolCallbacks['update-domain']).toBeDefined();
-      
-      consoleSpy.mockRestore();
     });
 
     it('should register tools with correct names and descriptions', () => {

@@ -1,5 +1,6 @@
 /**
- * @fileoverview SSH key management command module for Upsun MCP server.
+ * @fileoverview SSH key manageexport function registerSSH(adapter: McpAdapter): void {
+  log.info('Register SSH keys Handlers');nt command module for Upsun MCP server.
  * 
  * This module provides MCP tools for managing SSH keys for Upsun accounts.
  * SSH keys allow secure access to project environments for Git operations,
@@ -9,6 +10,10 @@
 import { McpAdapter } from "../core/adapter.js";
 import { Response, Schema } from "../core/helper.js";
 import { z } from "zod";
+import { createLogger } from '../core/logger.js';
+
+// Create logger for SSH operations
+const log = createLogger('MCP:Tool:ssh-commands');
 
 /**
  * Registers SSH key management tools with the MCP server.
@@ -30,7 +35,7 @@ import { z } from "zod";
  * ```
  */
 export function registerSshKey(adapter: McpAdapter): void {
-  console.log(`[MCP] Register SSH keys Handlers`);
+  log.info('Register SSH keys Handlers');
 
   /**
    * Tool: add-sshkey
@@ -54,6 +59,7 @@ export function registerSshKey(adapter: McpAdapter): void {
       key_id: z.string(),
     },
     async ({ user_id, ssh_key, key_id }) => {
+      log.debug(`Add SSH Key for User: ${user_id}, Key ID: ${key_id}`);
       const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
 
       return Response.json(result);
@@ -81,6 +87,7 @@ export function registerSshKey(adapter: McpAdapter): void {
       key_id: z.string(),
     },
     async ({ user_id, key_id }) => {
+      log.debug(`Delete SSH Key for User: ${user_id}, Key ID: ${key_id}`);
       const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
 
       return Response.json(result);
@@ -105,6 +112,7 @@ export function registerSshKey(adapter: McpAdapter): void {
       user_id: z.string(),
     },
     async ({ user_id }) => {
+      log.debug(`List SSH Keys for User: ${user_id}`);
       const result = "TODO"; //await adapter.client.backup.create(project_id, environment_name);
 
       return Response.json(result);

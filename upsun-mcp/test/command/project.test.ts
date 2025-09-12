@@ -2,6 +2,18 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
 import { McpAdapter } from "../../src/core/adapter.js";
 import { registerProject } from "../../src/command/project.js";
 
+// Mock the logger module
+const mockLogger = {
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn()
+};
+
+jest.mock('../../src/core/logger.js', () => ({
+  createLogger: jest.fn(() => mockLogger)
+}));
+
 // Mock data for testing
 const mockProject = {
   id: 'test-project-13',
@@ -63,6 +75,12 @@ describe('Project Command Module', () => {
     jest.clearAllMocks();
     toolCallbacks = {};
     
+    // Reset logger mocks
+    mockLogger.debug.mockClear();
+    mockLogger.info.mockClear();
+    mockLogger.warn.mockClear();
+    mockLogger.error.mockClear();
+    
     // Setup mock server.tool to capture callbacks
     (mockAdapter.server.tool as jest.Mock) = jest.fn().mockImplementation((...args: any[]) => {
       const [name, , , callback] = args;
@@ -87,8 +105,6 @@ describe('Project Command Module', () => {
 
   describe('registerProject function', () => {
     it('should register all project tools', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-      
       // Reset mock call count before testing
       jest.clearAllMocks();
       (mockAdapter.server.tool as jest.Mock) = jest.fn().mockImplementation((...args: any[]) => {
@@ -99,7 +115,6 @@ describe('Project Command Module', () => {
       
       registerProject(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register Project Handlers');
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(4);
       
       // Verify all tools are registered
@@ -107,8 +122,6 @@ describe('Project Command Module', () => {
       expect(toolCallbacks['delete-project']).toBeDefined();
       expect(toolCallbacks['info-project']).toBeDefined();
       expect(toolCallbacks['list-project']).toBeDefined();
-      
-      consoleSpy.mockRestore();
     });
 
     it('should register tools with correct names and descriptions', () => {

@@ -2,6 +2,18 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
 import { McpAdapter } from "../../src/core/adapter.js";
 import { registerCertificate } from "../../src/command/certificate.js";
 
+// Mock the logger module
+const mockLogger = {
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn()
+};
+
+jest.mock('../../src/core/logger.js', () => ({
+  createLogger: jest.fn(() => mockLogger)
+}));
+
 // Mock the adapter
 const mockAdapter: McpAdapter = {
   client: {},
@@ -15,6 +27,12 @@ describe('Certificate Command Module', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Reset logger mocks
+    mockLogger.debug.mockClear();
+    mockLogger.info.mockClear();
+    mockLogger.warn.mockClear();
+    mockLogger.error.mockClear();
     toolCallbacks = {};
     
     // Setup mock server.tool to capture callbacks
@@ -30,11 +48,10 @@ describe('Certificate Command Module', () => {
 
   describe('registerCertificate function', () => {
     it('should register all certificate tools', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      
       
       registerCertificate(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register Certificate Handlers');
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(4);
       
       // Verify all tools are registered
@@ -43,7 +60,7 @@ describe('Certificate Command Module', () => {
       expect(toolCallbacks['get-certificate']).toBeDefined();
       expect(toolCallbacks['list-certificate']).toBeDefined();
       
-      consoleSpy.mockRestore();
+      
     });
 
     it('should register tools with correct names and descriptions', () => {

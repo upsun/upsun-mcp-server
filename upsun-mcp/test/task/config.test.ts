@@ -2,6 +2,18 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
 import { McpAdapter } from "../../src/core/adapter.js";
 import { registerConfig } from "../../src/task/config.js";
 
+// Mock the logger module
+const mockLogger = {
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn()
+};
+
+jest.mock('../../src/core/logger.js', () => ({
+  createLogger: jest.fn(() => mockLogger)
+}));
+
 // Mock data for testing
 const mockPromptCallbacks: Record<string, (args: any) => any> = {};
 
@@ -21,6 +33,12 @@ describe('Config Task Module', () => {
     // Clear prompt callbacks
     Object.keys(mockPromptCallbacks).forEach(key => delete mockPromptCallbacks[key]);
     
+    // Reset logger mocks
+    mockLogger.debug.mockClear();
+    mockLogger.info.mockClear();
+    mockLogger.warn.mockClear();
+    mockLogger.error.mockClear();
+    
     // Set up the mock to capture callbacks correctly
     (mockAdapter.server.prompt as jest.Mock).mockImplementation((...args: any[]) => {
       const [name, , , callback] = args;
@@ -35,11 +53,8 @@ describe('Config Task Module', () => {
 
   describe('registerConfig function', () => {
     it('should register all config prompts', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-      
       registerConfig(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register Backup Handlers');
       expect(mockAdapter.server.prompt).toHaveBeenCalledTimes(4);
       
       // Verify all prompts are registered
@@ -47,8 +62,6 @@ describe('Config Task Module', () => {
       expect(mockPromptCallbacks['init-config']).toBeDefined();
       expect(mockPromptCallbacks['add-domain']).toBeDefined();
       expect(mockPromptCallbacks['add-variable']).toBeDefined();
-      
-      consoleSpy.mockRestore();
     });
 
     it('should register prompts with correct names and descriptions', () => {

@@ -9,6 +9,10 @@
 import { McpAdapter } from "../core/adapter.js";
 import { Response, Schema } from "../core/helper.js";
 import { z } from "zod";
+import { createLogger } from '../core/logger.js';
+
+// Create logger for route operations
+const log = createLogger('MCP:Tool:route-commands');
 
 /**
  * Registers route management tools with the MCP server.
@@ -27,7 +31,7 @@ import { z } from "zod";
  * ```
  */
 export function registerRoute(adapter: McpAdapter): void {
-  console.log(`[MCP] Register Route Handlers`);
+  log.info('Register Route Handlers');
 
   /**
    * Tool: get-route
@@ -49,6 +53,7 @@ export function registerRoute(adapter: McpAdapter): void {
       route_id: z.string().optional(),
     },
     async ({ project_id, environment_name, route_id }) => {
+      log.debug(`Get Route: ${route_id || 'primary'} in Environment: ${environment_name} of Project: ${project_id}`);
       const result = (await adapter.client.route.get(project_id, environment_name, route_id || ''));
 
       return Response.json(result);
@@ -73,6 +78,7 @@ export function registerRoute(adapter: McpAdapter): void {
       environment_name: Schema.environmentName(),
     },
     async ({ project_id, environment_name }) => {
+      log.debug(`List Routes in Environment: ${environment_name} of Project: ${project_id}`);
       const result = await adapter.client.route.list(project_id, environment_name);
 
       return Response.json(result);
@@ -96,6 +102,7 @@ export function registerRoute(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
     },
     async ({ project_id }) => {
+      log.debug(`Get Console URL of Project: ${project_id}`);
       // const result = (await adapter.client.route.web(project_id)).ui;
       const result = "Not implemented";
       return Response.json(result);

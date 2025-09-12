@@ -2,6 +2,18 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
 import { McpAdapter } from "../../src/core/adapter.js";
 import { registerActivity } from "../../src/command/activity.js";
 
+// Mock the logger module
+const mockLogger = {
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn()
+};
+
+jest.mock('../../src/core/logger.js', () => ({
+  createLogger: jest.fn(() => mockLogger)
+}));
+
 // Mock data for testing
 const mockActivity = {
   id: 'test-activity-123',
@@ -61,6 +73,12 @@ describe('Activity Command Module', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Reset logger mocks
+    mockLogger.debug.mockClear();
+    mockLogger.info.mockClear();
+    mockLogger.warn.mockClear();
+    mockLogger.error.mockClear();
     toolCallbacks = {};
     
     // Setup mock server.tool to capture callbacks
@@ -82,11 +100,10 @@ describe('Activity Command Module', () => {
 
   describe('registerActivity function', () => {
     it('should register all activity tools', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      
       
       registerActivity(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register Activity Handlers');
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(4);
       
       // Verify all tools are registered
@@ -95,7 +112,7 @@ describe('Activity Command Module', () => {
       expect(toolCallbacks['list-activity']).toBeDefined();
       expect(toolCallbacks['log-activity']).toBeDefined();
       
-      consoleSpy.mockRestore();
+      
     });
 
     it('should register tools with correct names and descriptions', () => {

@@ -2,6 +2,18 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
 import { McpAdapter } from "../../src/core/adapter.js";
 import { registerSshKey } from "../../src/command/ssh.js";
 
+// Mock the logger module
+const mockLogger = {
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn()
+};
+
+jest.mock('../../src/core/logger.js', () => ({
+  createLogger: jest.fn(() => mockLogger)
+}));
+
 // Mock the adapter
 const mockAdapter: McpAdapter = {
   client: {},
@@ -17,8 +29,14 @@ describe('SSH Key Command Module', () => {
     jest.clearAllMocks();
     toolCallbacks = {};
     
+    // Reset logger mocks
+    mockLogger.debug.mockClear();
+    mockLogger.info.mockClear();
+    mockLogger.warn.mockClear();
+    mockLogger.error.mockClear();
+    
     // Setup mock server.tool to capture callbacks
-    mockAdapter.server.tool = jest.fn().mockImplementation((name: string, description: string, schema: any, callback: any) => {
+    (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: string, description: string, schema: any, callback: any) => {
       toolCallbacks[name] = callback;
       return mockAdapter.server;
     });
@@ -30,19 +48,14 @@ describe('SSH Key Command Module', () => {
 
   describe('registerSshKey function', () => {
     it('should register all SSH key tools', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      
       registerSshKey(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register SSH keys Handlers');
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(3);
       
       // Verify all tools are registered
       expect(toolCallbacks['add-sshkey']).toBeDefined();
       expect(toolCallbacks['delete-sshkey']).toBeDefined();
       expect(toolCallbacks['list-sshkey']).toBeDefined();
-      
-      consoleSpy.mockRestore();
     });
 
     it('should register tools with correct names and descriptions', () => {

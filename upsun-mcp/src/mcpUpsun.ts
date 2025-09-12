@@ -4,6 +4,10 @@ import { UpsunClient, UpsunConfig } from "upsun-sdk-node";
 
 import * as pjson from '../package.json' with { type: 'json' };
 import { McpAdapter } from "./core/adapter.js";
+import { createLogger } from './core/logger.js';
+
+// Create logger for MCP operations
+const log = createLogger('mcp-server');
 
 import {
   registerActivity,
@@ -120,7 +124,7 @@ export class UpsunMcpServer implements McpAdapter {
    * ```
    */
   connectWithBearer(transport: Transport, bearerToken: string): Promise<void> {
-    console.log('[MCP] Connecting with Bearer token authentication');
+    log.info('Connecting with Bearer token authentication');
     this.client = new UpsunClient();
     this.client.setBearerToken(bearerToken);
     return this.server.connect(transport);
@@ -146,7 +150,7 @@ export class UpsunMcpServer implements McpAdapter {
    * ```
    */
   connectWithApiKey(transport: Transport, apiKey: string): Promise<void> {
-    console.log('[MCP] Connecting with API key authentication');
+    log.info('Connecting with API key authentication');
     // TODO: Different processing for API key will be handled in Upsun client library
     this.client = new UpsunClient({ apiKey } as UpsunConfig);
     return this.server.connect(transport);

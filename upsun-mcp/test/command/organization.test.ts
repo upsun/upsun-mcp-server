@@ -2,6 +2,18 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
 import { McpAdapter } from "../../src/core/adapter.js";
 import { registerOrganization } from "../../src/command/organization.js";
 
+// Mock the logger module
+const mockLogger = {
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn()
+};
+
+jest.mock('../../src/core/logger.js', () => ({
+  createLogger: jest.fn(() => mockLogger)
+}));
+
 // Mock data for testing
 const mockOrganization = {
   id: '123456789012345678901234567',
@@ -59,6 +71,12 @@ describe('Organization Command Module', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Reset logger mocks
+    mockLogger.debug.mockClear();
+    mockLogger.info.mockClear();
+    mockLogger.warn.mockClear();
+    mockLogger.error.mockClear();
     toolCallbacks = {};
     
     // Setup mock server.tool to capture callbacks
@@ -80,11 +98,10 @@ describe('Organization Command Module', () => {
 
   describe('registerOrganization function', () => {
     it('should register all organization tools', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      
       
       registerOrganization(mockAdapter);
       
-      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register Organization Handlers');
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(4);
       
       // Verify all tools are registered
@@ -93,7 +110,7 @@ describe('Organization Command Module', () => {
       expect(toolCallbacks['info-organization']).toBeDefined();
       expect(toolCallbacks['list-organization']).toBeDefined();
       
-      consoleSpy.mockRestore();
+      
     });
 
     it('should register tools with correct names and descriptions', () => {

@@ -1,4 +1,8 @@
 import express from "express";
+import { createLogger } from './logger.js';
+
+// Create logger instance
+const log = createLogger('Auth');
 
 /**
  * Centralized authentication utilities for OAuth2 and Bearer token management.
@@ -49,7 +53,7 @@ export interface OAuth2AuthorizationServerMetadata {
   token_endpoint_auth_methods_supported: string[];
   code_challenge_methods_supported: string[];
   // Hack for Dynamic Client Registration (not standard)
-  registration_endpoint: string;
+  //registration_endpoint: string;
 }
 
 /**
@@ -77,7 +81,7 @@ export function createAuthorizationServerMetadata(config: OAuth2Config): OAuth2A
     grant_types_supported: ['authorization_code'],
     token_endpoint_auth_methods_supported: ['none', 'client_secret_basic'],
     code_challenge_methods_supported: ['S256'],
-    registration_endpoint: `${config.baseUrl}/register`
+    //registration_endpoint: `${config.baseUrl}/register`
   });
 }
 
@@ -101,7 +105,7 @@ export function createProtectedResourceMetadata(config: OAuth2Config): OAuth2Pro
  * @param config - Optional OAuth2 configuration (uses default if not provided)
  */
 export function setupOAuth2Direct(app: express.Application, config?: OAuth2Config): void {
-  console.debug('[Auth] OAuth2 metadata setup initiated...');
+  log.debug('OAuth2 metadata setup initiated...');
   const oauth2Config = config || getOAuth2Config();
   const authServerMetadata = createAuthorizationServerMetadata(oauth2Config);
   const protectedResourceMetadata = createProtectedResourceMetadata(oauth2Config);
@@ -129,9 +133,9 @@ export function setupOAuth2Direct(app: express.Application, config?: OAuth2Confi
     });
   });
 
-  console.log(` OAuth2 metadata configured automatically`);
-  console.log(`  - Authorization Server: ${oauth2Config.issuerUrl}`);
-  console.log(`  - Resource Server: ${oauth2Config.baseUrl}`);
+  log.info('OAuth2 - Metadata configured automatically');
+  log.info(`OAuth2 - Authorization Server: ${oauth2Config.issuerUrl}`);
+  log.info(`OAuth2 - Resource Server: ${oauth2Config.baseUrl}`);
 }
 
 /**
@@ -141,19 +145,16 @@ export function setupOAuth2Direct(app: express.Application, config?: OAuth2Confi
  * @returns Bearer token string if found, undefined otherwise
  */
 export function extractBearerToken(req: express.Request): string | undefined {
-  // console.log('=== DEBUG extractBearerToken ===');
-  // console.log('Headers:', JSON.stringify(req.headers, null, 2));
-
   const authHeader = req.headers['authorization'] || req.headers['Authorization'];
-  // console.log('Authorization header:', authHeader);
+  log.debug('Authorization header:', authHeader);
 
   if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring('Bearer '.length).trim();
-    console.log('[Auth] Extracted token:', token ? `${token.substring(0, 10)}...` : 'empty');
+    log.debug('Extracted token:', token ? `${token.substring(0, 10)}...` : 'empty');
     if (token) return token;
   }
 
-  console.info('[Auth] No valid Bearer token found');
+  log.warn('No valid Bearer token found');
   return undefined;
 }
 
@@ -239,14 +240,17 @@ export function requireBearerToken(req: express.Request, res: express.Response, 
  */
 export function extractApiKey(req: express.Request,
   headerName: string = 'upsun-api-token'): string | undefined {
+  const authHeader = req.headers[headerName];
   const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
+  log.debug('Authorization header:', authHeader);
 
-  if (!req.headers[headerName]) {
+  if (!authHeader) {
+    log.warn('No valid API key found');
     return undefined;
   }
 
-  const apiKey = req.headers[headerName] as string;
-  console.log(`[Auth] Authenticate from ${ip} with API key: ${apiKey.substring(0, 5)}xxxxxxx`);
+  const apiKey = authHeader as string;
+  log.debug(`Authenticate from ${ip} with API key: ${apiKey.substring(0, 5)}xxxxxxx`);
   return apiKey;
 }
 

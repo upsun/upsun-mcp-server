@@ -2,6 +2,18 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
 import { McpAdapter } from "../../src/core/adapter.js";
 import { registerRoute } from "../../src/command/route.js";
 
+// Mock the logger module
+const mockLogger = {
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn()
+};
+
+jest.mock('../../src/core/logger.js', () => ({
+  createLogger: jest.fn(() => mockLogger)
+}));
+
 // Mock the adapter
 const mockAdapter: McpAdapter = {
   client: {
@@ -23,12 +35,21 @@ describe('Route Command Module', () => {
     jest.clearAllMocks() as any;
     toolCallbacks = {};
     
+    // Reset logger mocks
+    mockLogger.debug.mockClear();
+    mockLogger.info.mockClear();
+    mockLogger.warn.mockClear();
+    mockLogger.error.mockClear();
+    
     // Setup mock server.tool to capture callbacks
     // @ts-ignore
     mockAdapter.server.tool = jest.fn().mockImplementation((name: string, description: string, schema: any, callback: any) => {
       toolCallbacks[name] = callback;
       return mockAdapter.server;
     }) as any;
+    
+    // Register routes to populate toolCallbacks
+    registerRoute(mockAdapter) as any;
   });
 
   afterEach(() => {
@@ -37,24 +58,17 @@ describe('Route Command Module', () => {
 
   describe('registerRoute function', () => {
     it('should register all route tools', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {}) as any;
-      
-      registerRoute(mockAdapter) as any;
-      
-      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Register Route Handlers') as any;
+      // Don't call registerRoute again since it's already called in beforeEach
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(3) as any;
       
       // Verify all tools are registered
       expect(toolCallbacks['get-route']).toBeDefined() as any;
       expect(toolCallbacks['list-route']).toBeDefined() as any;
       expect(toolCallbacks['get-console']).toBeDefined() as any;
-      
-      consoleSpy.mockRestore() as any;
-    }) as any;
+    });
 
     it('should register tools with correct names and descriptions', () => {
-      registerRoute(mockAdapter) as any;
-      
+      // Don't call registerRoute again since it's already called in beforeEach
       const calls = (mockAdapter.server.tool as jest.Mock).mock.calls;
       
       expect(calls[0]).toEqual([
@@ -77,13 +91,10 @@ describe('Route Command Module', () => {
         expect.any(Object),
         expect.any(Function)
       ]) as any;
-    }) as any;
-  }) as any;
+    });
+  });
 
   describe('get-route tool', () => {
-    beforeEach(() => {
-      registerRoute(mockAdapter) as any;
-    }) as any;
 
     it('should get route with route_id', async () => {
       const mockRouteData = {
@@ -203,9 +214,6 @@ describe('Route Command Module', () => {
   }) as any;
 
   describe('list-route tool', () => {
-    beforeEach(() => {
-      registerRoute(mockAdapter) as any;
-    }) as any;
 
     it('should list all routes for environment', async () => {
       const mockRoutesData = [
@@ -299,9 +307,6 @@ describe('Route Command Module', () => {
   }) as any;
 
   describe('get-console tool', () => {
-    beforeEach(() => {
-      registerRoute(mockAdapter) as any;
-    }) as any;
 
     it('should get console URL for project', async () => {
       const mockWebData = {
@@ -378,9 +383,6 @@ describe('Route Command Module', () => {
   }) as any;
 
   describe('error handling and edge cases', () => {
-    beforeEach(() => {
-      registerRoute(mockAdapter) as any;
-    }) as any;
 
     it('should handle API errors for get-route', async () => {
       const error = new Error('Route not found') as any;
@@ -494,4 +496,4 @@ describe('Route Command Module', () => {
       }) as any;
     }) as any;
   }) as any;
-}) as any;
+});

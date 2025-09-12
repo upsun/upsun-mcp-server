@@ -12,6 +12,10 @@
 
 import { McpAdapter } from "../core/adapter.js";
 import { Response, Schema } from "../core/helper.js";
+import { createLogger } from '../core/logger.js';
+
+// Create logger for organization operations
+const log = createLogger('MCP:Tool:organization-commands');
 
 /**
  * Registers organization management tools with the MCP server.
@@ -31,7 +35,7 @@ import { Response, Schema } from "../core/helper.js";
  * ```
  */
 export function registerOrganization(adapter: McpAdapter): void {
-  console.log(`[MCP] Register Organization Handlers`);
+  log.info('Register Organization Handlers');
 
   /**
    * Tool: create-organization
@@ -49,6 +53,7 @@ export function registerOrganization(adapter: McpAdapter): void {
       organization_name: Schema.organizationName(),
     },
     async ({ organization_name }) => {
+      log.debug(`Create Organization: ${organization_name}`);
       const result = await adapter.client.organization.create(organization_name);
 
       return Response.json(result);
@@ -72,6 +77,7 @@ export function registerOrganization(adapter: McpAdapter): void {
       organization_id: Schema.organizationId(),
     },
     async ({ organization_id }) => {
+      log.debug(`Delete Organization: ${organization_id}`);
       const result = await adapter.client.organization.delete(organization_id);
 
       return Response.json(result);
@@ -94,6 +100,7 @@ export function registerOrganization(adapter: McpAdapter): void {
       organization_id: Schema.organizationId(),
     },
     async ({ organization_id }) => {
+      log.debug(`Get Information of Organization: ${organization_id}`);
       const result = await adapter.client.organization.info(organization_id);
 
       return Response.json(result);
@@ -116,7 +123,8 @@ export function registerOrganization(adapter: McpAdapter): void {
     {
 
     },
-    async ({ }) => {
+    async () => {
+      log.debug(`List all my organizations`);
         const result = await adapter.client.organization.list();
         
         return Response.json(result);

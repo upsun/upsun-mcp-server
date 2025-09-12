@@ -15,6 +15,7 @@ import {
   extractApiKey,
   HTTP_SESSION_ATTR,
 } from "./authentication.js";
+import { createLogger } from "./logger.js";
 
 
 /** Keep-alive interval for SSE connections (25 seconds) */
@@ -25,6 +26,12 @@ const HTTP_MCP_PATH = '/mcp';
 const HTTP_SSE_PATH = '/sse';
 /** HTTP path for legacy message endpoint */
 const HTTP_MSG_PATH = '/messages';
+
+// Create specialized loggers but use 'log' as variable name for consistency
+const log = createLogger('Web');
+const httpLog = createLogger('Web:HTTP');
+const sseLog = createLogger('Web:SSE');
+const coreLog = createLogger('Core');
 
 
 /**
@@ -49,8 +56,10 @@ export class LocalServer<A extends McpAdapter> {
   constructor(
     private readonly mcpAdapterServerFactory: new () => A,
   ) {
+    coreLog.info('Initializing local server instance...');
     this.transport = new StdioServerTransport();
     this.server = new this.mcpAdapterServerFactory();
+    coreLog.info('Local server instance initialized!');
   }
 
   /**
@@ -130,7 +139,7 @@ export class GatewayServer<A extends McpAdapter> {
     private readonly mcpAdapterServerFactory: new () => A,
     public readonly app: core.Express = express()
   ) {
-    console.debug('[Web] Initializing GatewayServer instance...');
+    coreLog.info('Initializing gateway server instance...');
     this.app.use(express.json());
 
     // Load OAuth2 authentication
@@ -139,7 +148,7 @@ export class GatewayServer<A extends McpAdapter> {
     // Load all transports
     this.setupStreamableTransport();
     this.setupSseTransport();
-    console.debug('[Web] GatewayServer instance initialized!');
+    coreLog.info('Gateway server instance initialized!');
   }
 
   /**
@@ -152,7 +161,7 @@ export class GatewayServer<A extends McpAdapter> {
    * @private
    */
   private makeInstanceAdapterMcpServer(): McpAdapter {
-    console.debug('[Core] Creating new MCP adapter instance...');
+    coreLog.debug('Creating new MCP adapter instance...');
     return new this.mcpAdapterServerFactory();
   }
 
@@ -177,13 +186,13 @@ export class GatewayServer<A extends McpAdapter> {
    * @private
    */
   private setupStreamableTransport(): void {
-    console.debug('[Web] Setting up Streamable HTTP transport...');
+    coreLog.debug('Setting up Streamable HTTP transport...');
 
     // Handle POST requests for client-to-server communication
     this.app.post(HTTP_MCP_PATH, async (req, res) => {
       // Check for existing session ID
       const sessionId = req.headers[HTTP_SESSION_ATTR] as string | undefined;
-      console.log('[Web][http] Received POST request to /mcp (Streamable transport)');
+      httpLog.info('Received POST request to /mcp (Streamable transport)');
 
       if (sessionId && this.transports.streamable[sessionId]) {
         // Reuse existing transport - inject fresh authentication token
@@ -194,14 +203,14 @@ export class GatewayServer<A extends McpAdapter> {
         const apiKey = extractApiKey(req);
         
         if (!bearer && !apiKey) {
-          console.info('[Web][http] Rejecting request: No bearer token or API key found in existing session');
+          httpLog.warn('Rejecting request: No bearer token or API key found in existing session');
           res.status(401).json({ error: 'missing_token', hint: 'Bearer token (Authorization header) or API key (upsun-api-token header) required' });
           return;
         }
         
         // Use appropriate authentication token and update server
         if (bearer) {
-          console.log('[Web][http] Bearer token found for existing session, updating server');
+          httpLog.debug('Bearer token found for existing session, updating server');
           server.setCurrentBearerToken(bearer);
         }
         
@@ -209,12 +218,12 @@ export class GatewayServer<A extends McpAdapter> {
 
       } else if (!sessionId && isInitializeRequest(req.body)) {
         // New session initialization request - check for authentication token
-        console.log('[Web][http] New session initialization request');
+        httpLog.info('New session initialization request');
         const bearer = extractBearerToken(req);
         const apiKey = extractApiKey(req);
         
         if (!bearer && !apiKey) {
-          console.log('[Web][http] Rejecting initialization: No bearer token or API key found');
+          httpLog.warn('Rejecting initialization: No bearer token or API key found');
           res.status(401).json({ error: 'missing_token', hint: 'Bearer token (Authorization header) or API key (upsun-api-token header) required for initialization' });
           return;
         }
@@ -224,15 +233,15 @@ export class GatewayServer<A extends McpAdapter> {
 
         // New initialization request
         const transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => randomUUID(),
-          onsessioninitialized: (sessionId) => {
+          sessionIdGenerator: (): string => randomUUID(),
+          onsessioninitialized: (sessionId): void => {
             // Store the transport and server by session ID
             this.transports.streamable[sessionId] = { transport, server };
           }
         });
 
         // Clean up transport when closed
-        transport.onclose = () => {
+        transport.onclose = (): void => {
           if (transport.sessionId) {
             delete this.transports.streamable[transport.sessionId];
           }
@@ -240,10 +249,10 @@ export class GatewayServer<A extends McpAdapter> {
 
         // Connect server using appropriate authentication method
         if (bearer) {
-          console.log('[Web][http] Bearer token found for initialization, creating new session');
+          httpLog.info('Bearer token found for initialization, creating new session');
           await server.connectWithBearer(transport, bearer);
         } else if (apiKey) {
-          console.log('[Web][http] API key found for initialization, creating new session');
+          httpLog.info('API key found for initialization, creating new session');
           await server.connectWithApiKey(transport, apiKey);
           // API key is fixed for the lifecycle, no need to set current token
         }
@@ -271,8 +280,8 @@ export class GatewayServer<A extends McpAdapter> {
      * @param req - Express request object
      * @param res - Express response object
      */
-    const handleSessionRequest = async (req: express.Request, res: express.Response) => {
-      console.log('[Web][http] Received GET/DELETE request to /mcp (Streamable transport)');
+    const handleSessionRequest = async (req: express.Request, res: express.Response): Promise<void> => {
+      httpLog.info('Received GET/DELETE request to /mcp (Streamable transport)');
 
       const sessionId = req.headers[HTTP_SESSION_ATTR] as string | undefined;
       if (!sessionId || !this.transports.streamable[sessionId]) {
@@ -315,12 +324,12 @@ export class GatewayServer<A extends McpAdapter> {
    * @private
    */
   private setupSseTransport(): void {
-    console.debug('[Web] Setting up legacy SSE transport...');
+    coreLog.debug('Setting up legacy SSE transport...');
 
     // Legacy SSE endpoint for older clients
     this.app.get(HTTP_SSE_PATH, async (req: express.Request, res: express.Response) => {
       const ip = req.headers['x-forwarded-for'] || req.ip
-      console.log(`[Web][SSE] Received GET request to /sse (deprecated SSE transport) from ${ip}`);
+      sseLog.info(`Received GET request to /sse (deprecated SSE transport) from ${ip}`);
 
       // Extract authentication token (Bearer or API key - exclusive)
       const bearer = extractBearerToken(req);
@@ -352,7 +361,7 @@ export class GatewayServer<A extends McpAdapter> {
 
       // Store connection details
       this.sseConnections.set(transport.sessionId, { res, intervalId });
-      console.log(`[Web][SSE] Client connected: ${transport.sessionId}, starting keep-alive.`);
+      sseLog.info(`Client connected: ${transport.sessionId}, starting keep-alive.`);
 
       res.on("close", () => {
         delete this.transports.sse[transport.sessionId];
@@ -367,17 +376,17 @@ export class GatewayServer<A extends McpAdapter> {
       try {
         // Connect server using appropriate authentication method
         if (bearer) {
-          console.log(`[Web][SSE] New SSE session from ${ip} with Bearer token, ID: ${transport.sessionId}`);
+          sseLog.info(`New SSE session from ${ip} with Bearer token, ID: ${transport.sessionId}`);
           await server.connectWithBearer(transport, bearer);
         } else if (apiKey) {
-          console.log(`[Web][SSE] New SSE session from ${ip} with API key, ID: ${transport.sessionId}`);
+          sseLog.info(`New SSE session from ${ip} with API key, ID: ${transport.sessionId}`);
           await server.connectWithApiKey(transport, apiKey);
           // API key is fixed for the lifecycle, no need to set current token
         }
 
-        console.log(`[Web][SSE] New session from ${ip} with ID: ${transport.sessionId}`);
+        sseLog.info(`New session from ${ip} with ID: ${transport.sessionId}`);
       } catch (error) {
-        console.error(`[Web][SSE] Error connecting server to transport for ${transport.sessionId}:`, error);
+        sseLog.error(`Error connecting server to transport for ${transport.sessionId}:`, error);
         // Ensure cleanup happens even if connect fails
         clearInterval(intervalId);
         this.sseConnections.delete(transport.sessionId);
@@ -391,7 +400,7 @@ export class GatewayServer<A extends McpAdapter> {
     // Legacy message endpoint for older clients
     this.app.post(HTTP_MSG_PATH, async (req: express.Request, res: express.Response) => {
       const ip = req.headers['x-forwarded-for'] || req.ip
-      console.log(`Received POST request to /message (deprecated SSE transport) from ${ip}`);
+      sseLog.info(`Received POST request to /message (deprecated SSE transport) from ${ip}`);
 
       const sessionId = req.query.sessionId as string;
       const transportSession = this.transports.sse[sessionId];
@@ -412,7 +421,7 @@ export class GatewayServer<A extends McpAdapter> {
           server.setCurrentBearerToken(bearer);
         }
         
-        console.log(`Message call from ${ip} with ID: ${transport.sessionId}`);
+        sseLog.info(`Message call from ${ip} with ID: ${transport.sessionId}`);
         await transport.handlePostMessage(req, res, req.body);
       } else {
         res
@@ -443,13 +452,13 @@ export class GatewayServer<A extends McpAdapter> {
    * ```
    */
   listen(port: number=3000): void {
-    console.debug('[Core] Starting Server listen process...');
+    coreLog.debug('Starting Server listen process...');
 
     this.app.listen(port, "0.0.0.0", () => {
-      console.log(`[Core] Backwards compatible MCP server listening on port ${port}`);
-      console.log(`  - Configure with http://localhost:${port}/sse`);
-      console.log(`  - Configure with http://localhost:${port}/mcp`);
-      console.log(`
+      coreLog.info(`Backwards compatible MCP server listening on port ${port}`);
+      coreLog.info(`  - Configure with http://localhost:${port}/sse`);
+      coreLog.info(`  - Configure with http://localhost:${port}/mcp`);
+      coreLog.info(`
 ==============================================
 SUPPORTED TRANSPORT OPTIONS:
 
@@ -473,38 +482,38 @@ SUPPORTED TRANSPORT OPTIONS:
 
     // Handle server shutdown
     process.on('SIGINT', async () => {
-      console.log('[Core] Shutting down server...');
+      coreLog.info('Shutting down server...');
 
       // Close all active transports to properly clean up resources
       for (const sessionId in this.transports.sse) {
         try {
-          console.log(`[Core] Closing transport for session ${sessionId}`);
+          log.info(`Closing transport for session ${sessionId}`);
           await this.transports.sse[sessionId].transport.close();
           delete this.transports.sse[sessionId];
         } catch (error) {
-          console.error(`[Core] Error closing transport SSE for session ${sessionId}:`, error);
+          log.error(`Error closing transport SSE for session ${sessionId}:`, error);
         }
       }
 
       for (const sessionId in this.transports.streamable) {
         try {
-          console.log(`[Core] Closing transport for session ${sessionId}`);
+          log.info(`Closing transport for session ${sessionId}`);
           await this.transports.streamable[sessionId].transport.close();
           delete this.transports.streamable[sessionId];
         } catch (error) {
-          console.error(`[Core] Error closing transport streamable for session ${sessionId}:`, error);
+          log.error(`Error closing transport streamable for session ${sessionId}:`, error);
         }
       }
-      console.log('[Core] Server shutdown complete');
+      coreLog.info('Server shutdown complete');
       process.exit(0);
     });
 
     process.on('uncaughtException', (error) => {
-        console.error('Uncaught Exception:', error);
+        coreLog.error('Uncaught Exception:', error);
     });
     
     process.on('unhandledRejection', (reason, promise) => {
-        console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+        coreLog.error('Unhandled Rejection at:', promise, 'reason:', reason);
     });
     
   }
