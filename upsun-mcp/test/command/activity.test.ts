@@ -1,17 +1,17 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { McpAdapter } from "../../src/core/adapter.js";
-import { registerActivity } from "../../src/command/activity.js";
+import { McpAdapter } from '../../src/core/adapter.js';
+import { registerActivity } from '../../src/command/activity.js';
 
 // Mock the logger module
 const mockLogger = {
   debug: jest.fn(),
   info: jest.fn(),
   warn: jest.fn(),
-  error: jest.fn()
+  error: jest.fn(),
 };
 
 jest.mock('../../src/core/logger.js', () => ({
-  createLogger: jest.fn(() => mockLogger)
+  createLogger: jest.fn(() => mockLogger),
 }));
 
 // Mock data for testing
@@ -23,7 +23,7 @@ const mockActivity = {
   completed_at: '2025-05-28T00:05:00Z',
   project_id: 'test-project-13',
   environment: 'main',
-  description: 'Deploy application'
+  description: 'Deploy application',
 };
 
 const mockActivityList = [
@@ -34,8 +34,8 @@ const mockActivityList = [
     status: 'running',
     created_at: '2025-05-28T00:10:00Z',
     project_id: 'test-project-13',
-    environment: 'staging'
-  }
+    environment: 'staging',
+  },
 ];
 
 const mockActivityLog = `
@@ -47,7 +47,7 @@ const mockActivityLog = `
 
 const mockCancelResult = {
   success: true,
-  message: 'Activity cancelled successfully'
+  message: 'Activity cancelled successfully',
 };
 
 // Mock the Upsun client
@@ -56,16 +56,16 @@ const mockClient = {
     list: jest.fn(),
     get: jest.fn(),
     cancel: jest.fn(),
-    log: jest.fn()
-  }
+    log: jest.fn(),
+  },
 };
 
 // Mock the adapter
 const mockAdapter: McpAdapter = {
   client: mockClient,
   server: {
-    tool: jest.fn()
-  }
+    tool: jest.fn(),
+  },
 } as any;
 
 describe('Activity Command Module', () => {
@@ -80,12 +80,14 @@ describe('Activity Command Module', () => {
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
     toolCallbacks = {};
-    
+
     // Setup mock server.tool to capture callbacks
-    mockAdapter.server.tool = jest.fn().mockImplementation((name: string, description: string, schema: any, callback: any) => {
-      toolCallbacks[name] = callback;
-      return mockAdapter.server;
-    });
+    mockAdapter.server.tool = jest
+      .fn()
+      .mockImplementation((name: string, description: string, schema: any, callback: any) => {
+        toolCallbacks[name] = callback;
+        return mockAdapter.server;
+      });
 
     // Setup default mock responses
     mockClient.activity.list.mockResolvedValue(mockActivityList);
@@ -100,52 +102,48 @@ describe('Activity Command Module', () => {
 
   describe('registerActivity function', () => {
     it('should register all activity tools', () => {
-      
-      
       registerActivity(mockAdapter);
-      
+
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(4);
-      
+
       // Verify all tools are registered
       expect(toolCallbacks['cancel-activity']).toBeDefined();
       expect(toolCallbacks['get-activity']).toBeDefined();
       expect(toolCallbacks['list-activity']).toBeDefined();
       expect(toolCallbacks['log-activity']).toBeDefined();
-      
-      
     });
 
     it('should register tools with correct names and descriptions', () => {
       registerActivity(mockAdapter);
-      
+
       const calls = (mockAdapter.server.tool as jest.Mock).mock.calls;
-      
+
       expect(calls[0]).toEqual([
         'cancel-activity',
         'Cancel a activity of upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[1]).toEqual([
         'get-activity',
         'Get detail of activity on upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[2]).toEqual([
         'list-activity',
         'List all activities of upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[3]).toEqual([
         'log-activity',
         'Get log activity of upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
     });
   });
@@ -159,7 +157,7 @@ describe('Activity Command Module', () => {
       const callback = toolCallbacks['cancel-activity'];
       const params = {
         project_id: 'test-project-13',
-        activity_id: 'test-activity-123'
+        activity_id: 'test-activity-123',
       };
 
       const result = await callback(params);
@@ -169,10 +167,12 @@ describe('Activity Command Module', () => {
         'test-activity-123'
       );
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockCancelResult, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockCancelResult, null, 2),
+          },
+        ],
       });
     });
 
@@ -183,7 +183,7 @@ describe('Activity Command Module', () => {
 
       const params = {
         project_id: 'test-project-13',
-        activity_id: 'test-activity-123'
+        activity_id: 'test-activity-123',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -203,20 +203,19 @@ describe('Activity Command Module', () => {
       const callback = toolCallbacks['get-activity'];
       const params = {
         project_id: 'test-project-13',
-        activity_id: 'test-activity-123'
+        activity_id: 'test-activity-123',
       };
 
       const result = await callback(params);
 
-      expect(mockClient.activity.get).toHaveBeenCalledWith(
-        'test-project-13',
-        'test-activity-123'
-      );
+      expect(mockClient.activity.get).toHaveBeenCalledWith('test-project-13', 'test-activity-123');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockActivity, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockActivity, null, 2),
+          },
+        ],
       });
     });
 
@@ -227,14 +226,11 @@ describe('Activity Command Module', () => {
 
       const params = {
         project_id: 'test-project-13',
-        activity_id: 'invalid-activity'
+        activity_id: 'invalid-activity',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
-      expect(mockClient.activity.get).toHaveBeenCalledWith(
-        'test-project-13',
-        'invalid-activity'
-      );
+      expect(mockClient.activity.get).toHaveBeenCalledWith('test-project-13', 'invalid-activity');
     });
   });
 
@@ -246,17 +242,19 @@ describe('Activity Command Module', () => {
     it('should list activities successfully', async () => {
       const callback = toolCallbacks['list-activity'];
       const params = {
-        project_id: 'test-project-13'
+        project_id: 'test-project-13',
       };
 
       const result = await callback(params);
 
       expect(mockClient.activity.list).toHaveBeenCalledWith('test-project-13');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockActivityList, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockActivityList, null, 2),
+          },
+        ],
       });
     });
 
@@ -265,17 +263,19 @@ describe('Activity Command Module', () => {
       mockClient.activity.list.mockResolvedValue([]);
 
       const params = {
-        project_id: 'test-project-13'
+        project_id: 'test-project-13',
       };
 
       const result = await callback(params);
 
       expect(mockClient.activity.list).toHaveBeenCalledWith('test-project-13');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify([], null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify([], null, 2),
+          },
+        ],
       });
     });
 
@@ -285,7 +285,7 @@ describe('Activity Command Module', () => {
       mockClient.activity.list.mockRejectedValue(new Error(errorMessage));
 
       const params = {
-        project_id: 'invalid-project'
+        project_id: 'invalid-project',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -302,20 +302,19 @@ describe('Activity Command Module', () => {
       const callback = toolCallbacks['log-activity'];
       const params = {
         project_id: 'test-project-13',
-        activity_id: 'test-activity-123'
+        activity_id: 'test-activity-123',
       };
 
       const result = await callback(params);
 
-      expect(mockClient.activity.log).toHaveBeenCalledWith(
-        'test-project-13',
-        'test-activity-123'
-      );
+      expect(mockClient.activity.log).toHaveBeenCalledWith('test-project-13', 'test-activity-123');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockActivityLog, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockActivityLog, null, 2),
+          },
+        ],
       });
     });
 
@@ -325,20 +324,19 @@ describe('Activity Command Module', () => {
 
       const params = {
         project_id: 'test-project-13',
-        activity_id: 'test-activity-123'
+        activity_id: 'test-activity-123',
       };
 
       const result = await callback(params);
 
-      expect(mockClient.activity.log).toHaveBeenCalledWith(
-        'test-project-13',
-        'test-activity-123'
-      );
+      expect(mockClient.activity.log).toHaveBeenCalledWith('test-project-13', 'test-activity-123');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify('', null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('', null, 2),
+          },
+        ],
       });
     });
 
@@ -349,14 +347,11 @@ describe('Activity Command Module', () => {
 
       const params = {
         project_id: 'test-project-13',
-        activity_id: 'test-activity-123'
+        activity_id: 'test-activity-123',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
-      expect(mockClient.activity.log).toHaveBeenCalledWith(
-        'test-project-13',
-        'test-activity-123'
-      );
+      expect(mockClient.activity.log).toHaveBeenCalledWith('test-project-13', 'test-activity-123');
     });
   });
 
@@ -371,16 +366,18 @@ describe('Activity Command Module', () => {
 
       const params = {
         project_id: 'test-project-13',
-        activity_id: 'test-activity-123'
+        activity_id: 'test-activity-123',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(null, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(null, null, 2),
+          },
+        ],
       });
     });
 
@@ -391,27 +388,29 @@ describe('Activity Command Module', () => {
         metadata: {
           branch: 'feature/new-feature',
           commit: 'abc123def456',
-          user: 'developer@example.com'
+          user: 'developer@example.com',
         },
         variables: {
           DATABASE_URL: 'postgres://...',
-          REDIS_URL: 'redis://...'
-        }
+          REDIS_URL: 'redis://...',
+        },
       };
       mockClient.activity.get.mockResolvedValue(complexActivity);
 
       const params = {
         project_id: 'test-project-13',
-        activity_id: 'test-activity-123'
+        activity_id: 'test-activity-123',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(complexActivity, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(complexActivity, null, 2),
+          },
+        ],
       });
     });
   });

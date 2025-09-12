@@ -1,25 +1,25 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { McpAdapter } from "../../src/core/adapter.js";
-import { registerBackup } from "../../src/command/backup.js";
+import { McpAdapter } from '../../src/core/adapter.js';
+import { registerBackup } from '../../src/command/backup.js';
 
 // Mock the logger module
 const mockLogger = {
   debug: jest.fn(),
   info: jest.fn(),
   warn: jest.fn(),
-  error: jest.fn()
+  error: jest.fn(),
 };
 
 jest.mock('../../src/core/logger.js', () => ({
-  createLogger: jest.fn(() => mockLogger)
+  createLogger: jest.fn(() => mockLogger),
 }));
 
 // Mock the adapter
 const mockAdapter: McpAdapter = {
   client: {},
   server: {
-    tool: jest.fn()
-  }
+    tool: jest.fn(),
+  },
 } as any;
 
 describe('Backup Command Module', () => {
@@ -34,12 +34,14 @@ describe('Backup Command Module', () => {
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
     toolCallbacks = {};
-    
+
     // Setup mock server.tool to capture callbacks
-    mockAdapter.server.tool = jest.fn().mockImplementation((name: string, description: string, schema: any, callback: any) => {
-      toolCallbacks[name] = callback;
-      return mockAdapter.server;
-    });
+    mockAdapter.server.tool = jest
+      .fn()
+      .mockImplementation((name: string, description: string, schema: any, callback: any) => {
+        toolCallbacks[name] = callback;
+        return mockAdapter.server;
+      });
   });
 
   afterEach(() => {
@@ -48,60 +50,56 @@ describe('Backup Command Module', () => {
 
   describe('registerBackup function', () => {
     it('should register all backup tools', () => {
-      
-      
       registerBackup(mockAdapter);
-      
+
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(5);
-      
+
       // Verify all tools are registered
       expect(toolCallbacks['create-backup']).toBeDefined();
       expect(toolCallbacks['delete-backup']).toBeDefined();
       expect(toolCallbacks['get-backup']).toBeDefined();
       expect(toolCallbacks['list-backup']).toBeDefined();
       expect(toolCallbacks['restore-backup']).toBeDefined();
-      
-      
     });
 
     it('should register tools with correct names and descriptions', () => {
       registerBackup(mockAdapter);
-      
+
       const calls = (mockAdapter.server.tool as jest.Mock).mock.calls;
-      
+
       expect(calls[0]).toEqual([
         'create-backup',
         'Create a backup on upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[1]).toEqual([
         'delete-backup',
         'Delete a backup of upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[2]).toEqual([
         'get-backup',
         'Get a backup of upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[3]).toEqual([
         'list-backup',
         'List all backups of upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[4]).toEqual([
         'restore-backup',
         'Restore a backups of upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
     });
   });
@@ -116,16 +114,18 @@ describe('Backup Command Module', () => {
       const params = {
         project_id: 'test-project-13',
         environment_name: 'main',
-        is_live: true
+        is_live: true,
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -133,16 +133,18 @@ describe('Backup Command Module', () => {
       const callback = toolCallbacks['create-backup'];
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'main'
+        environment_name: 'main',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -151,16 +153,18 @@ describe('Backup Command Module', () => {
       const params = {
         project_id: 'test-project-13',
         environment_name: 'staging',
-        is_live: false
+        is_live: false,
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
   });
@@ -175,16 +179,18 @@ describe('Backup Command Module', () => {
       const params = {
         project_id: 'test-project-13',
         environment_name: 'main',
-        backup_id: 'backup-123'
+        backup_id: 'backup-123',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -193,16 +199,18 @@ describe('Backup Command Module', () => {
       const params = {
         project_id: 'test-project-13',
         environment_name: 'staging',
-        backup_id: 'backup-456-auto'
+        backup_id: 'backup-456-auto',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
   });
@@ -217,16 +225,18 @@ describe('Backup Command Module', () => {
       const params = {
         project_id: 'test-project-13',
         environment_name: 'main',
-        backup_id: 'backup-123'
+        backup_id: 'backup-123',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -235,16 +245,18 @@ describe('Backup Command Module', () => {
       const params = {
         project_id: 'test-project-13',
         environment_name: 'production',
-        backup_id: 'backup-daily-001'
+        backup_id: 'backup-daily-001',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
   });
@@ -258,16 +270,18 @@ describe('Backup Command Module', () => {
       const callback = toolCallbacks['list-backup'];
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'main'
+        environment_name: 'main',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -275,16 +289,18 @@ describe('Backup Command Module', () => {
       const callback = toolCallbacks['list-backup'];
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'staging'
+        environment_name: 'staging',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
   });
@@ -302,16 +318,18 @@ describe('Backup Command Module', () => {
         target_environment_name: 'staging',
         no_code: false,
         no_resources: false,
-        resources_init: 'backup'
+        resources_init: 'backup',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -320,16 +338,18 @@ describe('Backup Command Module', () => {
       const params = {
         project_id: 'test-project-13',
         environment_name: 'main',
-        target_environment_name: 'new-env'
+        target_environment_name: 'new-env',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -340,16 +360,18 @@ describe('Backup Command Module', () => {
         environment_name: 'production',
         target_environment_name: 'disaster-recovery',
         no_code: true,
-        no_resources: false
+        no_resources: false,
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -360,16 +382,18 @@ describe('Backup Command Module', () => {
         environment_name: 'main',
         target_environment_name: 'code-only-env',
         no_code: false,
-        no_resources: true
+        no_resources: true,
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -379,16 +403,18 @@ describe('Backup Command Module', () => {
         project_id: 'test-project-13',
         environment_name: 'main',
         target_environment_name: 'custom-restore',
-        resources_init: 'environment'
+        resources_init: 'environment',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
   });
@@ -401,21 +427,36 @@ describe('Backup Command Module', () => {
     it('should handle all tools with minimal required parameters', async () => {
       const callbacks = [
         { name: 'create-backup', params: { project_id: 'proj', environment_name: 'env' } },
-        { name: 'delete-backup', params: { project_id: 'proj', environment_name: 'env', backup_id: 'backup' } },
-        { name: 'get-backup', params: { project_id: 'proj', environment_name: 'env', backup_id: 'backup' } },
+        {
+          name: 'delete-backup',
+          params: { project_id: 'proj', environment_name: 'env', backup_id: 'backup' },
+        },
+        {
+          name: 'get-backup',
+          params: { project_id: 'proj', environment_name: 'env', backup_id: 'backup' },
+        },
         { name: 'list-backup', params: { project_id: 'proj', environment_name: 'env' } },
-        { name: 'restore-backup', params: { project_id: 'proj', environment_name: 'env', target_environment_name: 'target' } }
+        {
+          name: 'restore-backup',
+          params: {
+            project_id: 'proj',
+            environment_name: 'env',
+            target_environment_name: 'target',
+          },
+        },
       ];
 
       for (const { name, params } of callbacks) {
         const callback = toolCallbacks[name];
         const result = await callback(params);
-        
+
         expect(result).toEqual({
-          content: [{
-            type: 'text',
-            text: JSON.stringify("TODO", null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify('TODO', null, 2),
+            },
+          ],
         });
       }
     });
@@ -425,16 +466,18 @@ describe('Backup Command Module', () => {
       const params = {
         project_id: 'test-project-with-dashes',
         environment_name: 'env_with_underscores',
-        is_live: true
+        is_live: true,
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
   });

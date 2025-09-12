@@ -19,7 +19,7 @@ describe('LocalServer', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Mock the adapter factory
     mockAdapterFactory = jest.fn().mockImplementation(() => ({
       connectWithApiKey: jest.fn().mockResolvedValue(undefined),
@@ -40,9 +40,9 @@ describe('LocalServer', () => {
     it('should connect the server with API key from environment', async () => {
       process.env.UPSUN_API_KEY = 'test-api-key';
       const server = new LocalServer(mockAdapterFactory);
-      
+
       await server.listen();
-      
+
       expect(server.server.connectWithApiKey).toHaveBeenCalled();
       delete process.env.UPSUN_API_KEY;
     });
@@ -50,8 +50,10 @@ describe('LocalServer', () => {
     it('should throw error when no API key is set', async () => {
       delete process.env.UPSUN_API_KEY;
       const server = new LocalServer(mockAdapterFactory);
-      
-      await expect(server.listen()).rejects.toThrow('UPSUN_API_KEY environment variable is required for LocalServer');
+
+      await expect(server.listen()).rejects.toThrow(
+        'UPSUN_API_KEY environment variable is required for LocalServer'
+      );
     });
   });
 });
@@ -62,7 +64,7 @@ describe('GatewayServer', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Mock the adapter factory
     mockAdapterFactory = jest.fn().mockImplementation(() => ({
       connectWithApiKey: jest.fn().mockResolvedValue(undefined),
@@ -113,25 +115,25 @@ describe('GatewayServer', () => {
     it('should start the server', async () => {
       const mockServer = { close: jest.fn() };
       const mockListen = jest.fn().mockReturnValue(mockServer);
-      
+
       gatewayServer.app.listen = mockListen;
-      
+
       // Don't await - just verify it starts without error
       gatewayServer.listen();
-      
-      expect(mockListen).toHaveBeenCalledWith(3000, "0.0.0.0", expect.any(Function));
+
+      expect(mockListen).toHaveBeenCalledWith(3000, '0.0.0.0', expect.any(Function));
     });
 
     it('should use custom port when specified', async () => {
       const mockServer = { close: jest.fn() };
       const mockListen = jest.fn().mockReturnValue(mockServer);
-      
+
       gatewayServer.app.listen = mockListen;
-      
+
       // Don't await - just verify it starts without error
       gatewayServer.listen(8080);
-      
-      expect(mockListen).toHaveBeenCalledWith(8080, "0.0.0.0", expect.any(Function));
+
+      expect(mockListen).toHaveBeenCalledWith(8080, '0.0.0.0', expect.any(Function));
     });
   });
 

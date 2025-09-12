@@ -10,11 +10,11 @@ process.exit = jest.fn() as any;
 describe('index.ts functionality', () => {
   // Save original environment variables
   const originalEnv = process.env;
-  
+
   beforeEach(() => {
     // Remove logs to avoid unnecessary output
     jest.spyOn(console, 'log').mockImplementation(() => {});
-    
+
     // Restore original environment variables
     process.env = { ...originalEnv };
   });
@@ -45,7 +45,7 @@ describe('index.ts functionality', () => {
     process.env.PORT = '4000';
     const port = Number(String(process.env.PORT)) || 3001;
     expect(port).toBe(4000);
-    
+
     delete process.env.PORT;
     const defaultPort = Number(String(process.env.PORT)) || 3001;
     expect(defaultPort).toBe(3001);
@@ -56,7 +56,7 @@ describe('index.ts functionality', () => {
     const gateway = await import('../src/core/gateway.js');
     const mcpUpsun = await import('../src/mcpUpsun.js');
     const dotenvModule = await import('dotenv');
-    
+
     expect(gateway.GatewayServer).toBeDefined();
     expect(mcpUpsun.UpsunMcpServer).toBeDefined();
     expect(dotenvModule.default.config).toBeDefined();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import { Schema, Assert, Response } from "../../src/core/helper.js";
-import { z } from "zod";
+import { Schema, Assert, Response } from '../../src/core/helper.js';
+import { z } from 'zod';
 
 describe('Helper Module', () => {
   describe('Schema class', () => {
@@ -29,7 +29,9 @@ describe('Helper Module', () => {
       it('should reject project IDs not exactly 13 characters', () => {
         const schema = Schema.projectId();
         expect(() => schema.parse('123456789012')).toThrow('Project ID must be 13 characters long');
-        expect(() => schema.parse('12345678901234')).toThrow('Project ID must be 13 characters long');
+        expect(() => schema.parse('12345678901234')).toThrow(
+          'Project ID must be 13 characters long'
+        );
         expect(() => schema.parse('')).toThrow('Project ID must be 13 characters long');
       });
     });
@@ -76,8 +78,12 @@ describe('Helper Module', () => {
 
       it('should reject organization IDs not exactly 27 characters', () => {
         const schema = Schema.organizationId();
-        expect(() => schema.parse('12345678901234567890123456')).toThrow('Organization ID must be 27 characters long');
-        expect(() => schema.parse('1234567890123456789012345678')).toThrow('Organization ID must be 27 characters long');
+        expect(() => schema.parse('12345678901234567890123456')).toThrow(
+          'Organization ID must be 27 characters long'
+        );
+        expect(() => schema.parse('1234567890123456789012345678')).toThrow(
+          'Organization ID must be 27 characters long'
+        );
         expect(() => schema.parse('')).toThrow('Organization ID must be 27 characters long');
       });
     });
@@ -107,8 +113,12 @@ describe('Helper Module', () => {
 
       it('should reject backup IDs not exactly 27 characters', () => {
         const schema = Schema.backupId();
-        expect(() => schema.parse('12345678901234567890123456')).toThrow('Backup ID must be 27 characters long');
-        expect(() => schema.parse('1234567890123456789012345678')).toThrow('Backup ID must be 27 characters long');
+        expect(() => schema.parse('12345678901234567890123456')).toThrow(
+          'Backup ID must be 27 characters long'
+        );
+        expect(() => schema.parse('1234567890123456789012345678')).toThrow(
+          'Backup ID must be 27 characters long'
+        );
         expect(() => schema.parse('')).toThrow('Backup ID must be 27 characters long');
       });
     });
@@ -137,7 +147,7 @@ describe('Helper Module', () => {
         expect(schema).toBeInstanceOf(z.ZodString);
         expect(schema.parse('example.com')).toBe('example.com');
         expect(schema.parse('subdomain.example.com')).toBe('subdomain.example.com');
-        
+
         const maxLengthDomain = 'a'.repeat(255);
         expect(schema.parse(maxLengthDomain)).toBe(maxLengthDomain);
       });
@@ -145,7 +155,9 @@ describe('Helper Module', () => {
       it('should reject domain names longer than 255 characters', () => {
         const schema = Schema.domainName();
         const tooLongDomain = 'a'.repeat(256);
-        expect(() => schema.parse(tooLongDomain)).toThrow('Domain name must be less than 255 characters');
+        expect(() => schema.parse(tooLongDomain)).toThrow(
+          'Domain name must be less than 255 characters'
+        );
       });
 
       it('should validate domain name strings', () => {
@@ -193,47 +205,55 @@ describe('Helper Module', () => {
     describe('text', () => {
       it('should create a text response with correct structure', () => {
         const result = Response.text('Hello World');
-        
+
         expect(result).toEqual({
-          content: [{
-            type: 'text',
-            text: 'Hello World'
-          }]
+          content: [
+            {
+              type: 'text',
+              text: 'Hello World',
+            },
+          ],
         });
       });
 
       it('should handle empty strings', () => {
         const result = Response.text('');
-        
+
         expect(result).toEqual({
-          content: [{
-            type: 'text',
-            text: ''
-          }]
+          content: [
+            {
+              type: 'text',
+              text: '',
+            },
+          ],
         });
       });
 
       it('should handle multiline text', () => {
         const multilineText = 'Line 1\nLine 2\nLine 3';
         const result = Response.text(multilineText);
-        
+
         expect(result).toEqual({
-          content: [{
-            type: 'text',
-            text: multilineText
-          }]
+          content: [
+            {
+              type: 'text',
+              text: multilineText,
+            },
+          ],
         });
       });
 
       it('should handle special characters', () => {
         const specialText = 'Special chars: !@#$%^&*()';
         const result = Response.text(specialText);
-        
+
         expect(result).toEqual({
-          content: [{
-            type: 'text',
-            text: specialText
-          }]
+          content: [
+            {
+              type: 'text',
+              text: specialText,
+            },
+          ],
         });
       });
     });
@@ -242,24 +262,28 @@ describe('Helper Module', () => {
       it('should create a JSON response with correct structure', () => {
         const testObject = { name: 'Test', value: 123 };
         const result = Response.json(testObject);
-        
+
         expect(result).toEqual({
-          content: [{
-            type: 'text',
-            text: JSON.stringify(testObject, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(testObject, null, 2),
+            },
+          ],
         });
       });
 
       it('should handle arrays', () => {
         const testArray = [1, 2, 3, 'test'];
         const result = Response.json(testArray);
-        
+
         expect(result).toEqual({
-          content: [{
-            type: 'text',
-            text: JSON.stringify(testArray, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(testArray, null, 2),
+            },
+          ],
         });
       });
 
@@ -269,72 +293,88 @@ describe('Helper Module', () => {
             name: 'John',
             details: {
               age: 30,
-              preferences: ['coding', 'reading']
-            }
-          }
+              preferences: ['coding', 'reading'],
+            },
+          },
         };
         const result = Response.json(nestedObject);
-        
+
         expect(result).toEqual({
-          content: [{
-            type: 'text',
-            text: JSON.stringify(nestedObject, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(nestedObject, null, 2),
+            },
+          ],
         });
       });
 
       it('should handle null and undefined', () => {
         expect(Response.json(null)).toEqual({
-          content: [{
-            type: 'text',
-            text: JSON.stringify(null, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(null, null, 2),
+            },
+          ],
         });
 
         expect(Response.json(undefined)).toEqual({
-          content: [{
-            type: 'text',
-            text: JSON.stringify(undefined, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(undefined, null, 2),
+            },
+          ],
         });
       });
 
       it('should handle primitive values', () => {
         expect(Response.json(42)).toEqual({
-          content: [{
-            type: 'text',
-            text: JSON.stringify(42, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(42, null, 2),
+            },
+          ],
         });
 
         expect(Response.json('string')).toEqual({
-          content: [{
-            type: 'text',
-            text: JSON.stringify('string', null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify('string', null, 2),
+            },
+          ],
         });
 
         expect(Response.json(true)).toEqual({
-          content: [{
-            type: 'text',
-            text: JSON.stringify(true, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(true, null, 2),
+            },
+          ],
         });
       });
 
       it('should handle empty objects and arrays', () => {
         expect(Response.json({})).toEqual({
-          content: [{
-            type: 'text',
-            text: JSON.stringify({}, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({}, null, 2),
+            },
+          ],
         });
 
         expect(Response.json([])).toEqual({
-          content: [{
-            type: 'text',
-            text: JSON.stringify([], null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify([], null, 2),
+            },
+          ],
         });
       });
     });

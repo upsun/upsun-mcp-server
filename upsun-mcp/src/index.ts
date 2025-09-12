@@ -1,6 +1,6 @@
-import dotenv from 'dotenv'; 
+import dotenv from 'dotenv';
 
-import { GatewayServer, LocalServer } from "./core/gateway.js";
+import { GatewayServer, LocalServer } from './core/gateway.js';
 import { UpsunMcpServer } from './mcpUpsun.js';
 
 dotenv.config();
@@ -11,7 +11,7 @@ const typeInstance = process.env.TYPE_ENV || 'remote';
 if (typeInstance === 'local') {
   // STDIO
   const local = new LocalServer(UpsunMcpServer);
-  local.listen()
+  local.listen();
 } else {
   // SSE & Streamable
   const PORT = Number(String(process.env.PORT)) || 3000;

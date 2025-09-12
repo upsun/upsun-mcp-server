@@ -1,17 +1,17 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { McpAdapter } from "../../src/core/adapter.js";
-import { registerProject } from "../../src/command/project.js";
+import { McpAdapter } from '../../src/core/adapter.js';
+import { registerProject } from '../../src/command/project.js';
 
 // Mock the logger module
 const mockLogger = {
   debug: jest.fn(),
   info: jest.fn(),
   warn: jest.fn(),
-  error: jest.fn()
+  error: jest.fn(),
 };
 
 jest.mock('../../src/core/logger.js', () => ({
-  createLogger: jest.fn(() => mockLogger)
+  createLogger: jest.fn(() => mockLogger),
 }));
 
 // Mock data for testing
@@ -22,7 +22,7 @@ const mockProject = {
   created_at: '2025-05-28T00:00:00Z',
   organization_id: '123456789012345678901234567',
   region: 'eu-west-1',
-  default_branch: 'main'
+  default_branch: 'main',
 };
 
 const mockProjectList = [
@@ -34,18 +34,18 @@ const mockProjectList = [
     created_at: '2025-05-28T01:00:00Z',
     organization_id: '123456789012345678901234567',
     region: 'us-east-1',
-    default_branch: 'main'
-  }
+    default_branch: 'main',
+  },
 ];
 
 const mockCreateResult = {
   ...mockProject,
-  message: 'Project created successfully'
+  message: 'Project created successfully',
 };
 
 const mockDeleteResult = {
   success: true,
-  message: 'Project deleted successfully'
+  message: 'Project deleted successfully',
 };
 
 // Mock the Upsun client
@@ -55,16 +55,16 @@ const mockClient: any = {
     delete: jest.fn(),
     info: jest.fn(),
     list: jest.fn(),
-    getSubscription: jest.fn()
-  }
+    getSubscription: jest.fn(),
+  },
 };
 
 // Mock the adapter
 const mockAdapter: McpAdapter = {
   client: mockClient,
   server: {
-    tool: jest.fn()
-  }
+    tool: jest.fn(),
+  },
 } as any;
 
 // Global toolCallbacks for all tests
@@ -74,13 +74,13 @@ describe('Project Command Module', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     toolCallbacks = {};
-    
+
     // Reset logger mocks
     mockLogger.debug.mockClear();
     mockLogger.info.mockClear();
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
-    
+
     // Setup mock server.tool to capture callbacks
     (mockAdapter.server.tool as jest.Mock) = jest.fn().mockImplementation((...args: any[]) => {
       const [name, , , callback] = args;
@@ -93,9 +93,9 @@ describe('Project Command Module', () => {
     mockClient.project.delete.mockResolvedValue(mockDeleteResult);
     mockClient.project.info.mockResolvedValue(mockProject);
     mockClient.project.list.mockResolvedValue(mockProjectList);
-    mockClient.project.getSubscription.mockResolvedValue({ 
-      ...mockProject, 
-      status: 'active' // This should match SubscriptionStatusEnum.Active
+    mockClient.project.getSubscription.mockResolvedValue({
+      ...mockProject,
+      status: 'active', // This should match SubscriptionStatusEnum.Active
     });
   });
 
@@ -112,11 +112,11 @@ describe('Project Command Module', () => {
         toolCallbacks[name] = callback;
         return mockAdapter.server;
       });
-      
+
       registerProject(mockAdapter);
-      
+
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(4);
-      
+
       // Verify all tools are registered
       expect(toolCallbacks['create-project']).toBeDefined();
       expect(toolCallbacks['delete-project']).toBeDefined();
@@ -126,35 +126,35 @@ describe('Project Command Module', () => {
 
     it('should register tools with correct names and descriptions', () => {
       registerProject(mockAdapter);
-      
+
       const calls = (mockAdapter.server.tool as jest.Mock).mock.calls;
-      
+
       expect(calls[0]).toEqual([
         'create-project',
         'Create a new upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[1]).toEqual([
         'delete-project',
         'Delete a upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[2]).toEqual([
         'info-project',
         'Get information of upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[3]).toEqual([
         'list-project',
         'List all upsun projects',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
     });
   });
@@ -168,56 +168,64 @@ describe('Project Command Module', () => {
     it('should create project with default branch', async () => {
       const mockSub = { id: 'sub-123', status: 'active' };
       const mockProject = { id: 'project-123', name: 'Test Project', status: 'active' };
-      
+
       mockClient.project.create.mockResolvedValue(mockSub);
       mockClient.project.getSubscription.mockResolvedValue(mockProject);
-      
+
       const result = await toolCallbacks['create-project']({
         organization_id: 'org-123',
-        name: 'Test Project'
+        name: 'Test Project',
       });
-      
+
       expect(mockClient.project.create).toHaveBeenCalledWith(
-        'org-123', 
-        'eu-5.platform.sh', 
-        'Test Project', 
+        'org-123',
+        'eu-5.platform.sh',
+        'Test Project',
         undefined
       );
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify({
-            id: 'project-123',
-            name: 'Test Project',
-            status: 'active'
-          }, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                id: 'project-123',
+                name: 'Test Project',
+                status: 'active',
+              },
+              null,
+              2
+            ),
+          },
+        ],
       });
     });
 
     it('should create project with custom default branch', async () => {
       const mockSub = { id: 'sub-123', status: 'active' };
-      
+
       mockClient.project.create.mockResolvedValue(mockSub);
       mockClient.project.getSubscription.mockResolvedValue(mockProject);
-      
+
       const result = await toolCallbacks['create-project']({
         organization_id: 'org-123',
         name: 'Test Project',
-        default_branch: 'develop'
+        default_branch: 'develop',
       });
-      
+
       expect(mockClient.project.create).toHaveBeenCalledWith(
-        'org-123', 
-        'eu-5.platform.sh', 
-        'Test Project', 
+        'org-123',
+        'eu-5.platform.sh',
+        'Test Project',
         'develop'
       );
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockProject, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockProject, null, 2),
+          },
+        ],
       });
     });
 
@@ -225,45 +233,53 @@ describe('Project Command Module', () => {
       const mockSub = { id: 'sub-123' };
       const mockInactiveProject = { id: 'project-123', status: 'pending' };
       const mockActiveProject = { id: 'project-123', status: 'active' };
-      
+
       mockClient.project.create.mockResolvedValue(mockSub);
       mockClient.project.getSubscription
-        .mockResolvedValueOnce(mockInactiveProject)  // First call - not active
-        .mockResolvedValueOnce(mockActiveProject);   // Second call - active
-      
+        .mockResolvedValueOnce(mockInactiveProject) // First call - not active
+        .mockResolvedValueOnce(mockActiveProject); // Second call - active
+
       // Mock delay function by mocking setTimeout
       const originalSetTimeout = globalThis.setTimeout;
       globalThis.setTimeout = jest.fn((callback: Function) => {
         callback(); // Execute immediately for testing
         return 123 as any;
       }) as any;
-      
+
       const result = await toolCallbacks['create-project']({
         organization_id: 'org-123',
-        name: 'Test Project'
+        name: 'Test Project',
       });
-      
+
       expect(mockClient.project.getSubscription).toHaveBeenCalledTimes(2);
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify({
-            id: 'project-123',
-            status: 'active'
-          }, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                id: 'project-123',
+                status: 'active',
+              },
+              null,
+              2
+            ),
+          },
+        ],
       });
-      
+
       globalThis.setTimeout = originalSetTimeout;
     });
 
     it('should handle project creation errors', async () => {
       mockClient.project.create.mockRejectedValue(new Error('Creation failed'));
-      
-      await expect(toolCallbacks['create-project']({
-        organization_id: 'org-123',
-        name: 'Test Project'
-      })).rejects.toThrow('Creation failed');
+
+      await expect(
+        toolCallbacks['create-project']({
+          organization_id: 'org-123',
+          name: 'Test Project',
+        })
+      ).rejects.toThrow('Creation failed');
     });
   });
 
@@ -278,7 +294,7 @@ describe('Project Command Module', () => {
         organization_id: '123456789012345678901234567',
         region: 'eu-west-1',
         name: 'New Test Project',
-        default_branch: 'main'
+        default_branch: 'main',
       };
 
       const result = await callback(params);
@@ -290,10 +306,12 @@ describe('Project Command Module', () => {
         'main'
       );
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify({ ...mockProject, status: 'active' }, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({ ...mockProject, status: 'active' }, null, 2),
+          },
+        ],
       });
     });
 
@@ -302,7 +320,7 @@ describe('Project Command Module', () => {
       const params = {
         organization_id: '123456789012345678901234567',
         region: 'eu-west-1',
-        name: 'New Test Project'
+        name: 'New Test Project',
       };
 
       const result = await callback(params);
@@ -314,10 +332,12 @@ describe('Project Command Module', () => {
         undefined
       );
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify({ ...mockProject, status: 'active' }, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({ ...mockProject, status: 'active' }, null, 2),
+          },
+        ],
       });
     });
 
@@ -329,7 +349,7 @@ describe('Project Command Module', () => {
       const params = {
         organization_id: 'invalid-org-id',
         region: 'eu-west-1',
-        name: 'New Test Project'
+        name: 'New Test Project',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -350,17 +370,19 @@ describe('Project Command Module', () => {
     it('should delete a project successfully', async () => {
       const callback = toolCallbacks['delete-project'];
       const params = {
-        project_id: 'test-project-13'
+        project_id: 'test-project-13',
       };
 
       const result = await callback(params);
 
       expect(mockClient.project.delete).toHaveBeenCalledWith('test-project-13');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockDeleteResult, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockDeleteResult, null, 2),
+          },
+        ],
       });
     });
 
@@ -370,7 +392,7 @@ describe('Project Command Module', () => {
       mockClient.project.delete.mockRejectedValue(new Error(errorMessage));
 
       const params = {
-        project_id: 'invalid-project'
+        project_id: 'invalid-project',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -382,17 +404,19 @@ describe('Project Command Module', () => {
       mockClient.project.delete.mockResolvedValue({ success: false, error: 'Project not found' });
 
       const params = {
-        project_id: 'non-existent-proj'
+        project_id: 'non-existent-proj',
       };
 
       const result = await callback(params);
 
       expect(mockClient.project.delete).toHaveBeenCalledWith('non-existent-proj');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify({ success: false, error: 'Project not found' }, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({ success: false, error: 'Project not found' }, null, 2),
+          },
+        ],
       });
     });
   });
@@ -405,17 +429,19 @@ describe('Project Command Module', () => {
     it('should get project info successfully', async () => {
       const callback = toolCallbacks['info-project'];
       const params = {
-        project_id: 'test-project-13'
+        project_id: 'test-project-13',
       };
 
       const result = await callback(params);
 
       expect(mockClient.project.info).toHaveBeenCalledWith('test-project-13');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockProject, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockProject, null, 2),
+          },
+        ],
       });
     });
 
@@ -425,7 +451,7 @@ describe('Project Command Module', () => {
       mockClient.project.info.mockRejectedValue(new Error(errorMessage));
 
       const params = {
-        project_id: 'restricted-proj'
+        project_id: 'restricted-proj',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -438,30 +464,32 @@ describe('Project Command Module', () => {
         ...mockProject,
         environments: [
           { name: 'main', status: 'active' },
-          { name: 'staging', status: 'active' }
+          { name: 'staging', status: 'active' },
         ],
         applications: [
           { name: 'web', type: 'php' },
-          { name: 'worker', type: 'nodejs' }
+          { name: 'worker', type: 'nodejs' },
         ],
         git: {
           url: 'git@github.com:example/repo.git',
-          head: 'abc123'
-        }
+          head: 'abc123',
+        },
       };
       mockClient.project.info.mockResolvedValue(detailedProject);
 
       const params = {
-        project_id: 'test-project-13'
+        project_id: 'test-project-13',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(detailedProject, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(detailedProject, null, 2),
+          },
+        ],
       });
     });
   });
@@ -474,17 +502,19 @@ describe('Project Command Module', () => {
     it('should list projects successfully', async () => {
       const callback = toolCallbacks['list-project'];
       const params = {
-        organization_id: '123456789012345678901234567'
+        organization_id: '123456789012345678901234567',
       };
 
       const result = await callback(params);
 
       expect(mockClient.project.list).toHaveBeenCalledWith('123456789012345678901234567');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockProjectList, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockProjectList, null, 2),
+          },
+        ],
       });
     });
 
@@ -493,17 +523,19 @@ describe('Project Command Module', () => {
       mockClient.project.list.mockResolvedValue([]);
 
       const params = {
-        organization_id: '123456789012345678901234567'
+        organization_id: '123456789012345678901234567',
       };
 
       const result = await callback(params);
 
       expect(mockClient.project.list).toHaveBeenCalledWith('123456789012345678901234567');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify([], null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify([], null, 2),
+          },
+        ],
       });
     });
 
@@ -513,7 +545,7 @@ describe('Project Command Module', () => {
       mockClient.project.list.mockRejectedValue(new Error(errorMessage));
 
       const params = {
-        organization_id: 'unauthorized-org'
+        organization_id: 'unauthorized-org',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -526,22 +558,24 @@ describe('Project Command Module', () => {
         id: `project-${i.toString().padStart(13, '0')}`,
         name: `Project ${i}`,
         status: i % 2 === 0 ? 'active' : 'provisioning',
-        created_at: `2025-05-${(i % 28 + 1).toString().padStart(2, '0')}T00:00:00Z`,
-        organization_id: '123456789012345678901234567'
+        created_at: `2025-05-${((i % 28) + 1).toString().padStart(2, '0')}T00:00:00Z`,
+        organization_id: '123456789012345678901234567',
       }));
       mockClient.project.list.mockResolvedValue(largeProjectList);
 
       const params = {
-        organization_id: '123456789012345678901234567'
+        organization_id: '123456789012345678901234567',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(largeProjectList, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(largeProjectList, null, 2),
+          },
+        ],
       });
     });
   });
@@ -556,16 +590,18 @@ describe('Project Command Module', () => {
       mockClient.project.info.mockResolvedValue(null);
 
       const params = {
-        project_id: 'test-project-13'
+        project_id: 'test-project-13',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(null, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(null, null, 2),
+          },
+        ],
       });
     });
 
@@ -576,7 +612,7 @@ describe('Project Command Module', () => {
       const params = {
         organization_id: '123456789012345678901234567',
         region: 'eu-west-1',
-        name: 'Test Project'
+        name: 'Test Project',
       };
 
       await expect(callback(params)).rejects.toThrow('Request timeout');
@@ -587,11 +623,10 @@ describe('Project Command Module', () => {
       mockClient.project.list.mockRejectedValue(new Error('Rate limit exceeded'));
 
       const params = {
-        organization_id: '123456789012345678901234567'
+        organization_id: '123456789012345678901234567',
       };
 
       await expect(callback(params)).rejects.toThrow('Rate limit exceeded');
     });
   });
-
 });

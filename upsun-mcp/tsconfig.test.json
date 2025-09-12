@@ -15,12 +15,6 @@
     "types": ["jest", "node"],
     "noImplicitAny": false
   },
-  "include": [
-    "src/**/*",
-    "test/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "build"
-  ]
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "build"]
 }

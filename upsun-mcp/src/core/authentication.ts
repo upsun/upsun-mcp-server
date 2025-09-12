@@ -1,4 +1,4 @@
-import express from "express";
+import express from 'express';
 import { createLogger } from './logger.js';
 
 // Create logger instance
@@ -6,7 +6,7 @@ const log = createLogger('Auth');
 
 /**
  * Centralized authentication utilities for OAuth2 and Bearer token management.
- * 
+ *
  * This module provides:
  * - OAuth2 metadata configuration for both Authorization Server and Resource Server
  * - Bearer token extraction and validation
@@ -30,13 +30,13 @@ export interface OAuth2Config {
  * Default OAuth2 configuration from environment variables or defaults
  */
 export const getOAuth2Config = (): OAuth2Config => ({
-  authorizationUrl: process.env.OAUTH_AUTH_URL || "https://auth.upsun.com/oauth2/authorize",
-  tokenUrl: process.env.OAUTH_TOKEN_URL || "https://auth.upsun.com/oauth2/token",
-  revocationUrl: process.env.OAUTH_REVOCATION_URL || "https://auth.upsun.com/oauth2/revoke",
-  issuerUrl: process.env.OAUTH_ISSUER_URL || "https://auth.upsun.com",
-  baseUrl: process.env.OAUTH_BASE_URL || "http://127.0.0.1:3000/",
-  scope: process.env.OAUTH_SCOPE || "offline_access",
-  documentationUrl: process.env.OAUTH_DOC_URL || "https://docs.example.com/"
+  authorizationUrl: process.env.OAUTH_AUTH_URL || 'https://auth.upsun.com/oauth2/authorize',
+  tokenUrl: process.env.OAUTH_TOKEN_URL || 'https://auth.upsun.com/oauth2/token',
+  revocationUrl: process.env.OAUTH_REVOCATION_URL || 'https://auth.upsun.com/oauth2/revoke',
+  issuerUrl: process.env.OAUTH_ISSUER_URL || 'https://auth.upsun.com',
+  baseUrl: process.env.OAUTH_BASE_URL || 'http://127.0.0.1:3000/',
+  scope: process.env.OAUTH_SCOPE || 'offline_access',
+  documentationUrl: process.env.OAUTH_DOC_URL || 'https://docs.example.com/',
 });
 
 /**
@@ -70,8 +70,10 @@ export interface OAuth2ProtectedResourceMetadata {
 /**
  * Creates OAuth2 Authorization Server metadata from configuration
  */
-export function createAuthorizationServerMetadata(config: OAuth2Config): OAuth2AuthorizationServerMetadata {
-  return ({
+export function createAuthorizationServerMetadata(
+  config: OAuth2Config
+): OAuth2AuthorizationServerMetadata {
+  return {
     issuer: config.issuerUrl,
     authorization_endpoint: config.authorizationUrl,
     token_endpoint: config.tokenUrl,
@@ -82,25 +84,27 @@ export function createAuthorizationServerMetadata(config: OAuth2Config): OAuth2A
     token_endpoint_auth_methods_supported: ['none', 'client_secret_basic'],
     code_challenge_methods_supported: ['S256'],
     //registration_endpoint: `${config.baseUrl}/register`
-  });
+  };
 }
 
 /**
  * Creates OAuth2 Protected Resource metadata from configuration
  */
-export function createProtectedResourceMetadata(config: OAuth2Config): OAuth2ProtectedResourceMetadata {
-  return ({
+export function createProtectedResourceMetadata(
+  config: OAuth2Config
+): OAuth2ProtectedResourceMetadata {
+  return {
     resource: config.baseUrl,
     authorization_servers: [config.issuerUrl],
     scopes_supported: config.scope.split(' '),
     resource_name: 'Upsun MCP Server',
-    resource_documentation: config.documentationUrl || 'https://docs.example.com/'
-  });
+    resource_documentation: config.documentationUrl || 'https://docs.example.com/',
+  };
 }
 
 /**
  * Sets up OAuth2 metadata endpoints on an Express application
- * 
+ *
  * @param app - Express application instance
  * @param config - Optional OAuth2 configuration (uses default if not provided)
  */
@@ -122,14 +126,14 @@ export function setupOAuth2Direct(app: express.Application, config?: OAuth2Confi
 
   app.post('/register', (_req, res) => {
     res.json({
-      client_id: "mcp",
-      client_name: "Claude Code (test)",
-      redirect_uris: ["http://localhost:64236/callback"],
-      grant_types: ["authorization_code", "refresh_token"],
-      response_types: ["code"],
-      token_endpoint_auth_method: ["none", 'client_secret_basic'],
-      application_type: "native",
-      scope: "offline_access"
+      client_id: 'mcp',
+      client_name: 'Claude Code (test)',
+      redirect_uris: ['http://localhost:64236/callback'],
+      grant_types: ['authorization_code', 'refresh_token'],
+      response_types: ['code'],
+      token_endpoint_auth_method: ['none', 'client_secret_basic'],
+      application_type: 'native',
+      scope: 'offline_access',
     });
   });
 
@@ -140,7 +144,7 @@ export function setupOAuth2Direct(app: express.Application, config?: OAuth2Confi
 
 /**
  * Extracts Bearer token from Authorization header
- * 
+ *
  * @param req - Express request object
  * @returns Bearer token string if found, undefined otherwise
  */
@@ -172,7 +176,7 @@ export interface BearerTokenValidationResult {
 
 /**
  * Validates Bearer token from request
- * 
+ *
  * @param req - Express request object
  * @returns Validation result with token or error information
  */
@@ -184,8 +188,8 @@ export function validateBearerToken(req: express.Request): BearerTokenValidation
       isValid: false,
       error: {
         code: 'missing_token',
-        message: 'Bearer token required in Authorization header'
-      }
+        message: 'Bearer token required in Authorization header',
+      },
     };
   }
 
@@ -197,31 +201,35 @@ export function validateBearerToken(req: express.Request): BearerTokenValidation
       isValid: false,
       error: {
         code: 'invalid_token',
-        message: 'Bearer token cannot be empty'
-      }
+        message: 'Bearer token cannot be empty',
+      },
     };
   }
 
   return {
     isValid: true,
-    token
+    token,
   };
 }
 
 /**
  * Express middleware for Bearer token authentication
- * 
+ *
  * @param req - Express request object
  * @param res - Express response object
  * @param next - Express next function
  */
-export function requireBearerToken(req: express.Request, res: express.Response, next: express.NextFunction): void {
+export function requireBearerToken(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+): void {
   const validation = validateBearerToken(req);
 
   if (!validation.isValid) {
     res.status(401).json({
       error: validation.error?.code || 'unauthorized',
-      message: validation.error?.message || 'Authentication required'
+      message: validation.error?.message || 'Authentication required',
     });
     return;
   }
@@ -234,13 +242,15 @@ export function requireBearerToken(req: express.Request, res: express.Response, 
 
 /**
  * Extracts API key validation for backwards compatibility
- * 
+ *
  * @param req - Express request object
  * @param headerName - Name of the header containing the API key
  * @returns API key string if present, undefined otherwise
  */
-export function extractApiKey(req: express.Request,
-  headerName: string = 'upsun-api-token'): string | undefined {
+export function extractApiKey(
+  req: express.Request,
+  headerName: string = 'upsun-api-token'
+): string | undefined {
   const authHeader = req.headers[headerName];
   const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
   log.debug('Authorization header:', authHeader);

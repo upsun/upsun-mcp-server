@@ -9,7 +9,7 @@ export enum LogLevel {
   INFO = 1,
   WARN = 2,
   ERROR = 3,
-  NONE = 4
+  NONE = 4,
 }
 
 export interface Logger {
@@ -26,52 +26,68 @@ const getLogLevel = (): LogLevel => {
 
   if (logLevel) {
     switch (logLevel) {
-      case 'DEBUG': return LogLevel.DEBUG;
-      case 'INFO': return LogLevel.INFO;
-      case 'WARN': return LogLevel.WARN;
-      case 'ERROR': return LogLevel.ERROR;
-      case 'NONE': return LogLevel.NONE;
+      case 'DEBUG':
+        return LogLevel.DEBUG;
+      case 'INFO':
+        return LogLevel.INFO;
+      case 'WARN':
+        return LogLevel.WARN;
+      case 'ERROR':
+        return LogLevel.ERROR;
+      case 'NONE':
+        return LogLevel.NONE;
     }
   }
 
   // Default levels based on environment
   switch (env) {
-    case 'production': return LogLevel.WARN;
-    case 'test': return LogLevel.ERROR;
-    default: return LogLevel.DEBUG; // development
+    case 'production':
+      return LogLevel.WARN;
+    case 'test':
+      return LogLevel.ERROR;
+    default:
+      return LogLevel.DEBUG; // development
   }
 };
 
 // Convert our LogLevel to Pino level
 const toPinoLevel = (level: LogLevel): pino.LevelWithSilent => {
   switch (level) {
-    case LogLevel.DEBUG: return 'debug';
-    case LogLevel.INFO: return 'info';
-    case LogLevel.WARN: return 'warn';
-    case LogLevel.ERROR: return 'error';
-    case LogLevel.NONE: return 'silent';
-    default: return 'info';
+    case LogLevel.DEBUG:
+      return 'debug';
+    case LogLevel.INFO:
+      return 'info';
+    case LogLevel.WARN:
+      return 'warn';
+    case LogLevel.ERROR:
+      return 'error';
+    case LogLevel.NONE:
+      return 'silent';
+    default:
+      return 'info';
   }
 };
 
 // Create the base Pino logger instance
 const basePinoLogger = pino({
   level: toPinoLevel(getLogLevel()),
-  ...(process.env.NODE_ENV !== 'production' ? {
-    // Development: Pretty formatted logs avec le format demandé
-    transport: {
-      target: 'pino-pretty',
-      options: {
-        colorize: true,
-        translateTime: 'dd-mm-yy HH:MM:ss.l',
-        ignore: 'pid,hostname,component,args',
-        messageFormat: '[{component}]: {msg}',
+  ...(process.env.NODE_ENV !== 'production'
+    ? {
+        // Development: Pretty formatted logs avec le format demandé
+        transport: {
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+            translateTime: 'dd-mm-yy HH:MM:ss.l',
+            ignore: 'pid,hostname,component,args',
+            messageFormat: '[{component}]: {msg}',
+          },
+        },
       }
-    }
-  } : {
-    // Production: JSON logs to stdout
-    timestamp: pino.stdTimeFunctions.isoTime,
-  })
+    : {
+        // Production: JSON logs to stdout
+        timestamp: pino.stdTimeFunctions.isoTime,
+      }),
 });
 
 class PinoLogger implements Logger {

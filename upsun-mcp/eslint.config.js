@@ -21,11 +21,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: [
-      'build/**',
-      'node_modules/**',
-      'coverage/**',
-      'test/**',
-    ],
+    ignores: ['build/**', 'node_modules/**', 'coverage/**', 'test/**'],
   }
 );

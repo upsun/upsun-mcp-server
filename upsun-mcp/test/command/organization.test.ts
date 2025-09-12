@@ -1,17 +1,17 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { McpAdapter } from "../../src/core/adapter.js";
-import { registerOrganization } from "../../src/command/organization.js";
+import { McpAdapter } from '../../src/core/adapter.js';
+import { registerOrganization } from '../../src/command/organization.js';
 
 // Mock the logger module
 const mockLogger = {
   debug: jest.fn(),
   info: jest.fn(),
   warn: jest.fn(),
-  error: jest.fn()
+  error: jest.fn(),
 };
 
 jest.mock('../../src/core/logger.js', () => ({
-  createLogger: jest.fn(() => mockLogger)
+  createLogger: jest.fn(() => mockLogger),
 }));
 
 // Mock data for testing
@@ -22,7 +22,7 @@ const mockOrganization = {
   created_at: '2025-05-28T00:00:00Z',
   owner: 'user@example.com',
   projects_count: 5,
-  members_count: 10
+  members_count: 10,
 };
 
 const mockOrganizationList = [
@@ -34,18 +34,18 @@ const mockOrganizationList = [
     created_at: '2025-05-27T00:00:00Z',
     owner: 'admin@example.com',
     projects_count: 2,
-    members_count: 3
-  }
+    members_count: 3,
+  },
 ];
 
 const mockCreateResult = {
   ...mockOrganization,
-  message: 'Organization created successfully'
+  message: 'Organization created successfully',
 };
 
 const mockDeleteResult = {
   success: true,
-  message: 'Organization deleted successfully'
+  message: 'Organization deleted successfully',
 };
 
 // Mock the Upsun client
@@ -54,16 +54,16 @@ const mockClient = {
     create: jest.fn(),
     delete: jest.fn(),
     info: jest.fn(),
-    list: jest.fn()
-  }
+    list: jest.fn(),
+  },
 };
 
 // Mock the adapter
 const mockAdapter: McpAdapter = {
   client: mockClient,
   server: {
-    tool: jest.fn()
-  }
+    tool: jest.fn(),
+  },
 } as any;
 
 describe('Organization Command Module', () => {
@@ -78,12 +78,14 @@ describe('Organization Command Module', () => {
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
     toolCallbacks = {};
-    
+
     // Setup mock server.tool to capture callbacks
-    mockAdapter.server.tool = jest.fn().mockImplementation((name: string, description: string, schema: any, callback: any) => {
-      toolCallbacks[name] = callback;
-      return mockAdapter.server;
-    });
+    mockAdapter.server.tool = jest
+      .fn()
+      .mockImplementation((name: string, description: string, schema: any, callback: any) => {
+        toolCallbacks[name] = callback;
+        return mockAdapter.server;
+      });
 
     // Setup default mock responses
     mockClient.organization.create.mockResolvedValue(mockCreateResult);
@@ -98,52 +100,48 @@ describe('Organization Command Module', () => {
 
   describe('registerOrganization function', () => {
     it('should register all organization tools', () => {
-      
-      
       registerOrganization(mockAdapter);
-      
+
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(4);
-      
+
       // Verify all tools are registered
       expect(toolCallbacks['create-organization']).toBeDefined();
       expect(toolCallbacks['delete-organization']).toBeDefined();
       expect(toolCallbacks['info-organization']).toBeDefined();
       expect(toolCallbacks['list-organization']).toBeDefined();
-      
-      
     });
 
     it('should register tools with correct names and descriptions', () => {
       registerOrganization(mockAdapter);
-      
+
       const calls = (mockAdapter.server.tool as jest.Mock).mock.calls;
-      
+
       expect(calls[0]).toEqual([
         'create-organization',
         'Create a Organization on upsun',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[1]).toEqual([
         'delete-organization',
         'Delete a Organization on upsun',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[2]).toEqual([
         'info-organization',
         'Get information of organization on upsun',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[3]).toEqual([
         'list-organization',
         'List all my organizations on upsun',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
     });
   });
@@ -156,17 +154,19 @@ describe('Organization Command Module', () => {
     it('should create an organization successfully', async () => {
       const callback = toolCallbacks['create-organization'];
       const params = {
-        organization_name: 'New Test Organization'
+        organization_name: 'New Test Organization',
       };
 
       const result = await callback(params);
 
       expect(mockClient.organization.create).toHaveBeenCalledWith('New Test Organization');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockCreateResult, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockCreateResult, null, 2),
+          },
+        ],
       });
     });
 
@@ -176,7 +176,7 @@ describe('Organization Command Module', () => {
       mockClient.organization.create.mockRejectedValue(new Error(errorMessage));
 
       const params = {
-        organization_name: 'Existing Organization'
+        organization_name: 'Existing Organization',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -186,17 +186,19 @@ describe('Organization Command Module', () => {
     it('should handle special characters in organization name', async () => {
       const callback = toolCallbacks['create-organization'];
       const params = {
-        organization_name: 'Test Org & Co. (2025)'
+        organization_name: 'Test Org & Co. (2025)',
       };
 
       const result = await callback(params);
 
       expect(mockClient.organization.create).toHaveBeenCalledWith('Test Org & Co. (2025)');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockCreateResult, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockCreateResult, null, 2),
+          },
+        ],
       });
     });
   });
@@ -209,17 +211,19 @@ describe('Organization Command Module', () => {
     it('should delete an organization successfully', async () => {
       const callback = toolCallbacks['delete-organization'];
       const params = {
-        organization_id: '123456789012345678901234567'
+        organization_id: '123456789012345678901234567',
       };
 
       const result = await callback(params);
 
       expect(mockClient.organization.delete).toHaveBeenCalledWith('123456789012345678901234567');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockDeleteResult, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockDeleteResult, null, 2),
+          },
+        ],
       });
     });
 
@@ -229,7 +233,7 @@ describe('Organization Command Module', () => {
       mockClient.organization.delete.mockRejectedValue(new Error(errorMessage));
 
       const params = {
-        organization_id: 'invalid-org-id'
+        organization_id: 'invalid-org-id',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -238,23 +242,29 @@ describe('Organization Command Module', () => {
 
     it('should handle deletion of organization with projects', async () => {
       const callback = toolCallbacks['delete-organization'];
-      mockClient.organization.delete.mockResolvedValue({ 
-        success: false, 
-        error: 'Cannot delete organization with active projects' 
+      mockClient.organization.delete.mockResolvedValue({
+        success: false,
+        error: 'Cannot delete organization with active projects',
       });
 
       const params = {
-        organization_id: '123456789012345678901234567'
+        organization_id: '123456789012345678901234567',
       };
 
       const result = await callback(params);
 
       expect(mockClient.organization.delete).toHaveBeenCalledWith('123456789012345678901234567');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify({ success: false, error: 'Cannot delete organization with active projects' }, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              { success: false, error: 'Cannot delete organization with active projects' },
+              null,
+              2
+            ),
+          },
+        ],
       });
     });
   });
@@ -267,17 +277,19 @@ describe('Organization Command Module', () => {
     it('should get organization info successfully', async () => {
       const callback = toolCallbacks['info-organization'];
       const params = {
-        organization_id: '123456789012345678901234567'
+        organization_id: '123456789012345678901234567',
       };
 
       const result = await callback(params);
 
       expect(mockClient.organization.info).toHaveBeenCalledWith('123456789012345678901234567');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockOrganization, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockOrganization, null, 2),
+          },
+        ],
       });
     });
 
@@ -287,7 +299,7 @@ describe('Organization Command Module', () => {
       mockClient.organization.info.mockRejectedValue(new Error(errorMessage));
 
       const params = {
-        organization_id: 'restricted-org-id'
+        organization_id: 'restricted-org-id',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -300,30 +312,32 @@ describe('Organization Command Module', () => {
         ...mockOrganization,
         members: [
           { email: 'user1@example.com', role: 'admin' },
-          { email: 'user2@example.com', role: 'member' }
+          { email: 'user2@example.com', role: 'member' },
         ],
         projects: [
           { id: 'proj1', name: 'Project 1' },
-          { id: 'proj2', name: 'Project 2' }
+          { id: 'proj2', name: 'Project 2' },
         ],
         billing: {
           plan: 'enterprise',
-          status: 'active'
-        }
+          status: 'active',
+        },
       };
       mockClient.organization.info.mockResolvedValue(detailedOrganization);
 
       const params = {
-        organization_id: '123456789012345678901234567'
+        organization_id: '123456789012345678901234567',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(detailedOrganization, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(detailedOrganization, null, 2),
+          },
+        ],
       });
     });
   });
@@ -341,10 +355,12 @@ describe('Organization Command Module', () => {
 
       expect(mockClient.organization.list).toHaveBeenCalledWith();
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockOrganizationList, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockOrganizationList, null, 2),
+          },
+        ],
       });
     });
 
@@ -358,10 +374,12 @@ describe('Organization Command Module', () => {
 
       expect(mockClient.organization.list).toHaveBeenCalledWith();
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify([], null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify([], null, 2),
+          },
+        ],
       });
     });
 
@@ -382,10 +400,10 @@ describe('Organization Command Module', () => {
         id: `org-${i.toString().padStart(27, '0')}`,
         name: `Organization ${i}`,
         status: i % 3 === 0 ? 'active' : 'inactive',
-        created_at: `2025-05-${(i % 28 + 1).toString().padStart(2, '0')}T00:00:00Z`,
+        created_at: `2025-05-${((i % 28) + 1).toString().padStart(2, '0')}T00:00:00Z`,
         owner: `owner${i}@example.com`,
         projects_count: i % 10,
-        members_count: (i % 5) + 1
+        members_count: (i % 5) + 1,
       }));
       mockClient.organization.list.mockResolvedValue(largeOrganizationList);
 
@@ -394,10 +412,12 @@ describe('Organization Command Module', () => {
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(largeOrganizationList, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(largeOrganizationList, null, 2),
+          },
+        ],
       });
     });
   });
@@ -412,16 +432,18 @@ describe('Organization Command Module', () => {
       mockClient.organization.info.mockResolvedValue(null);
 
       const params = {
-        organization_id: '123456789012345678901234567'
+        organization_id: '123456789012345678901234567',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(null, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(null, null, 2),
+          },
+        ],
       });
     });
 
@@ -430,7 +452,7 @@ describe('Organization Command Module', () => {
       mockClient.organization.create.mockRejectedValue(new Error('Network timeout'));
 
       const params = {
-        organization_name: 'Test Organization'
+        organization_name: 'Test Organization',
       };
 
       await expect(callback(params)).rejects.toThrow('Network timeout');

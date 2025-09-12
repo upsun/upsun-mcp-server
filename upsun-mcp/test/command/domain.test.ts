@@ -1,25 +1,25 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { McpAdapter } from "../../src/core/adapter.js";
-import { registerDomain } from "../../src/command/domain.js";
+import { McpAdapter } from '../../src/core/adapter.js';
+import { registerDomain } from '../../src/command/domain.js';
 
 // Mock the logger module
 const mockLogger = {
   debug: jest.fn(),
   info: jest.fn(),
   warn: jest.fn(),
-  error: jest.fn()
+  error: jest.fn(),
 };
 
 jest.mock('../../src/core/logger.js', () => ({
-  createLogger: jest.fn(() => mockLogger)
+  createLogger: jest.fn(() => mockLogger),
 }));
 
 // Mock the adapter
 const mockAdapter: McpAdapter = {
   client: {},
   server: {
-    tool: jest.fn()
-  }
+    tool: jest.fn(),
+  },
 } as any;
 
 describe('Domain Command Module', () => {
@@ -28,18 +28,20 @@ describe('Domain Command Module', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     toolCallbacks = {};
-    
+
     // Reset logger mocks
     mockLogger.debug.mockClear();
     mockLogger.info.mockClear();
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
-    
+
     // Setup mock server.tool to capture callbacks
-    (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: string, description: string, schema: any, callback: any) => {
-      toolCallbacks[name] = callback;
-      return mockAdapter.server;
-    });
+    (mockAdapter.server.tool as any) = jest
+      .fn()
+      .mockImplementation((name: string, description: string, schema: any, callback: any) => {
+        toolCallbacks[name] = callback;
+        return mockAdapter.server;
+      });
   });
 
   afterEach(() => {
@@ -49,9 +51,9 @@ describe('Domain Command Module', () => {
   describe('registerDomain function', () => {
     it('should register all domain tools', () => {
       registerDomain(mockAdapter);
-      
+
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(5);
-      
+
       // Verify all tools are registered
       expect(toolCallbacks['add-domain']).toBeDefined();
       expect(toolCallbacks['delete-domain']).toBeDefined();
@@ -62,42 +64,42 @@ describe('Domain Command Module', () => {
 
     it('should register tools with correct names and descriptions', () => {
       registerDomain(mockAdapter);
-      
+
       const calls = (mockAdapter.server.tool as jest.Mock).mock.calls;
-      
+
       expect(calls[0]).toEqual([
         'add-domain',
         'Add Domain on upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[1]).toEqual([
         'delete-domain',
         'Delete a Domain on upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[2]).toEqual([
         'get-domain',
         'Get a Domain of upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[3]).toEqual([
         'list-domain',
         'List all Domains of upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
-      
+
       expect(calls[4]).toEqual([
         'update-domain',
         'Update a Domain of upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]);
     });
   });
@@ -111,16 +113,18 @@ describe('Domain Command Module', () => {
       const callback = toolCallbacks['add-domain'];
       const params = {
         project_id: 'test-project-13',
-        domain_name: 'example.com'
+        domain_name: 'example.com',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -128,16 +132,18 @@ describe('Domain Command Module', () => {
       const callback = toolCallbacks['add-domain'];
       const params = {
         project_id: 'test-project-13',
-        domain_name: 'api.example.com'
+        domain_name: 'api.example.com',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -145,16 +151,18 @@ describe('Domain Command Module', () => {
       const callback = toolCallbacks['add-domain'];
       const params = {
         project_id: 'test-project-13',
-        domain_name: '*.example.com'
+        domain_name: '*.example.com',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -162,16 +170,18 @@ describe('Domain Command Module', () => {
       const callback = toolCallbacks['add-domain'];
       const params = {
         project_id: 'test-project-13',
-        domain_name: 'example.网站'
+        domain_name: 'example.网站',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
   });
@@ -185,16 +195,18 @@ describe('Domain Command Module', () => {
       const callback = toolCallbacks['delete-domain'];
       const params = {
         project_id: 'test-project-13',
-        domain_name: 'example.com'
+        domain_name: 'example.com',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -202,16 +214,18 @@ describe('Domain Command Module', () => {
       const callback = toolCallbacks['delete-domain'];
       const params = {
         project_id: 'test-project-13',
-        domain_name: 'blog.example.com'
+        domain_name: 'blog.example.com',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -219,16 +233,18 @@ describe('Domain Command Module', () => {
       const callback = toolCallbacks['delete-domain'];
       const params = {
         project_id: 'test-project-13',
-        domain_name: 'www.example.com'
+        domain_name: 'www.example.com',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
   });
@@ -242,16 +258,18 @@ describe('Domain Command Module', () => {
       const callback = toolCallbacks['get-domain'];
       const params = {
         project_id: 'test-project-13',
-        domain_name: 'example.com'
+        domain_name: 'example.com',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -259,16 +277,18 @@ describe('Domain Command Module', () => {
       const callback = toolCallbacks['get-domain'];
       const params = {
         project_id: 'test-project-13',
-        domain_name: 'secure.example.com'
+        domain_name: 'secure.example.com',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -276,16 +296,18 @@ describe('Domain Command Module', () => {
       const callback = toolCallbacks['get-domain'];
       const params = {
         project_id: 'test-project-13',
-        domain_name: 'pending.example.com'
+        domain_name: 'pending.example.com',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
   });
@@ -298,48 +320,54 @@ describe('Domain Command Module', () => {
     it('should return TODO for list domains', async () => {
       const callback = toolCallbacks['list-domain'];
       const params = {
-        project_id: 'test-project-13'
+        project_id: 'test-project-13',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
     it('should handle projects with multiple domains', async () => {
       const callback = toolCallbacks['list-domain'];
       const params = {
-        project_id: 'multi-domain-project'
+        project_id: 'multi-domain-project',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
     it('should handle enterprise projects', async () => {
       const callback = toolCallbacks['list-domain'];
       const params = {
-        project_id: 'enterprise-project-456'
+        project_id: 'enterprise-project-456',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
   });
@@ -353,16 +381,18 @@ describe('Domain Command Module', () => {
       const callback = toolCallbacks['update-domain'];
       const params = {
         project_id: 'test-project-13',
-        domain_name: 'example.com'
+        domain_name: 'example.com',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -370,16 +400,18 @@ describe('Domain Command Module', () => {
       const callback = toolCallbacks['update-domain'];
       const params = {
         project_id: 'test-project-13',
-        domain_name: 'ssl-update.example.com'
+        domain_name: 'ssl-update.example.com',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -387,16 +419,18 @@ describe('Domain Command Module', () => {
       const callback = toolCallbacks['update-domain'];
       const params = {
         project_id: 'test-project-13',
-        domain_name: 'routing.example.com'
+        domain_name: 'routing.example.com',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
   });
@@ -408,51 +442,53 @@ describe('Domain Command Module', () => {
 
     it('should handle all tools with minimal required parameters', async () => {
       const callbacks = [
-        { 
-          name: 'add-domain', 
-          params: { 
-            project_id: 'proj', 
-            domain_name: 'test.com' 
-          } 
+        {
+          name: 'add-domain',
+          params: {
+            project_id: 'proj',
+            domain_name: 'test.com',
+          },
         },
-        { 
-          name: 'delete-domain', 
-          params: { 
-            project_id: 'proj', 
-            domain_name: 'test.com' 
-          } 
+        {
+          name: 'delete-domain',
+          params: {
+            project_id: 'proj',
+            domain_name: 'test.com',
+          },
         },
-        { 
-          name: 'get-domain', 
-          params: { 
-            project_id: 'proj', 
-            domain_name: 'test.com' 
-          } 
+        {
+          name: 'get-domain',
+          params: {
+            project_id: 'proj',
+            domain_name: 'test.com',
+          },
         },
-        { 
-          name: 'list-domain', 
-          params: { 
-            project_id: 'proj' 
-          } 
+        {
+          name: 'list-domain',
+          params: {
+            project_id: 'proj',
+          },
         },
-        { 
-          name: 'update-domain', 
-          params: { 
-            project_id: 'proj', 
-            domain_name: 'test.com' 
-          } 
-        }
+        {
+          name: 'update-domain',
+          params: {
+            project_id: 'proj',
+            domain_name: 'test.com',
+          },
+        },
       ];
 
       for (const { name, params } of callbacks) {
         const callback = toolCallbacks[name];
         const result = await callback(params);
-        
+
         expect(result).toEqual({
-          content: [{
-            type: 'text',
-            text: JSON.stringify("TODO", null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify('TODO', null, 2),
+            },
+          ],
         });
       }
     });
@@ -462,16 +498,18 @@ describe('Domain Command Module', () => {
       const longDomain = 'very-long-subdomain-name-that-exceeds-normal-limits.example.com';
       const params = {
         project_id: 'test-project-13',
-        domain_name: longDomain
+        domain_name: longDomain,
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -479,16 +517,18 @@ describe('Domain Command Module', () => {
       const callback = toolCallbacks['get-domain'];
       const params = {
         project_id: 'test-project-13',
-        domain_name: 'test-domain.co.uk'
+        domain_name: 'test-domain.co.uk',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -496,16 +536,18 @@ describe('Domain Command Module', () => {
       const callback = toolCallbacks['update-domain'];
       const params = {
         project_id: 'test-project-13',
-        domain_name: 'api.v1.staging.app.example.com'
+        domain_name: 'api.v1.staging.app.example.com',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
 
@@ -513,16 +555,18 @@ describe('Domain Command Module', () => {
       const callback = toolCallbacks['add-domain'];
       const params = {
         project_id: 'test-project-13',
-        domain_name: '123.example.com'
+        domain_name: '123.example.com',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify("TODO", null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('TODO', null, 2),
+          },
+        ],
       });
     });
   });

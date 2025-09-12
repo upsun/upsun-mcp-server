@@ -1,17 +1,17 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { McpAdapter } from "../../src/core/adapter.js";
-import { registerRoute } from "../../src/command/route.js";
+import { McpAdapter } from '../../src/core/adapter.js';
+import { registerRoute } from '../../src/command/route.js';
 
 // Mock the logger module
 const mockLogger = {
   debug: jest.fn(),
   info: jest.fn(),
   warn: jest.fn(),
-  error: jest.fn()
+  error: jest.fn(),
 };
 
 jest.mock('../../src/core/logger.js', () => ({
-  createLogger: jest.fn(() => mockLogger)
+  createLogger: jest.fn(() => mockLogger),
 }));
 
 // Mock the adapter
@@ -20,12 +20,12 @@ const mockAdapter: McpAdapter = {
     route: {
       get: jest.fn(),
       list: jest.fn(),
-      web: jest.fn()
-    }
+      web: jest.fn(),
+    },
   },
   server: {
-    tool: jest.fn()
-  }
+    tool: jest.fn(),
+  },
 } as any;
 
 describe('Route Command Module', () => {
@@ -34,20 +34,22 @@ describe('Route Command Module', () => {
   beforeEach(() => {
     jest.clearAllMocks() as any;
     toolCallbacks = {};
-    
+
     // Reset logger mocks
     mockLogger.debug.mockClear();
     mockLogger.info.mockClear();
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
-    
+
     // Setup mock server.tool to capture callbacks
     // @ts-ignore
-    mockAdapter.server.tool = jest.fn().mockImplementation((name: string, description: string, schema: any, callback: any) => {
-      toolCallbacks[name] = callback;
-      return mockAdapter.server;
-    }) as any;
-    
+    mockAdapter.server.tool = jest
+      .fn()
+      .mockImplementation((name: string, description: string, schema: any, callback: any) => {
+        toolCallbacks[name] = callback;
+        return mockAdapter.server;
+      }) as any;
+
     // Register routes to populate toolCallbacks
     registerRoute(mockAdapter) as any;
   });
@@ -60,7 +62,7 @@ describe('Route Command Module', () => {
     it('should register all route tools', () => {
       // Don't call registerRoute again since it's already called in beforeEach
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(3) as any;
-      
+
       // Verify all tools are registered
       expect(toolCallbacks['get-route']).toBeDefined() as any;
       expect(toolCallbacks['list-route']).toBeDefined() as any;
@@ -70,58 +72,63 @@ describe('Route Command Module', () => {
     it('should register tools with correct names and descriptions', () => {
       // Don't call registerRoute again since it's already called in beforeEach
       const calls = (mockAdapter.server.tool as jest.Mock).mock.calls;
-      
+
       expect(calls[0]).toEqual([
         'get-route',
         'Get route URL of upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]) as any;
-      
+
       expect(calls[1]).toEqual([
         'list-route',
         'List routes URL of upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]) as any;
-      
+
       expect(calls[2]).toEqual([
         'get-console',
         'Get console URL of upsun project',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       ]) as any;
     });
   });
 
   describe('get-route tool', () => {
-
     it('should get route with route_id', async () => {
       const mockRouteData = {
         id: 'route-123',
         url: 'https://example.com',
         upstream: 'app',
-        cache: { enabled: true }
+        cache: { enabled: true },
       };
-      
+
       // @ts-ignore
       mockAdapter.client.route.get = jest.fn().mockResolvedValue(mockRouteData) as any;
-      
+
       const callback = toolCallbacks['get-route'];
       const params = {
         project_id: 'test-project-13',
         environment_name: 'main',
-        route_id: 'route-123'
+        route_id: 'route-123',
       };
 
-      const result = await callback(params) as any;
+      const result = (await callback(params)) as any;
 
-      expect(mockAdapter.client.route.get).toHaveBeenCalledWith('test-project-13', 'main', 'route-123') as any;
+      expect(mockAdapter.client.route.get).toHaveBeenCalledWith(
+        'test-project-13',
+        'main',
+        'route-123'
+      ) as any;
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockRouteData, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockRouteData, null, 2),
+          },
+        ],
       }) as any;
     }) as any;
 
@@ -129,26 +136,32 @@ describe('Route Command Module', () => {
       const mockRouteData = {
         id: 'primary-route',
         url: 'https://main-abcdef.example.com',
-        upstream: 'app'
+        upstream: 'app',
       };
-      
+
       // @ts-ignore
       mockAdapter.client.route.get = jest.fn().mockResolvedValue(mockRouteData) as any;
-      
+
       const callback = toolCallbacks['get-route'];
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'main'
+        environment_name: 'main',
       };
 
-      const result = await callback(params) as any;
+      const result = (await callback(params)) as any;
 
-      expect(mockAdapter.client.route.get).toHaveBeenCalledWith('test-project-13', 'main', '') as any;
+      expect(mockAdapter.client.route.get).toHaveBeenCalledWith(
+        'test-project-13',
+        'main',
+        ''
+      ) as any;
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockRouteData, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockRouteData, null, 2),
+          },
+        ],
       }) as any;
     }) as any;
 
@@ -156,27 +169,33 @@ describe('Route Command Module', () => {
       const mockRouteData = {
         id: 'staging-route',
         url: 'https://staging-abcdef.example.com',
-        upstream: 'app'
+        upstream: 'app',
       };
-      
+
       // @ts-ignore
       mockAdapter.client.route.get = jest.fn().mockResolvedValue(mockRouteData) as any;
-      
+
       const callback = toolCallbacks['get-route'];
       const params = {
         project_id: 'test-project-13',
         environment_name: 'staging',
-        route_id: 'staging-route'
+        route_id: 'staging-route',
       };
 
-      const result = await callback(params) as any;
+      const result = (await callback(params)) as any;
 
-      expect(mockAdapter.client.route.get).toHaveBeenCalledWith('test-project-13', 'staging', 'staging-route') as any;
+      expect(mockAdapter.client.route.get).toHaveBeenCalledWith(
+        'test-project-13',
+        'staging',
+        'staging-route'
+      ) as any;
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockRouteData, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockRouteData, null, 2),
+          },
+        ],
       }) as any;
     }) as any;
 
@@ -188,85 +207,93 @@ describe('Route Command Module', () => {
         cache: {
           enabled: true,
           ttl: 3600,
-          cookies: ['session_id']
-        }
+          cookies: ['session_id'],
+        },
       };
-      
+
       // @ts-ignore
       mockAdapter.client.route.get = jest.fn().mockResolvedValue(mockRouteData) as any;
-      
+
       const callback = toolCallbacks['get-route'];
       const params = {
         project_id: 'test-project-13',
         environment_name: 'main',
-        route_id: 'cached-route'
+        route_id: 'cached-route',
       };
 
-      const result = await callback(params) as any;
+      const result = (await callback(params)) as any;
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockRouteData, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockRouteData, null, 2),
+          },
+        ],
       }) as any;
     }) as any;
   }) as any;
 
   describe('list-route tool', () => {
-
     it('should list all routes for environment', async () => {
       const mockRoutesData = [
         {
           id: 'route-1',
           url: 'https://main.example.com',
-          upstream: 'app'
+          upstream: 'app',
         },
         {
           id: 'route-2',
           url: 'https://api.example.com',
-          upstream: 'api'
-        }
+          upstream: 'api',
+        },
       ];
-      
+
       // @ts-ignore
       mockAdapter.client.route.list = jest.fn().mockResolvedValue(mockRoutesData) as any;
-      
+
       const callback = toolCallbacks['list-route'];
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'main'
+        environment_name: 'main',
       };
 
-      const result = await callback(params) as any;
+      const result = (await callback(params)) as any;
 
       expect(mockAdapter.client.route.list).toHaveBeenCalledWith('test-project-13', 'main') as any;
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockRoutesData, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockRoutesData, null, 2),
+          },
+        ],
       }) as any;
     }) as any;
 
     it('should handle empty routes list', async () => {
       // @ts-ignore
       mockAdapter.client.route.list = jest.fn().mockResolvedValue([]) as any;
-      
+
       const callback = toolCallbacks['list-route'];
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'empty-env'
+        environment_name: 'empty-env',
       };
 
-      const result = await callback(params) as any;
+      const result = (await callback(params)) as any;
 
-      expect(mockAdapter.client.route.list).toHaveBeenCalledWith('test-project-13', 'empty-env') as any;
+      expect(mockAdapter.client.route.list).toHaveBeenCalledWith(
+        'test-project-13',
+        'empty-env'
+      ) as any;
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify([], null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify([], null, 2),
+          },
+        ],
       }) as any;
     }) as any;
 
@@ -276,83 +303,88 @@ describe('Route Command Module', () => {
           id: 'prod-route-1',
           url: 'https://www.example.com',
           upstream: 'app',
-          tls: { enabled: true }
+          tls: { enabled: true },
         },
         {
           id: 'prod-route-2',
           url: 'https://api.example.com',
           upstream: 'api',
-          tls: { enabled: true }
-        }
+          tls: { enabled: true },
+        },
       ];
-      
+
       // @ts-ignore
       mockAdapter.client.route.list = jest.fn().mockResolvedValue(mockRoutesData) as any;
-      
+
       const callback = toolCallbacks['list-route'];
       const params = {
         project_id: 'prod-project',
-        environment_name: 'production'
+        environment_name: 'production',
       };
 
-      const result = await callback(params) as any;
+      const result = (await callback(params)) as any;
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockRoutesData, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockRoutesData, null, 2),
+          },
+        ],
       }) as any;
     }) as any;
   }) as any;
 
   describe('get-console tool', () => {
-
     it('should get console URL for project', async () => {
       const mockWebData = {
-        ui: 'https://console.upsun.com/projects/test-project-13'
-      };
-      
-      // @ts-ignore
-      mockAdapter.client.route.web = jest.fn().mockResolvedValue(mockWebData) as any;
-      
-      const callback = toolCallbacks['get-console'];
-      const params = {
-        project_id: 'test-project-13'
+        ui: 'https://console.upsun.com/projects/test-project-13',
       };
 
-      const result = await callback(params) as any;
+      // @ts-ignore
+      mockAdapter.client.route.web = jest.fn().mockResolvedValue(mockWebData) as any;
+
+      const callback = toolCallbacks['get-console'];
+      const params = {
+        project_id: 'test-project-13',
+      };
+
+      const result = (await callback(params)) as any;
 
       // Since the function returns "Not implemented", we don't expect any client calls
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify('Not implemented', null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('Not implemented', null, 2),
+          },
+        ],
       }) as any;
     }) as any;
 
     it('should handle different project console URLs', async () => {
       const mockWebData = {
-        ui: 'https://console.upsun.com/projects/enterprise-project-456'
-      };
-      
-      // @ts-ignore
-      mockAdapter.client.route.web = jest.fn().mockResolvedValue(mockWebData) as any;
-      
-      const callback = toolCallbacks['get-console'];
-      const params = {
-        project_id: 'enterprise-project-456'
+        ui: 'https://console.upsun.com/projects/enterprise-project-456',
       };
 
-      const result = await callback(params) as any;
+      // @ts-ignore
+      mockAdapter.client.route.web = jest.fn().mockResolvedValue(mockWebData) as any;
+
+      const callback = toolCallbacks['get-console'];
+      const params = {
+        project_id: 'enterprise-project-456',
+      };
+
+      const result = (await callback(params)) as any;
 
       // Since the function returns "Not implemented", we don't expect any client calls
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify('Not implemented', null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('Not implemented', null, 2),
+          },
+        ],
       }) as any;
     }) as any;
 
@@ -360,57 +392,58 @@ describe('Route Command Module', () => {
       const mockWebData = {
         ui: 'https://console.upsun.com/projects/complex-project',
         api: 'https://api.upsun.com/projects/complex-project',
-        ssh: 'ssh://complex-project@ssh.upsun.com'
+        ssh: 'ssh://complex-project@ssh.upsun.com',
       };
-      
+
       // @ts-ignore
       mockAdapter.client.route.web = jest.fn().mockResolvedValue(mockWebData) as any;
-      
+
       const callback = toolCallbacks['get-console'];
       const params = {
-        project_id: 'complex-project'
+        project_id: 'complex-project',
       };
 
-      const result = await callback(params) as any;
+      const result = (await callback(params)) as any;
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify('Not implemented', null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('Not implemented', null, 2),
+          },
+        ],
       }) as any;
     }) as any;
   }) as any;
 
   describe('error handling and edge cases', () => {
-
     it('should handle API errors for get-route', async () => {
       const error = new Error('Route not found') as any;
       // @ts-ignore
       mockAdapter.client.route.get = jest.fn().mockRejectedValue(error) as any;
-      
+
       const callback = toolCallbacks['get-route'];
       const params = {
         project_id: 'test-project-13',
         environment_name: 'main',
-        route_id: 'nonexistent-route'
+        route_id: 'nonexistent-route',
       };
 
-      await expect(callback(params)).rejects.toThrow('Route not found') as any;
+      (await expect(callback(params)).rejects.toThrow('Route not found')) as any;
     }) as any;
 
     it('should handle API errors for list-route', async () => {
       const error = new Error('Environment not found') as any;
       // @ts-ignore
       mockAdapter.client.route.list = jest.fn().mockRejectedValue(error) as any;
-      
+
       const callback = toolCallbacks['list-route'];
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'nonexistent-env'
+        environment_name: 'nonexistent-env',
       };
 
-      await expect(callback(params)).rejects.toThrow('Environment not found') as any;
+      (await expect(callback(params)).rejects.toThrow('Environment not found')) as any;
     }) as any;
 
     it('should handle API errors for get-console', async () => {
@@ -418,35 +451,39 @@ describe('Route Command Module', () => {
       // it cannot throw errors. This test verifies the current behavior.
       const callback = toolCallbacks['get-console'];
       const params = {
-        project_id: 'restricted-project'
+        project_id: 'restricted-project',
       };
 
-      const result = await callback(params) as any;
+      const result = (await callback(params)) as any;
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify('Not implemented', null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify('Not implemented', null, 2),
+          },
+        ],
       }) as any;
     }) as any;
 
     it('should handle null/undefined responses', async () => {
       // @ts-ignore
       mockAdapter.client.route.get = jest.fn().mockResolvedValue(null) as any;
-      
+
       const callback = toolCallbacks['get-route'];
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'main'
+        environment_name: 'main',
       };
 
-      const result = await callback(params) as any;
+      const result = (await callback(params)) as any;
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(null, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(null, null, 2),
+          },
+        ],
       }) as any;
     }) as any;
 
@@ -459,40 +496,42 @@ describe('Route Command Module', () => {
           enabled: true,
           default_ttl: 3600,
           cookies: ['*'],
-          headers: ['Accept', 'Accept-Language']
+          headers: ['Accept', 'Accept-Language'],
         },
         redirects: {
           expires: '1d',
           paths: {
-            '/old-path': '/new-path'
-          }
+            '/old-path': '/new-path',
+          },
         },
         tls: {
           strict_transport_security: {
             enabled: true,
             include_subdomains: true,
-            preload: true
-          }
-        }
+            preload: true,
+          },
+        },
       };
-      
+
       // @ts-ignore
       mockAdapter.client.route.get = jest.fn().mockResolvedValue(complexRoute) as any;
-      
+
       const callback = toolCallbacks['get-route'];
       const params = {
         project_id: 'test-project-13',
         environment_name: 'main',
-        route_id: 'complex-route'
+        route_id: 'complex-route',
       };
 
-      const result = await callback(params) as any;
+      const result = (await callback(params)) as any;
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(complexRoute, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(complexRoute, null, 2),
+          },
+        ],
       }) as any;
     }) as any;
   }) as any;

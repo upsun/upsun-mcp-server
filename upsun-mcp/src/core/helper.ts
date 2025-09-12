@@ -1,12 +1,11 @@
-import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod";
+import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
 
 /**
  * Schema validation utilities for Upsun MCP server.
  * Provides Zod schema definitions for various Upsun platform entities.
  */
 export class Schema {
-
   /**
    * Creates a Zod string schema for activity IDs.
    * @returns A Zod string schema for validating activity IDs
@@ -21,7 +20,7 @@ export class Schema {
    * @returns A Zod string schema for validating project IDs
    */
   static projectId(): z.ZodString {
-    return z.string().length(13, "Project ID must be 13 characters long");
+    return z.string().length(13, 'Project ID must be 13 characters long');
   }
 
   /**
@@ -46,7 +45,7 @@ export class Schema {
    * @returns A Zod string schema for validating organization IDs
    */
   static organizationId(): z.ZodString {
-    return z.string().length(27, "Organization ID must be 27 characters long");
+    return z.string().length(27, 'Organization ID must be 27 characters long');
   }
 
   /**
@@ -63,7 +62,7 @@ export class Schema {
    * @returns A Zod string schema for validating backup IDs
    */
   static backupId(): z.ZodString {
-    return z.string().length(27, "Backup ID must be 27 characters long");
+    return z.string().length(27, 'Backup ID must be 27 characters long');
   }
 
   /**
@@ -72,7 +71,7 @@ export class Schema {
    * @returns A Zod string schema for validating certificate IDs
    */
   static certificateId(): z.ZodString {
-    return z.string().length(65, "Certificate ID must be 65 characters long");
+    return z.string().length(65, 'Certificate ID must be 65 characters long');
   }
 
   /**
@@ -81,7 +80,7 @@ export class Schema {
    * @returns A Zod string schema for validating domain names
    */
   static domainName(): z.ZodString {
-    return z.string().max(255, "Domain name must be less than 255 characters");
+    return z.string().max(255, 'Domain name must be less than 255 characters');
   }
 }
 
@@ -123,10 +122,12 @@ export class Response {
    */
   static text(text: string): CallToolResult {
     return {
-      content: [{
-        type: "text",
-        text
-      }]
+      content: [
+        {
+          type: 'text',
+          text,
+        },
+      ],
     };
   }
 
@@ -139,10 +140,12 @@ export class Response {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static json(json: any): CallToolResult {
     return {
-      content: [{
-        type: "text",
-        text: JSON.stringify(json, null, 2)
-      }]
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(json, null, 2),
+        },
+      ],
     };
   }
 }

@@ -6,27 +6,26 @@
  * top-level containers for applications and environments in the Upsun platform.
  */
 
-import { SubscriptionStatusEnum } from "upsun-sdk-node/dist/apis-gen/models/Subscription.js";
-import { McpAdapter } from "../core/adapter.js";
+import { SubscriptionStatusEnum } from 'upsun-sdk-node/dist/apis-gen/models/Subscription.js';
+import { McpAdapter } from '../core/adapter.js';
 import { createLogger } from '../core/logger.js';
 
 // Create logger for project operations
 const log = createLogger('MCP:Tool:project-commands');
-import { Response, Schema } from "../core/helper.js";
-import { z } from "zod";
-
+import { Response, Schema } from '../core/helper.js';
+import { z } from 'zod';
 
 /**
  * Registers project management tools with the MCP server.
- * 
+ *
  * This function adds four tools to the MCP server for project operations:
  * - create-project: Creates a new Upsun project within an organization
  * - delete-project: Permanently deletes a project and all its resources
  * - info-project: Retrieves detailed information about a specific project
  * - list-project: Lists all projects within an organization
- * 
+ *
  * @param adapter - The MCP adapter instance to register tools with
- * 
+ *
  * @example
  * ```typescript
  * const server = new UpsunMcpServer();
@@ -39,33 +38,44 @@ export function registerProject(adapter: McpAdapter): void {
   /**
    * Tool: create-project
    * Creates a new Upsun project within the specified organization.
-   * 
+   *
    * @param organization_id - The organization ID where the project will be created
    * @param region_host - The cloud region where the project will be deployed
    * @param name - The name of the new project
    * @param default_branch - The default Git branch (optional, defaults to "main")
    */
   adapter.server.tool(
-    "create-project",
-    "Create a new upsun project",
+    'create-project',
+    'Create a new upsun project',
     {
       organization_id: Schema.organizationId(),
       //region_host: z.string().default("eu-5.platform.sh").optional(),
       name: z.string(),
-      default_branch: z.string().default("main").optional()
+      default_branch: z.string().default('main').optional(),
     },
     async ({ organization_id, name, default_branch }) => {
       log.debug(`Create Project: ${name} in Organization: ${organization_id}`);
-      const region_host = "eu-5.platform.sh";
-      const subCreated = await adapter.client.project.create(organization_id, region_host, name, default_branch); // region, default_branch
+      const region_host = 'eu-5.platform.sh';
+      const subCreated = await adapter.client.project.create(
+        organization_id,
+        region_host,
+        name,
+        default_branch
+      ); // region, default_branch
 
-      let prjCreated = await adapter.client.project.getSubscription(organization_id, subCreated.id || "");
+      let prjCreated = await adapter.client.project.getSubscription(
+        organization_id,
+        subCreated.id || ''
+      );
       while (prjCreated.status !== SubscriptionStatusEnum.Active) {
-        log.info("Waiting for project to be active...");
+        log.info('Waiting for project to be active...');
         await delay(10000);
-        prjCreated = await adapter.client.project.getSubscription(organization_id, subCreated.id || "");
+        prjCreated = await adapter.client.project.getSubscription(
+          organization_id,
+          subCreated.id || ''
+        );
       }
-      
+
       return Response.json(prjCreated);
     }
   );
@@ -73,15 +83,15 @@ export function registerProject(adapter: McpAdapter): void {
   /**
    * Tool: delete-project
    * Permanently deletes a Upsun project and all its associated resources.
-   * 
+   *
    * @warning This operation is irreversible and will delete all environments,
    * applications, data, and configurations associated with the project.
-   * 
+   *
    * @param project_id - The unique identifier of the project to delete
    */
   adapter.server.tool(
-    "delete-project",
-    "Delete a upsun project",
+    'delete-project',
+    'Delete a upsun project',
     {
       project_id: Schema.projectId(),
     },
@@ -96,15 +106,15 @@ export function registerProject(adapter: McpAdapter): void {
   /**
    * Tool: info-project
    * Retrieves detailed information about a specific Upsun project.
-   * 
+   *
    * Returns comprehensive project details including configuration,
    * environments, applications, and metadata.
-   * 
+   *
    * @param project_id - The unique identifier of the project
    */
   adapter.server.tool(
-    "info-project",
-    "Get information of upsun project",
+    'info-project',
+    'Get information of upsun project',
     {
       project_id: Schema.projectId(),
     },
@@ -119,15 +129,15 @@ export function registerProject(adapter: McpAdapter): void {
   /**
    * Tool: list-project
    * Lists all projects within a specific organization.
-   * 
+   *
    * Returns an array of projects with basic information such as
    * project ID, name, status, and creation date.
-   * 
+   *
    * @param organization_id - The organization ID to list projects from
    */
   adapter.server.tool(
-    "list-project",
-    "List all upsun projects",
+    'list-project',
+    'List all upsun projects',
     {
       organization_id: Schema.organizationId(),
     },
@@ -141,6 +151,5 @@ export function registerProject(adapter: McpAdapter): void {
 }
 
 function delay(ms: number): Promise<void> {
-  return new Promise( resolve => setTimeout(resolve, ms) );
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
-

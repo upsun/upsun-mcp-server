@@ -1,17 +1,17 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { McpAdapter } from "../../src/core/adapter.js";
-import { registerEnvironment } from "../../src/command/environment.js";
+import { McpAdapter } from '../../src/core/adapter.js';
+import { registerEnvironment } from '../../src/command/environment.js';
 
 // Mock the logger module
 const mockLogger = {
   debug: jest.fn(),
   info: jest.fn(),
   warn: jest.fn(),
-  error: jest.fn()
+  error: jest.fn(),
 };
 
 jest.mock('../../src/core/logger.js', () => ({
-  createLogger: jest.fn(() => mockLogger)
+  createLogger: jest.fn(() => mockLogger),
 }));
 
 // Mock data for testing
@@ -24,7 +24,7 @@ const mockEnvironment = {
   machine_name: 'main-abc123',
   project_id: 'test-project-13',
   created_at: '2025-05-28T00:00:00Z',
-  updated_at: '2025-05-28T12:00:00Z'
+  updated_at: '2025-05-28T12:00:00Z',
 };
 
 const mockEnvironmentList = [
@@ -38,20 +38,17 @@ const mockEnvironmentList = [
     machine_name: 'staging-def456',
     project_id: 'test-project-13',
     created_at: '2025-05-27T00:00:00Z',
-    updated_at: '2025-05-28T10:00:00Z'
-  }
+    updated_at: '2025-05-28T10:00:00Z',
+  },
 ];
 
 const mockOperationResult = {
   success: true,
   message: 'Operation completed successfully',
-  activity_id: 'activity-123'
+  activity_id: 'activity-123',
 };
 
-const mockUrls = [
-  'https://main-abc123.upsun.app',
-  'https://www.example.com'
-];
+const mockUrls = ['https://main-abc123.upsun.app', 'https://www.example.com'];
 
 // Mock the Upsun client
 const mockClient = {
@@ -65,16 +62,16 @@ const mockClient = {
     redeploy: jest.fn() as any,
     resume: jest.fn() as any,
     url: jest.fn() as any,
-    urls: jest.fn() as any
-  }
+    urls: jest.fn() as any,
+  },
 };
 
 // Mock the adapter
 const mockAdapter: McpAdapter = {
   client: mockClient,
   server: {
-    tool: jest.fn()
-  }
+    tool: jest.fn(),
+  },
 } as any;
 
 describe('Environment Command Module', () => {
@@ -83,19 +80,21 @@ describe('Environment Command Module', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     toolCallbacks = {};
-    
+
     // Reset logger mocks
     mockLogger.debug.mockClear();
     mockLogger.info.mockClear();
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
-    
+
     // Setup mock server.tool to capture callbacks
     // @ts-ignore
-    (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: string, description: string, schema: any, callback: any) => {
-      toolCallbacks[name] = callback;
-      return mockAdapter.server;
-    });
+    (mockAdapter.server.tool as any) = jest
+      .fn()
+      .mockImplementation((name: string, description: string, schema: any, callback: any) => {
+        toolCallbacks[name] = callback;
+        return mockAdapter.server;
+      });
 
     // Setup default mock responses
     mockClient.environment.activate.mockResolvedValue(mockOperationResult);
@@ -117,9 +116,9 @@ describe('Environment Command Module', () => {
   describe('registerEnvironment function', () => {
     it('should register all environment tools', () => {
       registerEnvironment(mockAdapter);
-      
+
       expect(mockAdapter.server.tool).toHaveBeenCalledTimes(10);
-      
+
       // Verify all tools are registered
       expect(toolCallbacks['activate-environment']).toBeDefined();
       expect(toolCallbacks['delete-environment']).toBeDefined();
@@ -135,9 +134,9 @@ describe('Environment Command Module', () => {
 
     it('should register tools with correct names and descriptions', () => {
       registerEnvironment(mockAdapter);
-      
+
       const calls = (mockAdapter.server.tool as jest.Mock).mock.calls;
-      
+
       expect(calls[0][0]).toBe('activate-environment');
       expect(calls[1][0]).toBe('delete-environment');
       expect(calls[2][0]).toBe('info-environment');
@@ -160,17 +159,19 @@ describe('Environment Command Module', () => {
       const callback = toolCallbacks['activate-environment'];
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'staging'
+        environment_name: 'staging',
       };
 
       const result = await callback(params);
 
       expect(mockClient.environment.activate).toHaveBeenCalledWith('test-project-13', 'staging');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockOperationResult, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockOperationResult, null, 2),
+          },
+        ],
       });
     });
 
@@ -181,7 +182,7 @@ describe('Environment Command Module', () => {
 
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'invalid-env'
+        environment_name: 'invalid-env',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -197,17 +198,19 @@ describe('Environment Command Module', () => {
       const callback = toolCallbacks['delete-environment'];
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'staging'
+        environment_name: 'staging',
       };
 
       const result = await callback(params);
 
       expect(mockClient.environment.delete).toHaveBeenCalledWith('test-project-13', 'staging');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockOperationResult, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockOperationResult, null, 2),
+          },
+        ],
       });
     });
 
@@ -218,7 +221,7 @@ describe('Environment Command Module', () => {
 
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'main'
+        environment_name: 'main',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -234,17 +237,19 @@ describe('Environment Command Module', () => {
       const callback = toolCallbacks['info-environment'];
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'main'
+        environment_name: 'main',
       };
 
       const result = await callback(params);
 
       expect(mockClient.environment.info).toHaveBeenCalledWith('test-project-13', 'main');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockEnvironment, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockEnvironment, null, 2),
+          },
+        ],
       });
     });
 
@@ -255,7 +260,7 @@ describe('Environment Command Module', () => {
 
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'non-existent'
+        environment_name: 'non-existent',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -270,17 +275,19 @@ describe('Environment Command Module', () => {
     it('should list environments successfully', async () => {
       const callback = toolCallbacks['list-environment'];
       const params = {
-        project_id: 'test-project-13'
+        project_id: 'test-project-13',
       };
 
       const result = await callback(params);
 
       expect(mockClient.environment.list).toHaveBeenCalledWith('test-project-13');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockEnvironmentList, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockEnvironmentList, null, 2),
+          },
+        ],
       });
     });
 
@@ -289,16 +296,18 @@ describe('Environment Command Module', () => {
       mockClient.environment.list.mockResolvedValue([]);
 
       const params = {
-        project_id: 'test-project-13'
+        project_id: 'test-project-13',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify([], null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify([], null, 2),
+          },
+        ],
       });
     });
   });
@@ -313,16 +322,18 @@ describe('Environment Command Module', () => {
       const params = {
         project_id: 'test-project-13',
         environment_name: 'main',
-        application_name: 'web'
+        application_name: 'web',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify({ throw: "Not implemented !" }, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({ throw: 'Not implemented !' }, null, 2),
+          },
+        ],
       });
     });
   });
@@ -336,17 +347,22 @@ describe('Environment Command Module', () => {
       const callback = toolCallbacks['merge-environment'];
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'feature-branch'
+        environment_name: 'feature-branch',
       };
 
       const result = await callback(params);
 
-      expect(mockClient.environment.merge).toHaveBeenCalledWith('test-project-13', 'feature-branch');
+      expect(mockClient.environment.merge).toHaveBeenCalledWith(
+        'test-project-13',
+        'feature-branch'
+      );
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockOperationResult, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockOperationResult, null, 2),
+          },
+        ],
       });
     });
 
@@ -357,7 +373,7 @@ describe('Environment Command Module', () => {
 
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'main'
+        environment_name: 'main',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -373,17 +389,19 @@ describe('Environment Command Module', () => {
       const callback = toolCallbacks['pause-environment'];
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'staging'
+        environment_name: 'staging',
       };
 
       const result = await callback(params);
 
       expect(mockClient.environment.pause).toHaveBeenCalledWith('test-project-13', 'staging');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockOperationResult, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockOperationResult, null, 2),
+          },
+        ],
       });
     });
 
@@ -394,7 +412,7 @@ describe('Environment Command Module', () => {
 
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'main'
+        environment_name: 'main',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -411,17 +429,19 @@ describe('Environment Command Module', () => {
       const params = {
         project_id: 'test-project-13',
         environment_name: 'main',
-        application_name: 'web'
+        application_name: 'web',
       };
 
       const result = await callback(params);
 
       expect(mockClient.environment.redeploy).toHaveBeenCalledWith('test-project-13', 'main');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockOperationResult, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockOperationResult, null, 2),
+          },
+        ],
       });
     });
 
@@ -433,7 +453,7 @@ describe('Environment Command Module', () => {
       const params = {
         project_id: 'test-project-13',
         environment_name: 'main',
-        application_name: 'web'
+        application_name: 'web',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -449,17 +469,19 @@ describe('Environment Command Module', () => {
       const callback = toolCallbacks['resume-environment'];
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'staging'
+        environment_name: 'staging',
       };
 
       const result = await callback(params);
 
       expect(mockClient.environment.resume).toHaveBeenCalledWith('test-project-13', 'staging');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockOperationResult, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockOperationResult, null, 2),
+          },
+        ],
       });
     });
 
@@ -470,7 +492,7 @@ describe('Environment Command Module', () => {
 
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'main'
+        environment_name: 'main',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -486,17 +508,19 @@ describe('Environment Command Module', () => {
       const callback = toolCallbacks['urls-environment'];
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'main'
+        environment_name: 'main',
       };
 
       const result = await callback(params);
 
       expect(mockClient.environment.urls).toHaveBeenCalledWith('test-project-13', 'main');
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(mockUrls, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockUrls, null, 2),
+          },
+        ],
       });
     });
 
@@ -507,7 +531,7 @@ describe('Environment Command Module', () => {
 
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'inactive-env'
+        environment_name: 'inactive-env',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
@@ -519,16 +543,18 @@ describe('Environment Command Module', () => {
 
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'staging'
+        environment_name: 'staging',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify([], null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify([], null, 2),
+          },
+        ],
       });
     });
   });
@@ -544,16 +570,18 @@ describe('Environment Command Module', () => {
 
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'main'
+        environment_name: 'main',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{
-          type: 'text',
-          text: JSON.stringify(null, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(null, null, 2),
+          },
+        ],
       });
     });
 
@@ -563,7 +591,7 @@ describe('Environment Command Module', () => {
 
       const params = {
         project_id: 'test-project-13',
-        environment_name: 'staging'
+        environment_name: 'staging',
       };
 
       await expect(callback(params)).rejects.toThrow('Network timeout');

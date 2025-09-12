@@ -1,9 +1,9 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import { UpsunClient, UpsunConfig } from "upsun-sdk-node";
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import { UpsunClient, UpsunConfig } from 'upsun-sdk-node';
 
 import * as pjson from '../package.json' with { type: 'json' };
-import { McpAdapter } from "./core/adapter.js";
+import { McpAdapter } from './core/adapter.js';
 import { createLogger } from './core/logger.js';
 
 // Create logger for MCP operations
@@ -18,28 +18,27 @@ import {
   registerOrganization,
   registerProject,
   registerRoute,
-  registerSshKey
-} from "./command/index.js";
-import { registerConfig } from "./task/config.js";
+  registerSshKey,
+} from './command/index.js';
+import { registerConfig } from './task/config.js';
 
 /**
  * Upsun MCP Server implementation.
- * 
+ *
  * This class implements the McpAdapter interface to provide a Model Context Protocol
  * server for the Upsun platform. It integrates the Upsun SDK with the MCP framework
  * to expose Upsun platform functionality as MCP tools.
- * 
+ *
  * The server automatically registers all available command modules during construction,
  * providing a comprehensive set of tools for managing Upsun projects, environments,
  * deployments, and other platform resources.
- * 
+ *
  * @implements {McpAdapter}
  */
 export class UpsunMcpServer implements McpAdapter {
-
   /**
    * The Upsun SDK client instance.
-   * 
+   *
    * This client is initialized during the connect() method and provides
    * access to all Upsun platform APIs. It's used by the registered command
    * modules to perform operations on behalf of MCP clients.
@@ -54,13 +53,13 @@ export class UpsunMcpServer implements McpAdapter {
 
   /**
    * Creates a new UpsunMcpServer instance.
-   * 
+   *
    * Initializes the MCP server with the package name and version, then registers
    * all available command modules. Each command module adds specific tools and
    * capabilities related to different aspects of the Upsun platform.
-   * 
+   *
    * @param server - Optional MCP server instance (creates new one if not provided)
-   * 
+   *
    * @example
    * ```typescript
    * const mcpServer = new UpsunMcpServer();
@@ -69,11 +68,10 @@ export class UpsunMcpServer implements McpAdapter {
    */
   constructor(
     public readonly server: McpServer = new McpServer({
-      name: "upsun-server",
+      name: 'upsun-server',
       version: pjson.default.version,
-    }),
+    })
   ) {
-
     // Register all command modules with their respective tools
     registerActivity(this);
     registerBackup(this);
@@ -92,9 +90,9 @@ export class UpsunMcpServer implements McpAdapter {
   /**
    * Sets the current bearer token for this adapter instance.
    * This is called by the gateway before each tool invocation.
-   * 
+   *
    * @param token - The bearer token to set as current
-   * 
+   *
    * @example
    * ```typescript
    * server.setCurrentBearerToken('your-bearer-token');
@@ -106,17 +104,17 @@ export class UpsunMcpServer implements McpAdapter {
 
   /**
    * Establishes connection between the MCP server and transport layer using a Bearer token.
-   * 
+   *
    * This method initializes the Upsun client with the provided Bearer token and
    * connects the MCP server to the specified transport. The transport handles
    * the actual communication protocol (stdio, HTTP, SSE, etc.).
-   * 
+   *
    * @param transport - The transport layer for MCP communication
    * @param bearerToken - The Bearer token for authentication
    * @returns Promise that resolves when connection is established
-   * 
+   *
    * @throws Will throw an error if the Bearer token is invalid or connection fails
-   * 
+   *
    * @example
    * ```typescript
    * const transport = new StdioServerTransport();
@@ -132,17 +130,17 @@ export class UpsunMcpServer implements McpAdapter {
 
   /**
    * Establishes connection between the MCP server and transport layer using an API key.
-   * 
+   *
    * This method initializes the Upsun client with the provided API key and
    * connects the MCP server to the specified transport. The API key will be
    * processed differently than Bearer tokens within the Upsun client library.
-   * 
+   *
    * @param transport - The transport layer for MCP communication
    * @param apiKey - The API key for authentication
    * @returns Promise that resolves when connection is established
-   * 
+   *
    * @throws Will throw an error if the API key is invalid or connection fails
-   * 
+   *
    * @example
    * ```typescript
    * const transport = new StdioServerTransport();
