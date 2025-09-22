@@ -38,7 +38,7 @@ npm run prettier       # Format code
 UPSUN_API_KEY=your-api-token
 
 # Write Operations (Beta Safety)
-OAUTH_SCOPE=offline_access read write  # Enable write ops
+ENABLE-WRITE=true  # Enable write ops via header
 
 # Server Configuration
 TYPE_ENV=local         # stdio mode
@@ -52,14 +52,19 @@ NODE_ENV=development  # development, production, test
 
 ## Write Operations Control
 
-**Critical**: This beta release defaults to read-only mode. Write operations are controlled by the OAuth scope:
+**Critical**: This beta release defaults to read-only mode. Write operations are controlled by the `ENABLE-WRITE` header:
 
-- **Default scope**: `offline_access` (read-only)
-- **Write enabled**: `offline_access read write`
+- **Default**: Read-only operations only
+- **Write enabled**: Set `ENABLE-WRITE: true` header in MCP client configuration
 
-Set via environment variable:
-```bash
-OAUTH_SCOPE="offline_access read write"
+Example header configuration:
+```json
+{
+  "headers": {
+    "UPSUN-API-TOKEN": "your-api-token",
+    "ENABLE-WRITE": "true"
+  }
+}
 ```
 
 ## Project Structure
@@ -70,7 +75,7 @@ upsun-mcp/
 │   ├── core/           # Core MCP and infrastructure
 │   │   ├── adapter.ts  # MCP adapter interface
 │   │   ├── gateway.ts  # HTTP/SSE server
-│   │   ├── authentication.ts # OAuth2 & token handling
+│   │   ├── authentication.ts # Bearer token & authentication handling
 │   │   ├── logger.ts   # Structured logging
 │   │   └── helper.ts   # Common utilities
 │   ├── command/        # MCP tool implementations
@@ -103,7 +108,7 @@ upsun-mcp/
 
 - **`UpsunMcpServer`**: Main MCP server implementation
 - **`McpAdapter`**: Interface defining MCP server contract
-- **`GatewayServer`**: HTTP/SSE transport with OAuth2 endpoints
+- **`GatewayServer`**: HTTP/SSE transport with authentication handling
 - **`LocalServer`**: stdio transport for development
 
 ### Transport Modes
@@ -113,20 +118,16 @@ upsun-mcp/
    TYPE_ENV=local npm run run
    ```
 
-2. **Remote (HTTP/SSE)**: Web server with OAuth2 support
+2. **Remote (HTTP/SSE)**: Web server with HTTP authentication support
    ```bash
    TYPE_ENV=remote PORT=3000 npm run run
    ```
 
 ### Authentication Flow
 
-1. **API Key** (Legacy): Direct authentication via `UPSUN_API_KEY`
-2. **Bearer Token** (OAuth2): Modern OAuth2 flow with scopes
-
-OAuth2 endpoints automatically configured:
-- `/.well-known/oauth-authorization-server`
-- `/.well-known/oauth-protected-resource`
-- `/register` (Dynamic client registration)
+1. **API Key**: Direct authentication via `UPSUN-API-TOKEN` header
+2. **Bearer Token**: Alternative authentication via `Authorization: Bearer` header
+3. **Write Control**: Write operations controlled via `ENABLE-WRITE` header
 
 ## Development Workflow
 
@@ -297,14 +298,14 @@ LOG_LEVEL=NONE     # No logging
 - Store tokens in environment variables, never in code
 - Use separate tokens for development/production
 
-### OAuth2 Security
-- Validate all bearer tokens
-- Use secure scopes (minimal necessary permissions)
-- Implement proper token refresh logic
+### Header-based Security
+- Validate all authentication tokens
+- Implement proper header validation
+- Control write operations via explicit headers
 
 ### Write Operations
 - Default to read-only in beta
-- Require explicit scope configuration for writes
+- Require explicit `ENABLE-WRITE: true` header for writes
 - Log all write operations for audit trail
 
 ## Local Build Process
