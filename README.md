@@ -4,7 +4,7 @@ A Model Context Protocol (MCP) server that provides comprehensive integration wi
 
 ## 🚀 Hosted MCP Server Available
 
-**The Upsun MCP server is hosted and ready to use at: https://mcp.upsun.com**
+**The Upsun MCP server is hosted and ready to use at: https://mcp.upsun.com/mcp**
 
 You don't need to install or run anything locally unless you're developing or customizing the server. Simply configure your MCP client to connect to the hosted service.
 
@@ -87,7 +87,7 @@ By default, this beta release only allows read operations. To enable write opera
 **⚠️ Warning**: Write operations are permanent and can delete resources. Use with caution in production environments.
 
 ```
-"ENABLE-WRITE": "true"
+"enable-write": "true"
 ```
 
 ## Using the Hosted MCP Server
@@ -100,10 +100,10 @@ Add the Upsun MCP server to your MCP client configuration using the direct HTTP 
 {
   "servers": {
     "upsun": {
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   }
@@ -115,7 +115,7 @@ Add the Upsun MCP server to your MCP client configuration using the direct HTTP 
 Set up the Upsun MCP Server in under a minute:
 
 1. Get your API token from the [Upsun Console](https://console.upsun.com/). Navigate to your account settings and generate a new API token with appropriate permissions for your projects.
-2. Configure your MCP client to connect to https://mcp.upsun.com
+2. Configure your MCP client to connect to https://mcp.upsun.com/mcp
 3. Start managing infrastructure through natural language
 
 The Upsun MCP server works with all major AI development environments. Choose your preferred client below:
@@ -134,10 +134,10 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 {
   "mcpServers": {
     "upsun": {
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   }
@@ -154,7 +154,7 @@ Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/
 #### Claude Code Remote Server Connection
 
 ```sh
-claude mcp add --transport http upsun https://mcp.upsun.com --header "UPSUN-API-TOKEN: YOUR_API_TOKEN" --header "ENABLE-WRITE: false"
+claude mcp add --transport http upsun https://mcp.upsun.com/mcp --header "upsun-api-token: YOUR_API_TOKEN" --header "enable-write: false"
 ```
 
 </details>
@@ -170,10 +170,10 @@ Add this to your Windsurf MCP config file. See [Windsurf MCP docs](https://docs.
 {
   "mcpServers": {
     "upsun": {
-      "serverUrl": "https://mcp.upsun.com",
+      "serverUrl": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   }
@@ -194,10 +194,10 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
   "servers": {
     "upsun": {
       "type": "http",
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   }
@@ -223,11 +223,11 @@ You can easily configure the Upsun MCP server through Cline:
 {
   "mcpServers": {
     "upsun": {
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "type": "streamableHttp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   }
@@ -246,10 +246,10 @@ Add this to your Zed `settings.json`. See [Zed Context Server docs](https://zed.
   "context_servers": {
     "Upsun": {
       "settings": {
-        "url": "https://mcp.upsun.com",
+        "url": "https://mcp.upsun.com/mcp",
         "headers": {
-          "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+          "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
         }
       }
     }
@@ -276,10 +276,10 @@ To configure the Upsun MCP server in Augment Code:
   "mcpServers": [
     {
       "name": "upsun",
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   ]
@@ -302,10 +302,10 @@ Add this to your Roo Code MCP configuration file. See [Roo Code MCP docs](https:
   "mcpServers": {
     "upsun": {
       "type": "streamable-http",
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   }
@@ -326,10 +326,10 @@ See [Gemini CLI Configuration](https://google-gemini.github.io/gemini-cli/docs/t
 {
   "mcpServers": {
     "upsun": {
-      "httpUrl": "https://mcp.upsun.com",
+      "httpUrl": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false",
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false",
         "Accept": "application/json, text/event-stream"
       }
     }
@@ -346,14 +346,14 @@ If the `mcpServers` object does not exist, create it.
 
 #### Remote Server Connection
 
-Open Claude Desktop and navigate to Settings > Connectors > Add Custom Connector. Enter the name as `Upsun` and the remote MCP server URL as `https://mcp.upsun.com`.
+Open Claude Desktop and navigate to Settings > Connectors > Add Custom Connector. Enter the name as `Upsun` and the remote MCP server URL as `https://mcp.upsun.com/mcp`.
 
 Add your API token in the headers configuration:
 
 ```json
 {
-  "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-    "ENABLE-WRITE": "false"
+  "upsun-api-token": "YOUR_API_TOKEN",
+    "enable-write": "false"
 }
 ```
 
@@ -370,10 +370,10 @@ Add this to your Opencode configuration file. See [Opencode MCP docs](https://op
 "mcp": {
   "upsun": {
     "type": "remote",
-    "url": "https://mcp.upsun.com",
+    "url": "https://mcp.upsun.com/mcp",
     "headers": {
-      "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-    "ENABLE-WRITE": "false"
+      "upsun-api-token": "YOUR_API_TOKEN",
+    "enable-write": "false"
     },
     "enabled": true
   }
@@ -396,10 +396,10 @@ See [JetBrains AI Assistant Documentation](https://www.jetbrains.com/help/ai-ass
 {
   "mcpServers": {
     "upsun": {
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   }
@@ -425,10 +425,10 @@ See [Kiro Model Context Protocol Documentation](https://kiro.dev/docs/mcp/config
 {
   "mcpServers": {
     "Upsun": {
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       },
       "disabled": false,
       "autoApprove": []
@@ -453,10 +453,10 @@ For more details, visit the [Trae documentation](https://docs.trae.ai/ide/model-
 {
   "mcpServers": {
     "upsun": {
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   }
@@ -474,10 +474,10 @@ Add this to your Amazon Q Developer CLI configuration file. See [Amazon Q Develo
 {
   "mcpServers": {
     "upsun": {
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   }
@@ -498,10 +498,10 @@ See [Warp Model Context Protocol Documentation](https://docs.warp.dev/knowledge-
 ```json
 {
   "Upsun": {
-    "url": "https://mcp.upsun.com",
+    "url": "https://mcp.upsun.com/mcp",
     "headers": {
-      "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-    "ENABLE-WRITE": "false"
+      "upsun-api-token": "YOUR_API_TOKEN",
+    "enable-write": "false"
     },
     "start_on_launch": true
   }
@@ -525,10 +525,10 @@ Add the following configuration to the `mcp` section of your Copilot Coding Agen
   "mcpServers": {
     "upsun": {
       "type": "http",
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   }
@@ -553,10 +553,10 @@ See [LM Studio MCP Support](https://lmstudio.ai/blog/lmstudio-v0.3.17) for more 
 {
   "mcpServers": {
     "Upsun": {
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   }
@@ -581,10 +581,10 @@ Add this to your Visual Studio MCP config file (see the [Visual Studio docs](htt
   "servers": {
     "upsun": {
       "type": "http",
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   }
@@ -608,10 +608,10 @@ Add this to your Crush configuration file. See [Crush MCP docs](https://github.c
   "mcp": {
     "upsun": {
       "type": "http",
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   }
@@ -629,10 +629,10 @@ Open the "Settings" page of the app, navigate to "Plugins," and configure the Up
 {
   "mcpServers": {
     "upsun": {
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   }
@@ -660,10 +660,10 @@ Example config -
 {
   "mcpServers": {
     "upsun": {
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   }
@@ -684,10 +684,10 @@ To configure the Upsun MCP server in Zencoder, follow these steps:
 
 ```json
 {
-  "url": "https://mcp.upsun.com",
+  "url": "https://mcp.upsun.com/mcp",
   "headers": {
-    "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-    "ENABLE-WRITE": "false"
+    "upsun-api-token": "YOUR_API_TOKEN",
+    "enable-write": "false"
   }
 }
 ```
@@ -712,10 +712,10 @@ See [Qodo Gen docs](https://docs.qodo.ai/qodo-documentation/qodo-gen/qodo-gen-ch
 {
   "mcpServers": {
     "upsun": {
-      "url": "https://mcp.upsun.com",
+      "url": "https://mcp.upsun.com/mcp",
       "headers": {
-        "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-        "ENABLE-WRITE": "false"
+        "upsun-api-token": "YOUR_API_TOKEN",
+        "enable-write": "false"
       }
     }
   }
@@ -738,10 +738,10 @@ See [Local and Remote MCPs for Perplexity](https://www.perplexity.ai/help-center
 
 ```json
 {
-  "url": "https://mcp.upsun.com",
+  "url": "https://mcp.upsun.com/mcp",
   "headers": {
-    "UPSUN-API-TOKEN": "YOUR_API_TOKEN",
-    "ENABLE-WRITE": "false"
+    "upsun-api-token": "YOUR_API_TOKEN",
+    "enable-write": "false"
   }
 }
 ```
@@ -751,7 +751,7 @@ See [Local and Remote MCPs for Perplexity](https://www.perplexity.ai/help-center
 
 ## Local Development Setup
 
-**Note**: This section is only needed if you want to develop, customize, or contribute to the MCP server. Most users should use the hosted version at https://mcp.upsun.com.
+**Note**: This section is only needed if you want to develop, customize, or contribute to the MCP server. Most users should use the hosted version at https://mcp.upsun.com/mcp.
 
 ### Prerequisites for Development
 
@@ -927,7 +927,7 @@ All tools return JSON responses with consistent structure:
 ### Common Issues
 
 1. **Authentication Failed**: Verify your API token is valid and has sufficient permissions
-2. **Write Operations Disabled**: Check your `ENABLE-WRITE` header is set to `true`
+2. **Write Operations Disabled**: Check your `enable-write` header is set to `true`
 3. **Connection Timeout**: Ensure network connectivity to Upsun APIs
 4. **Resource Not Found**: Verify organization, project, and environment IDs
 
@@ -938,7 +938,7 @@ For issues with the hosted MCP server:
 1. **Check API token validity**: Verify your token is correctly set and hasn't expired
 2. **Review MCP client logs**: Check your MCP client's logs for connection errors
 3. **Test with minimal scope**: Start with read-only operations before enabling write permissions
-4. **Check network connectivity**: Ensure you can reach https://mcp.upsun.com
+4. **Check network connectivity**: Ensure you can reach https://mcp.upsun.com/mcp
 
 For local development debugging:
 
@@ -963,7 +963,7 @@ LOG_LEVEL=DEBUG npm run dev
 
 ## Support
 
-- **Hosted MCP Server**: https://mcp.upsun.com
+- **Hosted MCP Server**: https://mcp.upsun.com/mcp
 - [Upsun Documentation](https://docs.upsun.com/)
 - [API Token Setup Guide](https://docs.upsun.com/administration/cli/api-tokens.html#2-create-an-api-token)
 - [Model Context Protocol Specification](https://modelcontextprotocol.io/)

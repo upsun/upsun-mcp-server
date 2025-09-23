@@ -2,12 +2,12 @@
 
 This document provides technical information for **local development** and maintenance of the Upsun MCP Server.
 
-**Note**: The Upsun MCP server is hosted and available at https://mcp.upsun.com. This guide is for developers who want to contribute to, customize, or run the server locally for development purposes.
+**Note**: The Upsun MCP server is hosted and available at https://mcp.upsun.com/mcp. This guide is for developers who want to contribute to, customize, or run the server locally for development purposes.
 
 ## Hosted vs. Local Development
 
 ### Using the Hosted Service (Recommended for Users)
-- **URL**: https://mcp.upsun.com
+- **URL**: https://mcp.upsun.com/mcp
 - **Purpose**: Production-ready MCP server for end users
 - **Setup**: Configure your MCP client to connect to the hosted service
 - **Maintenance**: Managed by the Upsun team
@@ -38,7 +38,7 @@ npm run prettier       # Format code
 UPSUN_API_KEY=your-api-token
 
 # Write Operations (Beta Safety)
-ENABLE-WRITE=true  # Enable write ops via header
+enable-write=true  # Enable write ops via header
 
 # Server Configuration
 TYPE_ENV=local         # stdio mode
@@ -52,17 +52,17 @@ NODE_ENV=development  # development, production, test
 
 ## Write Operations Control
 
-**Critical**: This beta release defaults to read-only mode. Write operations are controlled by the `ENABLE-WRITE` header:
+**Critical**: This beta release defaults to read-only mode. Write operations are controlled by the `enable-write` header:
 
 - **Default**: Read-only operations only
-- **Write enabled**: Set `ENABLE-WRITE: true` header in MCP client configuration
+- **Write enabled**: Set `enable-write: true` header in MCP client configuration
 
 Example header configuration:
 ```json
 {
   "headers": {
-    "UPSUN-API-TOKEN": "your-api-token",
-    "ENABLE-WRITE": "true"
+    "upsun-api-token": "your-api-token",
+    "enable-write": "true"
   }
 }
 ```
@@ -125,9 +125,9 @@ upsun-mcp/
 
 ### Authentication Flow
 
-1. **API Key**: Direct authentication via `UPSUN-API-TOKEN` header
+1. **API Key**: Direct authentication via `upsun-api-token` header
 2. **Bearer Token**: Alternative authentication via `Authorization: Bearer` header
-3. **Write Control**: Write operations controlled via `ENABLE-WRITE` header
+3. **Write Control**: Write operations controlled via `enable-write` header
 
 ## Development Workflow
 
@@ -305,7 +305,7 @@ LOG_LEVEL=NONE     # No logging
 
 ### Write Operations
 - Default to read-only in beta
-- Require explicit `ENABLE-WRITE: true` header for writes
+- Require explicit `enable-write: true` header for writes
 - Log all write operations for audit trail
 
 ## Local Build Process
@@ -334,7 +334,7 @@ TYPE_ENV=local npm run run
 TYPE_ENV=remote PORT=3000 npm run run
 ```
 
-**Note**: For production usage, users should connect to the hosted service at https://mcp.upsun.com rather than running their own instance.
+**Note**: For production usage, users should connect to the hosted service at https://mcp.upsun.com/mcp rather than running their own instance.
 
 ## Troubleshooting
 
@@ -382,7 +382,7 @@ Key dependencies and their purposes:
 
 ## Important Notes
 
-- **For End Users**: Use the hosted MCP server at https://mcp.upsun.com
+- **For End Users**: Use the hosted MCP server at https://mcp.upsun.com/mcp
 - **For Developers**: This guide covers local development and contribution workflows
 - **Beta Software**: Always test thoroughly in development environments
 
