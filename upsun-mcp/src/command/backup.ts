@@ -51,23 +51,25 @@ export function registerBackup(adapter: McpAdapter): void {
    * @param environment_name - The name of the environment to backup
    * @param is_live - Whether to create a backup of the live environment (default: true)
    */
-  adapter.server.tool(
-    'create-backup',
-    'Create a backup on upsun project',
-    {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
-      is_live: z.boolean().default(true).optional(),
-    },
-    async ({ project_id, environment_name, is_live }) => {
-      log.debug(
-        `Create Backup in Project ${project_id}, Environment ${environment_name}, is_live: ${is_live}`
-      );
-      const result = 'TODO'; //await adapter.client.backup.create(project_id, environment_name);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'create-backup',
+      'Create a backup on upsun project',
+      {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+        is_live: z.boolean().default(true).optional(),
+      },
+      async ({ project_id, environment_name, is_live }) => {
+        log.debug(
+          `Create Backup in Project ${project_id}, Environment ${environment_name}, is_live: ${is_live}`
+        );
+        const result = 'TODO'; //await adapter.client.backup.create(project_id, environment_name);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: delete-backup
@@ -82,23 +84,25 @@ export function registerBackup(adapter: McpAdapter): void {
    * @param environment_name - The name of the environment
    * @param backup_id - The unique identifier of the backup to delete
    */
-  adapter.server.tool(
-    'delete-backup',
-    'Delete a backup of upsun project',
-    {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
-      backup_id: Schema.backupId(),
-    },
-    async ({ project_id, environment_name, backup_id }) => {
-      log.debug(
-        `Delete Backup ${backup_id} in Project ${project_id}, Environment ${environment_name}`
-      );
-      const result = 'TODO'; //await adapter.client.backup.delete(project_id, environment_name);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'delete-backup',
+      'Delete a backup of upsun project',
+      {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+        backup_id: Schema.backupId(),
+      },
+      async ({ project_id, environment_name, backup_id }) => {
+        log.debug(
+          `Delete Backup ${backup_id} in Project ${project_id}, Environment ${environment_name}`
+        );
+        const result = 'TODO'; //await adapter.client.backup.delete(project_id, environment_name);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: get-backup
@@ -175,31 +179,33 @@ export function registerBackup(adapter: McpAdapter): void {
    * @param no_resources - Whether to exclude resources from the restore (default: false)
    * @param resources_init - Source for initializing resources (default: "backup")
    */
-  adapter.server.tool(
-    'restore-backup',
-    'Restore a backups of upsun project',
-    {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
-      target_environment_name: Schema.environmentName(),
-      no_code: z.boolean().default(false).optional(),
-      no_resources: z.boolean().default(false).optional(),
-      resources_init: z.string().default('backup').optional(),
-    },
-    async ({
-      project_id,
-      environment_name,
-      target_environment_name,
-      no_code,
-      no_resources,
-      resources_init,
-    }) => {
-      log.debug(
-        `Restore Backup from Environment ${environment_name} to ${target_environment_name} in Project ${project_id}, no_code: ${no_code}, no_resources: ${no_resources}, resources_init: ${resources_init}`
-      );
-      const result = 'TODO'; //await adapter.client.backup.restore(project_id, environment_name, target_environment_name, no_code, no_resources, resources_init);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'restore-backup',
+      'Restore a backups of upsun project',
+      {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+        target_environment_name: Schema.environmentName(),
+        no_code: z.boolean().default(false).optional(),
+        no_resources: z.boolean().default(false).optional(),
+        resources_init: z.string().default('backup').optional(),
+      },
+      async ({
+        project_id,
+        environment_name,
+        target_environment_name,
+        no_code,
+        no_resources,
+        resources_init,
+      }) => {
+        log.debug(
+          `Restore Backup from Environment ${environment_name} to ${target_environment_name} in Project ${project_id}, no_code: ${no_code}, no_resources: ${no_resources}, resources_init: ${resources_init}`
+        );
+        const result = 'TODO'; //await adapter.client.backup.restore(project_id, environment_name, target_environment_name, no_code, no_resources, resources_init);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 }

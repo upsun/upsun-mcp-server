@@ -14,6 +14,24 @@ jest.mock('../../src/core/logger.js', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 
+// Ajout du mock explicite pour isMode sur mockAdapter (single global declaration)
+const mockClient: any = {
+  project: {
+    create: jest.fn(),
+    delete: jest.fn(),
+    info: jest.fn(),
+    list: jest.fn(),
+    getSubscription: jest.fn(),
+  },
+};
+const mockAdapter: McpAdapter = {
+  client: mockClient,
+  server: {
+    tool: jest.fn(),
+  },
+  isMode: () => true,
+} as any;
+
 // Mock data for testing
 const mockProject = {
   id: 'test-project-13',
@@ -48,24 +66,9 @@ const mockDeleteResult = {
   message: 'Project deleted successfully',
 };
 
-// Mock the Upsun client
-const mockClient: any = {
-  project: {
-    create: jest.fn(),
-    delete: jest.fn(),
-    info: jest.fn(),
-    list: jest.fn(),
-    getSubscription: jest.fn(),
-  },
-};
+// ...existing code...
 
-// Mock the adapter
-const mockAdapter: McpAdapter = {
-  client: mockClient,
-  server: {
-    tool: jest.fn(),
-  },
-} as any;
+// ...existing code...
 
 // Global toolCallbacks for all tests
 let toolCallbacks: Record<string, any> = {};
@@ -82,7 +85,7 @@ describe('Project Command Module', () => {
     mockLogger.error.mockClear();
 
     // Setup mock server.tool to capture callbacks
-    (mockAdapter.server.tool as jest.Mock) = jest.fn().mockImplementation((...args: any[]) => {
+    (mockAdapter.server.tool as unknown as jest.Mock) = jest.fn().mockImplementation((...args: any[]) => {
       const [name, , , callback] = args;
       toolCallbacks[name] = callback;
       return mockAdapter.server;
@@ -107,7 +110,7 @@ describe('Project Command Module', () => {
     it('should register all project tools', () => {
       // Reset mock call count before testing
       jest.clearAllMocks();
-      (mockAdapter.server.tool as jest.Mock) = jest.fn().mockImplementation((...args: any[]) => {
+      (mockAdapter.server.tool as unknown as jest.Mock) = jest.fn().mockImplementation((...args: any[]) => {
         const [name, , , callback] = args;
         toolCallbacks[name] = callback;
         return mockAdapter.server;
@@ -127,7 +130,7 @@ describe('Project Command Module', () => {
     it('should register tools with correct names and descriptions', () => {
       registerProject(mockAdapter);
 
-      const calls = (mockAdapter.server.tool as jest.Mock).mock.calls;
+      const calls = (mockAdapter.server.tool as unknown as jest.Mock).mock.calls;
 
       expect(calls[0]).toEqual([
         'create-project',

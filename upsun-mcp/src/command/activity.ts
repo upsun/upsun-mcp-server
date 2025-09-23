@@ -45,20 +45,22 @@ export function registerActivity(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the activity
    * @param activity_id - The unique identifier of the activity to cancel
    */
-  adapter.server.tool(
-    'cancel-activity',
-    'Cancel a activity of upsun project',
-    {
-      project_id: Schema.projectId(),
-      activity_id: Schema.activityId(),
-    },
-    async ({ project_id, activity_id }) => {
-      log.debug(`Cancel Activity ${activity_id} in Project ${project_id}`);
-      const result = await adapter.client.activity.cancel(project_id, activity_id);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'cancel-activity',
+      'Cancel a activity of upsun project',
+      {
+        project_id: Schema.projectId(),
+        activity_id: Schema.activityId(),
+      },
+      async ({ project_id, activity_id }) => {
+        log.debug(`Cancel Activity ${activity_id} in Project ${project_id}`);
+        const result = await adapter.client.activity.cancel(project_id, activity_id);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: get-activity

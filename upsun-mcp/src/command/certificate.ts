@@ -52,22 +52,24 @@ export function registerCertificate(adapter: McpAdapter): void {
    * @param key - The private key in PEM format
    * @param chain - The certificate chain in PEM format
    */
-  adapter.server.tool(
-    'add-certificate',
-    'Add an SSL/TLS certificate of upsun project',
-    {
-      project_id: Schema.projectId(),
-      certificate: z.string(),
-      key: z.string(),
-      chain: z.string(),
-    },
-    async ({ project_id, certificate, key, chain }) => {
-      log.debug(`Add Certificate in Project ${project_id}`);
-      const result = 'TODO'; //await adapter.client.certificate.add(project_id, certificate, key, chain);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'add-certificate',
+      'Add an SSL/TLS certificate of upsun project',
+      {
+        project_id: Schema.projectId(),
+        certificate: z.string(),
+        key: z.string(),
+        chain: z.string(),
+      },
+      async ({ project_id, certificate, key, chain }) => {
+        log.debug(`Add Certificate in Project ${project_id}`);
+        const result = 'TODO'; //await adapter.client.certificate.add(project_id, certificate, key, chain);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: delete-certificate
@@ -81,20 +83,22 @@ export function registerCertificate(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the certificate
    * @param certificate_id - The unique identifier of the certificate to delete
    */
-  adapter.server.tool(
-    'delete-certificate',
-    'Delete an SSL/TLS certificate of upsun project',
-    {
-      project_id: Schema.projectId(),
-      certificate_id: Schema.certificateId(),
-    },
-    async ({ project_id, certificate_id }) => {
-      log.debug(`Delete Certificate ${certificate_id} in Project ${project_id}`);
-      const result = 'TODO'; //await adapter.client.certificate.delete(project_id, certificate_id);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'delete-certificate',
+      'Delete an SSL/TLS certificate of upsun project',
+      {
+        project_id: Schema.projectId(),
+        certificate_id: Schema.certificateId(),
+      },
+      async ({ project_id, certificate_id }) => {
+        log.debug(`Delete Certificate ${certificate_id} in Project ${project_id}`);
+        const result = 'TODO'; //await adapter.client.certificate.delete(project_id, certificate_id);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: get-certificate

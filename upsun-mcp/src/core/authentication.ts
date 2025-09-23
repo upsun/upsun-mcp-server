@@ -265,6 +265,15 @@ export function extractApiKey(
   return apiKey;
 }
 
+export function extractMode(
+  req: express.Request,
+  headerName: string = 'enable-write'
+): string | undefined {
+  const mode = req.headers[headerName];
+  log.debug(`Extracted mode from ${headerName}:`, mode);
+  return typeof mode === 'string' ? 'writable' : 'readonly';
+}
+
 /**
  * HTTP header name for Upsun API key (legacy)
  */

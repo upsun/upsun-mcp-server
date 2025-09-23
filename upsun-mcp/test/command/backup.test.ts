@@ -14,12 +14,16 @@ jest.mock('../../src/core/logger.js', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 
-// Mock the adapter
+// Mock the Upsun client (ajoute ici les méthodes si besoin)
+const mockClient: any = {};
+
+// Mock the adapter (une seule déclaration globale)
 const mockAdapter: McpAdapter = {
-  client: {},
+  client: mockClient,
   server: {
     tool: jest.fn(),
   },
+  isMode: () => true,
 } as any;
 
 describe('Backup Command Module', () => {
@@ -36,9 +40,10 @@ describe('Backup Command Module', () => {
     toolCallbacks = {};
 
     // Setup mock server.tool to capture callbacks
-    mockAdapter.server.tool = jest
+    (mockAdapter.server.tool as any) = jest
       .fn()
-      .mockImplementation((name: string, description: string, schema: any, callback: any) => {
+      .mockImplementation((name: any, ...args: any[]) => {
+        const callback = args[args.length - 1];
         toolCallbacks[name] = callback;
         return mockAdapter.server;
       });
@@ -65,7 +70,7 @@ describe('Backup Command Module', () => {
     it('should register tools with correct names and descriptions', () => {
       registerBackup(mockAdapter);
 
-      const calls = (mockAdapter.server.tool as jest.Mock).mock.calls;
+      const calls = (mockAdapter.server.tool as unknown as jest.Mock).mock.calls;
 
       expect(calls[0]).toEqual([
         'create-backup',

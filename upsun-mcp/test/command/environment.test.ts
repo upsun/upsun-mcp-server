@@ -14,6 +14,29 @@ jest.mock('../../src/core/logger.js', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 
+// Ajout du mock explicite pour isMode sur mockAdapter (single global declaration)
+const mockClient: { environment: any } = {
+  environment: {
+    activate: jest.fn(),
+    delete: jest.fn(),
+    info: jest.fn(),
+    list: jest.fn(),
+    merge: jest.fn(),
+    pause: jest.fn(),
+    redeploy: jest.fn(),
+    resume: jest.fn(),
+    url: jest.fn(),
+    urls: jest.fn(),
+  },
+};
+const mockAdapter: McpAdapter = {
+  client: mockClient,
+  server: {
+    tool: jest.fn(),
+  },
+  isMode: () => true,
+} as any;
+
 // Mock data for testing
 const mockEnvironment = {
   id: 'env-main',
@@ -50,29 +73,9 @@ const mockOperationResult = {
 
 const mockUrls = ['https://main-abc123.upsun.app', 'https://www.example.com'];
 
-// Mock the Upsun client
-const mockClient = {
-  environment: {
-    activate: jest.fn() as any,
-    delete: jest.fn() as any,
-    info: jest.fn() as any,
-    list: jest.fn() as any,
-    merge: jest.fn() as any,
-    pause: jest.fn() as any,
-    redeploy: jest.fn() as any,
-    resume: jest.fn() as any,
-    url: jest.fn() as any,
-    urls: jest.fn() as any,
-  },
-};
+// ...existing code...
 
-// Mock the adapter
-const mockAdapter: McpAdapter = {
-  client: mockClient,
-  server: {
-    tool: jest.fn(),
-  },
-} as any;
+// ...existing code...
 
 describe('Environment Command Module', () => {
   let toolCallbacks: Record<string, any> = {};
@@ -88,10 +91,10 @@ describe('Environment Command Module', () => {
     mockLogger.error.mockClear();
 
     // Setup mock server.tool to capture callbacks
-    // @ts-ignore
     (mockAdapter.server.tool as any) = jest
       .fn()
-      .mockImplementation((name: string, description: string, schema: any, callback: any) => {
+      .mockImplementation((name: any, ...args: any[]) => {
+        const callback = args[args.length - 1];
         toolCallbacks[name] = callback;
         return mockAdapter.server;
       });
@@ -135,7 +138,7 @@ describe('Environment Command Module', () => {
     it('should register tools with correct names and descriptions', () => {
       registerEnvironment(mockAdapter);
 
-      const calls = (mockAdapter.server.tool as jest.Mock).mock.calls;
+      const calls = (mockAdapter.server.tool as unknown as jest.Mock).mock.calls;
 
       expect(calls[0][0]).toBe('activate-environment');
       expect(calls[1][0]).toBe('delete-environment');

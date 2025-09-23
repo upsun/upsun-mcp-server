@@ -46,19 +46,21 @@ export function registerOrganization(adapter: McpAdapter): void {
    *
    * @param organization_name - The name for the new organization
    */
-  adapter.server.tool(
-    'create-organization',
-    'Create a Organization on upsun',
-    {
-      organization_name: Schema.organizationName(),
-    },
-    async ({ organization_name }) => {
-      log.debug(`Create Organization: ${organization_name}`);
-      const result = await adapter.client.organization.create(organization_name);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'create-organization',
+      'Create a Organization on upsun',
+      {
+        organization_name: Schema.organizationName(),
+      },
+      async ({ organization_name }) => {
+        log.debug(`Create Organization: ${organization_name}`);
+        const result = await adapter.client.organization.create(organization_name);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: delete-organization
@@ -70,19 +72,21 @@ export function registerOrganization(adapter: McpAdapter): void {
    *
    * @param organization_id - The unique identifier of the organization to delete
    */
-  adapter.server.tool(
-    'delete-organization',
-    'Delete a Organization on upsun',
-    {
-      organization_id: Schema.organizationId(),
-    },
-    async ({ organization_id }) => {
-      log.debug(`Delete Organization: ${organization_id}`);
-      const result = await adapter.client.organization.delete(organization_id);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'delete-organization',
+      'Delete a Organization on upsun',
+      {
+        organization_id: Schema.organizationId(),
+      },
+      async ({ organization_id }) => {
+        log.debug(`Delete Organization: ${organization_id}`);
+        const result = await adapter.client.organization.delete(organization_id);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: info-organization

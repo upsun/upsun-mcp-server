@@ -64,4 +64,6 @@ export interface McpAdapter {
    * @throws May throw errors if connection fails or API key is invalid
    */
   connectWithApiKey(transport: Transport, apiKey: string): Promise<void>;
+
+  isMode(): boolean;
 }

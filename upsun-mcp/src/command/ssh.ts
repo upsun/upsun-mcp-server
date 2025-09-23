@@ -50,21 +50,23 @@ export function registerSshKey(adapter: McpAdapter): void {
    * @param ssh_key - The SSH public key content (starting with 'ssh-rsa', 'ssh-ed25519', etc.)
    * @param key_id - A unique identifier or label for the SSH key
    */
-  adapter.server.tool(
-    'add-sshkey',
-    'Add a SSH key on upsun account',
-    {
-      user_id: z.string(),
-      ssh_key: z.string(),
-      key_id: z.string(),
-    },
-    async ({ user_id, ssh_key, key_id }) => {
-      log.debug(`Add SSH Key for User: ${user_id}, Key ID: ${key_id}`);
-      const result = 'TODO'; //await adapter.client.backup.create(project_id, environment_name);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'add-sshkey',
+      'Add a SSH key on upsun account',
+      {
+        user_id: z.string(),
+        ssh_key: z.string(),
+        key_id: z.string(),
+      },
+      async ({ user_id, ssh_key, key_id }) => {
+        log.debug(`Add SSH Key for User: ${user_id}, Key ID: ${key_id}`);
+        const result = 'TODO'; //await adapter.client.backup.create(project_id, environment_name);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: delete-sshkey
@@ -79,20 +81,22 @@ export function registerSshKey(adapter: McpAdapter): void {
    * @param user_id - The ID of the user who owns the SSH key
    * @param key_id - The unique identifier of the SSH key to delete
    */
-  adapter.server.tool(
-    'delete-sshkey',
-    'Delete a SSH key of upsun account',
-    {
-      user_id: z.string(),
-      key_id: z.string(),
-    },
-    async ({ user_id, key_id }) => {
-      log.debug(`Delete SSH Key for User: ${user_id}, Key ID: ${key_id}`);
-      const result = 'TODO'; //await adapter.client.backup.create(project_id, environment_name);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'delete-sshkey',
+      'Delete a SSH key of upsun account',
+      {
+        user_id: z.string(),
+        key_id: z.string(),
+      },
+      async ({ user_id, key_id }) => {
+        log.debug(`Delete SSH Key for User: ${user_id}, Key ID: ${key_id}`);
+        const result = 'TODO'; //await adapter.client.backup.create(project_id, environment_name);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: list-sshkey

@@ -13,7 +13,7 @@
     "run": "node build/index.js",
     "build": "tsc -p tsconfig.json && chmod 755 build/index.js",
     "watch": "tsc --watch",
-    "inspector": "npx @modelcontextprotocol/inspector",
+    "inspector": "npx @modelcontextprotocol/inspector http://localhost:3000 --header 'upsun-api-token: xxxx'",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "prettier": "prettier --write .",

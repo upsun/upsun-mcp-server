@@ -41,11 +41,11 @@ export class Schema {
 
   /**
    * Creates a Zod string schema for organization IDs.
-   * Organization IDs must be exactly 27 characters long.
+   * Organization IDs must be exactly 25 characters long.
    * @returns A Zod string schema for validating organization IDs
    */
   static organizationId(): z.ZodString {
-    return z.string().length(27, 'Organization ID must be 27 characters long');
+    return z.string(); //.length(25, 'Organization ID must be 25 characters long');
   }
 
   /**

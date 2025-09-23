@@ -47,20 +47,22 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment to activate
    */
-  adapter.server.tool(
-    'activate-environment',
-    'Activate a environment of upsun project',
-    {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
-    },
-    async ({ project_id, environment_name }) => {
-      log.debug(`Activate Environment ${environment_name} in Project ${project_id}`);
-      const result = await adapter.client.environment.activate(project_id, environment_name);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'activate-environment',
+      'Activate a environment of upsun project',
+      {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+      },
+      async ({ project_id, environment_name }) => {
+        log.debug(`Activate Environment ${environment_name} in Project ${project_id}`);
+        const result = await adapter.client.environment.activate(project_id, environment_name);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: delete-environment
@@ -72,20 +74,22 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment to delete
    */
-  adapter.server.tool(
-    'delete-environment',
-    'Delete a environment of upsun project',
-    {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
-    },
-    async ({ project_id, environment_name }) => {
-      log.debug(`Delete Environment ${environment_name} from Project ${project_id}`);
-      const result = await adapter.client.environment.delete(project_id, environment_name);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'delete-environment',
+      'Delete a environment of upsun project',
+      {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+      },
+      async ({ project_id, environment_name }) => {
+        log.debug(`Delete Environment ${environment_name} from Project ${project_id}`);
+        const result = await adapter.client.environment.delete(project_id, environment_name);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: info-environment
@@ -173,20 +177,22 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment to merge
    */
-  adapter.server.tool(
-    'merge-environment',
-    'Merge a environment to parent environment of upsun project',
-    {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
-    },
-    async ({ project_id, environment_name }) => {
-      log.debug(`Merge Environment ${environment_name} in Project ${project_id}`);
-      const result = await adapter.client.environment.merge(project_id, environment_name);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'merge-environment',
+      'Merge a environment to parent environment of upsun project',
+      {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+      },
+      async ({ project_id, environment_name }) => {
+        log.debug(`Merge Environment ${environment_name} in Project ${project_id}`);
+        const result = await adapter.client.environment.merge(project_id, environment_name);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: pause-environment
@@ -198,20 +204,22 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment to pause
    */
-  adapter.server.tool(
-    'pause-environment',
-    'Pause a environment of upsun project',
-    {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
-    },
-    async ({ project_id, environment_name }) => {
-      log.debug(`Pause Environment ${environment_name} in Project ${project_id}`);
-      const result = await adapter.client.environment.pause(project_id, environment_name);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'pause-environment',
+      'Pause a environment of upsun project',
+      {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+      },
+      async ({ project_id, environment_name }) => {
+        log.debug(`Pause Environment ${environment_name} in Project ${project_id}`);
+        const result = await adapter.client.environment.pause(project_id, environment_name);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: redeploy-environment
@@ -224,21 +232,23 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param environment_name - The name of the environment to redeploy
    * @param application_name - The specific application to redeploy (optional)
    */
-  adapter.server.tool(
-    'redeploy-environment',
-    'Redeploy a environment of upsun project',
-    {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
-      application_name: Schema.applicationName().optional(),
-    },
-    async ({ project_id, environment_name }) => {
-      log.debug(`Redeploy Environment ${environment_name} in Project ${project_id}`);
-      const result = await adapter.client.environment.redeploy(project_id, environment_name);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'redeploy-environment',
+      'Redeploy a environment of upsun project',
+      {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+        application_name: Schema.applicationName().optional(),
+      },
+      async ({ project_id, environment_name }) => {
+        log.debug(`Redeploy Environment ${environment_name} in Project ${project_id}`);
+        const result = await adapter.client.environment.redeploy(project_id, environment_name);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: resume-environment
@@ -249,20 +259,22 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment to resume
    */
-  adapter.server.tool(
-    'resume-environment',
-    'Resume a environment of upsun project',
-    {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
-    },
-    async ({ project_id, environment_name }) => {
-      log.debug(`Resume Environment ${environment_name} in Project ${project_id}`);
-      const result = await adapter.client.environment.resume(project_id, environment_name);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'resume-environment',
+      'Resume a environment of upsun project',
+      {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+      },
+      async ({ project_id, environment_name }) => {
+        log.debug(`Resume Environment ${environment_name} in Project ${project_id}`);
+        const result = await adapter.client.environment.resume(project_id, environment_name);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: urls-environment

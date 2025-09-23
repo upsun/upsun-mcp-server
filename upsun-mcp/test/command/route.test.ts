@@ -26,6 +26,7 @@ const mockAdapter: McpAdapter = {
   server: {
     tool: jest.fn(),
   },
+  isMode: () => true,
 } as any;
 
 describe('Route Command Module', () => {
@@ -45,7 +46,8 @@ describe('Route Command Module', () => {
     // @ts-ignore
     mockAdapter.server.tool = jest
       .fn()
-      .mockImplementation((name: string, description: string, schema: any, callback: any) => {
+      .mockImplementation((name: any, ...args: any[]) => {
+        const callback = args[args.length - 1];
         toolCallbacks[name] = callback;
         return mockAdapter.server;
       }) as any;
@@ -71,7 +73,7 @@ describe('Route Command Module', () => {
 
     it('should register tools with correct names and descriptions', () => {
       // Don't call registerRoute again since it's already called in beforeEach
-      const calls = (mockAdapter.server.tool as jest.Mock).mock.calls;
+      const calls = (mockAdapter.server.tool as unknown as jest.Mock).mock.calls;
 
       expect(calls[0]).toEqual([
         'get-route',

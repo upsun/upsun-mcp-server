@@ -14,6 +14,23 @@ jest.mock('../../src/core/logger.js', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 
+// Ajout du mock explicite pour isMode sur mockAdapter (single global declaration)
+const mockClient: { organization: any } = {
+  organization: {
+    create: jest.fn(),
+    delete: jest.fn(),
+    info: jest.fn(),
+    list: jest.fn(),
+  },
+};
+const mockAdapter: McpAdapter = {
+  client: mockClient,
+  server: {
+    tool: jest.fn(),
+  },
+  isMode: () => true,
+} as any;
+
 // Mock data for testing
 const mockOrganization = {
   id: '123456789012345678901234567',
@@ -48,23 +65,9 @@ const mockDeleteResult = {
   message: 'Organization deleted successfully',
 };
 
-// Mock the Upsun client
-const mockClient = {
-  organization: {
-    create: jest.fn(),
-    delete: jest.fn(),
-    info: jest.fn(),
-    list: jest.fn(),
-  },
-};
+// ...existing code...
 
-// Mock the adapter
-const mockAdapter: McpAdapter = {
-  client: mockClient,
-  server: {
-    tool: jest.fn(),
-  },
-} as any;
+// ...existing code...
 
 describe('Organization Command Module', () => {
   let toolCallbacks: Record<string, any> = {};
@@ -80,9 +83,10 @@ describe('Organization Command Module', () => {
     toolCallbacks = {};
 
     // Setup mock server.tool to capture callbacks
-    mockAdapter.server.tool = jest
+    (mockAdapter.server.tool as any) = jest
       .fn()
-      .mockImplementation((name: string, description: string, schema: any, callback: any) => {
+      .mockImplementation((name: any, ...args: any[]) => {
+        const callback = args[args.length - 1];
         toolCallbacks[name] = callback;
         return mockAdapter.server;
       });
@@ -114,7 +118,7 @@ describe('Organization Command Module', () => {
     it('should register tools with correct names and descriptions', () => {
       registerOrganization(mockAdapter);
 
-      const calls = (mockAdapter.server.tool as jest.Mock).mock.calls;
+      const calls = (mockAdapter.server.tool as unknown as jest.Mock).mock.calls;
 
       expect(calls[0]).toEqual([
         'create-organization',

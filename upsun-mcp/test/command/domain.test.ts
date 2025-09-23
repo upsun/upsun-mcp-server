@@ -14,12 +14,13 @@ jest.mock('../../src/core/logger.js', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 
-// Mock the adapter
+// Mock the adapter (single global declaration)
 const mockAdapter: McpAdapter = {
-  client: {},
+  client: {} as any,
   server: {
     tool: jest.fn(),
   },
+  isMode: () => true,
 } as any;
 
 describe('Domain Command Module', () => {
@@ -35,10 +36,13 @@ describe('Domain Command Module', () => {
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
 
+    // Ajout du mock explicite pour isMode (already set globally)
+
     // Setup mock server.tool to capture callbacks
     (mockAdapter.server.tool as any) = jest
       .fn()
-      .mockImplementation((name: string, description: string, schema: any, callback: any) => {
+      .mockImplementation((name: any, ...args: any[]) => {
+        const callback = args[args.length - 1];
         toolCallbacks[name] = callback;
         return mockAdapter.server;
       });
@@ -65,7 +69,7 @@ describe('Domain Command Module', () => {
     it('should register tools with correct names and descriptions', () => {
       registerDomain(mockAdapter);
 
-      const calls = (mockAdapter.server.tool as jest.Mock).mock.calls;
+      const calls = (mockAdapter.server.tool as unknown as jest.Mock).mock.calls;
 
       expect(calls[0]).toEqual([
         'add-domain',

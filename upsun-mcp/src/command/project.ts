@@ -44,41 +44,43 @@ export function registerProject(adapter: McpAdapter): void {
    * @param name - The name of the new project
    * @param default_branch - The default Git branch (optional, defaults to "main")
    */
-  adapter.server.tool(
-    'create-project',
-    'Create a new upsun project',
-    {
-      organization_id: Schema.organizationId(),
-      //region_host: z.string().default("eu-5.platform.sh").optional(),
-      name: z.string(),
-      default_branch: z.string().default('main').optional(),
-    },
-    async ({ organization_id, name, default_branch }) => {
-      log.debug(`Create Project: ${name} in Organization: ${organization_id}`);
-      const region_host = 'eu-5.platform.sh';
-      const subCreated = await adapter.client.project.create(
-        organization_id,
-        region_host,
-        name,
-        default_branch
-      ); // region, default_branch
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'create-project',
+      'Create a new upsun project',
+      {
+        organization_id: Schema.organizationId(),
+        //region_host: z.string().default("eu-5.platform.sh").optional(),
+        name: z.string(),
+        default_branch: z.string().default('main').optional(),
+      },
+      async ({ organization_id, name, default_branch }) => {
+        log.debug(`Create Project: ${name} in Organization: ${organization_id}`);
+        const region_host = 'eu-5.platform.sh';
+        const subCreated = await adapter.client.project.create(
+          organization_id,
+          region_host,
+          name,
+          default_branch
+        ); // region, default_branch
 
-      let prjCreated = await adapter.client.project.getSubscription(
-        organization_id,
-        subCreated.id || ''
-      );
-      while (prjCreated.status !== SubscriptionStatusEnum.Active) {
-        log.info('Waiting for project to be active...');
-        await delay(10000);
-        prjCreated = await adapter.client.project.getSubscription(
+        let prjCreated = await adapter.client.project.getSubscription(
           organization_id,
           subCreated.id || ''
         );
-      }
+        while (prjCreated.status !== SubscriptionStatusEnum.Active) {
+          log.info('Waiting for project to be active...');
+          await delay(10000);
+          prjCreated = await adapter.client.project.getSubscription(
+            organization_id,
+            subCreated.id || ''
+          );
+        }
 
-      return Response.json(prjCreated);
-    }
-  );
+        return Response.json(prjCreated);
+      }
+    );
+  }
 
   /**
    * Tool: delete-project
@@ -89,19 +91,21 @@ export function registerProject(adapter: McpAdapter): void {
    *
    * @param project_id - The unique identifier of the project to delete
    */
-  adapter.server.tool(
-    'delete-project',
-    'Delete a upsun project',
-    {
-      project_id: Schema.projectId(),
-    },
-    async ({ project_id }) => {
-      log.debug(`Delete Project: ${project_id}`);
-      const result = await adapter.client.project.delete(project_id);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'delete-project',
+      'Delete a upsun project',
+      {
+        project_id: Schema.projectId(),
+      },
+      async ({ project_id }) => {
+        log.debug(`Delete Project: ${project_id}`);
+        const result = await adapter.client.project.delete(project_id);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: info-project

@@ -14,8 +14,10 @@ import {
   extractBearerToken,
   extractApiKey,
   HTTP_SESSION_ATTR,
+  extractMode,
 } from './authentication.js';
 import { createLogger } from './logger.js';
+import { env } from 'process';
 
 /** Keep-alive interval for SSE connections (25 seconds) */
 const KEEP_ALIVE_INTERVAL_MS = 25000;
@@ -51,10 +53,10 @@ export class LocalServer<A extends McpAdapter> {
    *
    * @param mcpAdapterServerFactory - Factory function to create MCP adapter instances
    */
-  constructor(private readonly mcpAdapterServerFactory: new () => A) {
+  constructor(private readonly mcpAdapterServerFactory: new (mode: string | undefined) => A) {
     coreLog.info('Initializing local server instance...');
     this.transport = new StdioServerTransport();
-    this.server = new this.mcpAdapterServerFactory();
+    this.server = new this.mcpAdapterServerFactory(process.env.MODE);
     coreLog.info('Local server instance initialized!');
   }
 
@@ -135,7 +137,7 @@ export class GatewayServer<A extends McpAdapter> {
    * ```
    */
   constructor(
-    private readonly mcpAdapterServerFactory: new () => A,
+    private readonly mcpAdapterServerFactory: new (mode: string | undefined) => A,
     public readonly app: core.Express = express()
   ) {
     coreLog.info('Initializing gateway server instance...');
@@ -159,9 +161,9 @@ export class GatewayServer<A extends McpAdapter> {
    * @returns A new MCP adapter instance
    * @private
    */
-  private makeInstanceAdapterMcpServer(): McpAdapter {
+  private makeInstanceAdapterMcpServer(mode: string | undefined = undefined): McpAdapter {
     coreLog.debug('Creating new MCP adapter instance...');
-    return new this.mcpAdapterServerFactory();
+    return new this.mcpAdapterServerFactory(mode);
   }
 
   //=============================================================================
@@ -222,6 +224,7 @@ export class GatewayServer<A extends McpAdapter> {
         httpLog.info('New session initialization request');
         const bearer = extractBearerToken(req);
         const apiKey = extractApiKey(req);
+        const mode = extractMode(req);
 
         if (!bearer && !apiKey) {
           httpLog.warn('Rejecting initialization: No bearer token or API key found');
@@ -233,7 +236,7 @@ export class GatewayServer<A extends McpAdapter> {
         }
 
         // Create the server instance first
-        const server = this.makeInstanceAdapterMcpServer();
+        const server = this.makeInstanceAdapterMcpServer(mode);
 
         // New initialization request
         const transport = new StreamableHTTPServerTransport({
@@ -338,6 +341,7 @@ export class GatewayServer<A extends McpAdapter> {
       // Extract authentication token (Bearer or API key - exclusive)
       const bearer = extractBearerToken(req);
       const apiKey = extractApiKey(req);
+      const mode = extractMode(req);
 
       if (!bearer && !apiKey) {
         res
@@ -352,7 +356,7 @@ export class GatewayServer<A extends McpAdapter> {
       const transport = new SSEServerTransport(HTTP_MSG_PATH, res);
 
       // Create the server instance first
-      const server = this.makeInstanceAdapterMcpServer();
+      const server = this.makeInstanceAdapterMcpServer(mode);
 
       this.transports.sse[transport.sessionId] = { transport, server };
 
@@ -419,6 +423,8 @@ export class GatewayServer<A extends McpAdapter> {
         // Extract and inject fresh bearer token for each request
         const bearer = extractBearerToken(req);
         const apiKey = extractApiKey(req);
+        const mode = extractMode(req);
+
         if (!bearer && !apiKey) {
           res.status(401).json({
             error: 'missing_token',

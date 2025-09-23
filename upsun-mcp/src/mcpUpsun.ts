@@ -67,6 +67,7 @@ export class UpsunMcpServer implements McpAdapter {
    * ```
    */
   constructor(
+    public mode: string | undefined = 'readonly',
     public readonly server: McpServer = new McpServer({
       name: 'upsun-server',
       version: pjson.default.version,
@@ -152,5 +153,12 @@ export class UpsunMcpServer implements McpAdapter {
     // TODO: Different processing for API key will be handled in Upsun client library
     this.client = new UpsunClient({ apiKey } as UpsunConfig);
     return this.server.connect(transport);
+  }
+
+  isMode(): boolean {
+    if (this.mode === undefined) {
+      this.mode = 'readonly';
+    }
+    return this.mode !== 'readonly';
   }
 }

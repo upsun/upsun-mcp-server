@@ -51,20 +51,22 @@ export function registerDomain(adapter: McpAdapter): void {
    * @param project_id - The project ID to add the domain to
    * @param domain_name - The domain name to add (e.g., example.com)
    */
-  adapter.server.tool(
-    'add-domain',
-    'Add Domain on upsun project',
-    {
-      project_id: Schema.projectId(),
-      domain_name: Schema.domainName(),
-    },
-    async ({ project_id, domain_name }) => {
-      log.debug(`Add Domain ${domain_name} to Project ${project_id}`);
-      const result = 'TODO'; //await adapter.client.domain.add(project_id, domain_name);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'add-domain',
+      'Add Domain on upsun project',
+      {
+        project_id: Schema.projectId(),
+        domain_name: Schema.domainName(),
+      },
+      async ({ project_id, domain_name }) => {
+        log.debug(`Add Domain ${domain_name} to Project ${project_id}`);
+        const result = 'TODO'; //await adapter.client.domain.add(project_id, domain_name);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: delete-domain
@@ -78,20 +80,22 @@ export function registerDomain(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the domain
    * @param domain_name - The domain name to remove
    */
-  adapter.server.tool(
-    'delete-domain',
-    'Delete a Domain on upsun project',
-    {
-      project_id: Schema.projectId(),
-      domain_name: Schema.domainName(),
-    },
-    async ({ project_id, domain_name }) => {
-      log.debug(`Delete Domain ${domain_name} from Project ${project_id}`);
-      const result = 'TODO'; //await adapter.client.domain.delete(project_id, domain_name);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'delete-domain',
+      'Delete a Domain on upsun project',
+      {
+        project_id: Schema.projectId(),
+        domain_name: Schema.domainName(),
+      },
+      async ({ project_id, domain_name }) => {
+        log.debug(`Delete Domain ${domain_name} from Project ${project_id}`);
+        const result = 'TODO'; //await adapter.client.domain.delete(project_id, domain_name);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 
   /**
    * Tool: get-domain
@@ -157,18 +161,20 @@ export function registerDomain(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the domain
    * @param domain_name - The domain name to update
    */
-  adapter.server.tool(
-    'update-domain',
-    'Update a Domain of upsun project',
-    {
-      project_id: Schema.projectId(),
-      domain_name: Schema.domainName(),
-    },
-    async ({ project_id, domain_name }) => {
-      log.debug(`Update Domain ${domain_name} in Project ${project_id}`);
-      const result = 'TODO'; //await adapter.client.domain.update(project_id, domain_name);
+  if (adapter.isMode()) {
+    adapter.server.tool(
+      'update-domain',
+      'Update a Domain of upsun project',
+      {
+        project_id: Schema.projectId(),
+        domain_name: Schema.domainName(),
+      },
+      async ({ project_id, domain_name }) => {
+        log.debug(`Update Domain ${domain_name} in Project ${project_id}`);
+        const result = 'TODO'; //await adapter.client.domain.update(project_id, domain_name);
 
-      return Response.json(result);
-    }
-  );
+        return Response.json(result);
+      }
+    );
+  }
 }

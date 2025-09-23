@@ -14,6 +14,25 @@ jest.mock('../../src/core/logger.js', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 
+// Mock the Upsun client
+const mockClient: { activity: any } = {
+  activity: {
+    list: jest.fn(),
+    get: jest.fn(),
+    cancel: jest.fn(),
+    log: jest.fn(),
+  },
+};
+
+// Ajout du mock explicite pour isMode sur mockAdapter, et client: mockClient
+const mockAdapter: McpAdapter = {
+  client: mockClient,
+  server: {
+    tool: jest.fn(),
+  },
+  isMode: () => true,
+} as any;
+
 // Mock data for testing
 const mockActivity = {
   id: 'test-activity-123',
@@ -50,24 +69,6 @@ const mockCancelResult = {
   message: 'Activity cancelled successfully',
 };
 
-// Mock the Upsun client
-const mockClient = {
-  activity: {
-    list: jest.fn(),
-    get: jest.fn(),
-    cancel: jest.fn(),
-    log: jest.fn(),
-  },
-};
-
-// Mock the adapter
-const mockAdapter: McpAdapter = {
-  client: mockClient,
-  server: {
-    tool: jest.fn(),
-  },
-} as any;
-
 describe('Activity Command Module', () => {
   let toolCallbacks: Record<string, any> = {};
 
@@ -82,9 +83,11 @@ describe('Activity Command Module', () => {
     toolCallbacks = {};
 
     // Setup mock server.tool to capture callbacks
-    mockAdapter.server.tool = jest
+    (mockAdapter.server.tool as any) = jest
       .fn()
-      .mockImplementation((name: string, description: string, schema: any, callback: any) => {
+      .mockImplementation((name: any, ...args: any[]) => {
+        // callback is always the last argument
+        const callback = args[args.length - 1];
         toolCallbacks[name] = callback;
         return mockAdapter.server;
       });
@@ -116,7 +119,7 @@ describe('Activity Command Module', () => {
     it('should register tools with correct names and descriptions', () => {
       registerActivity(mockAdapter);
 
-      const calls = (mockAdapter.server.tool as jest.Mock).mock.calls;
+      const calls = (mockAdapter.server.tool as unknown as jest.Mock).mock.calls;
 
       expect(calls[0]).toEqual([
         'cancel-activity',

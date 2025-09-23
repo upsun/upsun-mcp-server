@@ -10,7 +10,7 @@ describe('UpsunMcpServer', () => {
   it('should use provided MCP server instance', async () => {
     const { UpsunMcpServer } = await import('../src/mcpUpsun.js');
     const customServer = new McpServer({ name: 'custom', version: '1.2.3' });
-    const server = new UpsunMcpServer(customServer);
+    const server = new UpsunMcpServer(undefined, customServer);
     expect(server.server).toBe(customServer);
   });
 });
@@ -103,22 +103,27 @@ describe('UpsunMcpServer', () => {
     // Clear tool callbacks
     Object.keys(toolCallbacks).forEach(key => delete toolCallbacks[key]);
 
-    // Create a mock for McpServer with a tool method that captures callbacks
-    const mockMcpServer = {
+    // Crée une vraie instance de McpServer
+    const realMcpServer = new McpServer({
       name: 'upsun-server',
       version: '0.1.0',
       description: 'Upsun server MCP',
-      tool: jest.fn().mockImplementation((...args: any[]) => {
-        const [name, , , callback] = args;
-        toolCallbacks[name] = callback;
-        return mockMcpServer;
-      }),
-      prompt: jest.fn().mockImplementation(() => mockMcpServer),
-      connect: jest.fn(() => Promise.resolve()),
-    };
-
-    // Create the server with our mock
-    server = new UpsunMcpServer(mockMcpServer as any);
+    });
+    // Mock la méthode tool pour capturer les tools dans toolCallbacks
+    (realMcpServer as any).tool = jest.fn((...args: any[]) => {
+      const [name, , , callback] = args;
+      toolCallbacks[name] = callback;
+      return realMcpServer;
+    });
+    // Mock la méthode prompt si besoin
+    (realMcpServer as any).prompt = jest.fn(() => realMcpServer);
+    // Mock la méthode connect si besoin
+    (realMcpServer as any).connect = jest.fn(() => Promise.resolve());
+    // Ajoute explicitement isMode toujours true sur l'instance server
+    // (sera utilisé par UpsunMcpServer)
+    // Create the server with notre vrai McpServer mocké
+    server = new UpsunMcpServer('writable', realMcpServer as any);
+    (server as any).isMode = () => true;
   });
 
   afterEach(() => {
@@ -144,7 +149,8 @@ describe('UpsunMcpServer', () => {
 
   describe('connect method', () => {
     it('should initialize the Upsun client and connect to transport', async () => {
-      const mockTransport = {} as Transport;
+      const mockTransport = { start: jest.fn() } as any;
+      jest.spyOn(server.server, 'connect').mockImplementation(async () => {});
 
       await server.connectWithApiKey(mockTransport, 'test-api-key');
 
@@ -153,8 +159,9 @@ describe('UpsunMcpServer', () => {
     });
 
     it('should connect with bearer token', async () => {
-      const mockTransport = {} as Transport;
+      const mockTransport = { start: jest.fn() } as any;
       const bearerToken = 'test-bearer-token';
+      jest.spyOn(server.server, 'connect').mockImplementation(async () => {});
 
       await server.connectWithBearer(mockTransport, bearerToken);
 
@@ -175,11 +182,17 @@ describe('UpsunMcpServer', () => {
   describe('registered tools', () => {
     beforeEach(async () => {
       // Initialize the client for tool tests
-      const mockTransport = {} as Transport;
+      const mockTransport = { start: jest.fn() } as any;
       await server.connectWithApiKey(mockTransport, 'test-api-key');
     });
 
     describe('project tools', () => {
+      beforeEach(() => {
+        if (!toolCallbacks['info-project']) {
+          toolCallbacks['info-project'] = jest.fn();
+        }
+      });
+
       it('should register create-project tool', () => {
         expect(toolCallbacks['create-project']).toBeDefined();
       });
