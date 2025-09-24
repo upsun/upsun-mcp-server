@@ -2,51 +2,76 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
 import { McpAdapter } from '../../src/core/adapter.js';
 import { registerBackup } from '../../src/command/backup.js';
 
-// Mock the logger module
-const mockLogger = {
-  debug: jest.fn(),
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
+// --- GLOBAL MOCKS & CONSTANTS ---
+const acceptedResponse = { code: 200, message: 'TODO', status: 'TODO' };
+const backup = {
+  createdAt: '',
+  updatedAt: '',
+  id: 'TODO',
+  attributes: {},
+  environment: '',
+  project: '',
+  status: 'TODO',
+  size: 0,
+  type: '',
+  isLive: false,
+  createdBy: '',
+  expiresAt: '',
+  meta: {},
+  index: 0,
+  commitId: '',
+  safe: false,
+  sizeOfVolumes: 0,
+  volumes: [],
+  code: '',
+  resources: [],
+  description: '',
+  sizeUsed: 0,
+  deployment: '',
+  restorable: false,
+  automated: false,
 };
 
-jest.mock('../../src/core/logger.js', () => ({
-  createLogger: jest.fn(() => mockLogger),
-}));
+const mockLogger = Object.fromEntries(
+  ['debug', 'info', 'warn', 'error'].map(fn => [fn, jest.fn()])
+);
+jest.mock('../../src/core/logger.js', () => ({ createLogger: jest.fn(() => mockLogger) }));
 
-// Mock the Upsun client (ajoute ici les méthodes si besoin)
-const mockClient: any = {};
+const makeMockBackupTask = () =>
+  ({
+    create: jest.fn(async () => acceptedResponse),
+    delete: jest.fn(async () => acceptedResponse),
+    get: jest.fn(async (_projectId: string, _environmentId: string, _backupId: string) => backup),
+    list: jest.fn(async (_projectId: string, _environmentId: string) => [backup]),
+    restore: jest.fn(
+      async (_projectId: string, _environmentId: string, _backupId: string) => 'TODO'
+    ),
+    client: {},
+    bckApi: {},
+  }) as any;
 
-// Mock the adapter (une seule déclaration globale)
-const mockAdapter: McpAdapter = {
-  client: mockClient,
-  server: {
-    tool: jest.fn(),
-  },
-  isMode: () => true,
-} as any;
+const makeMockAdapter = () =>
+  ({
+    client: { backup: makeMockBackupTask() },
+    server: { tool: jest.fn() },
+    isMode: () => true,
+  }) as unknown as McpAdapter;
 
 describe('Backup Command Module', () => {
   let toolCallbacks: Record<string, any> = {};
+  let mockAdapter: McpAdapter;
 
   beforeEach(() => {
     jest.clearAllMocks();
-
-    // Reset logger mocks
-    mockLogger.debug.mockClear();
-    mockLogger.info.mockClear();
-    mockLogger.warn.mockClear();
-    mockLogger.error.mockClear();
+    Object.values(mockLogger).forEach(fn => fn.mockClear());
     toolCallbacks = {};
-
+    mockAdapter = makeMockAdapter();
     // Setup mock server.tool to capture callbacks
-    (mockAdapter.server.tool as any) = jest
-      .fn()
-      .mockImplementation((name: any, ...args: any[]) => {
-        const callback = args[args.length - 1];
-        toolCallbacks[name] = callback;
-        return mockAdapter.server;
-      });
+    (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: any, ...args: any[]) => {
+      const callback = args[args.length - 1];
+      toolCallbacks[name] = callback;
+      return mockAdapter.server;
+    });
   });
 
   afterEach(() => {
@@ -128,7 +153,7 @@ describe('Backup Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify(acceptedResponse, null, 2),
           },
         ],
       });
@@ -147,7 +172,7 @@ describe('Backup Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify(acceptedResponse, null, 2),
           },
         ],
       });
@@ -167,7 +192,7 @@ describe('Backup Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify(acceptedResponse, null, 2),
           },
         ],
       });
@@ -193,7 +218,7 @@ describe('Backup Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify(acceptedResponse, null, 2),
           },
         ],
       });
@@ -213,7 +238,7 @@ describe('Backup Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify(acceptedResponse, null, 2),
           },
         ],
       });
@@ -225,7 +250,7 @@ describe('Backup Command Module', () => {
       registerBackup(mockAdapter);
     });
 
-    it('should return TODO for get backup', async () => {
+    it('should return the mocked backup object for get-backup', async () => {
       const callback = toolCallbacks['get-backup'];
       const params = {
         project_id: 'test-project-13',
@@ -235,17 +260,35 @@ describe('Backup Command Module', () => {
 
       const result = await callback(params);
 
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('TODO', null, 2),
-          },
-        ],
+      // Use toMatchObject to ignore extra properties in backup
+      expect(result.content[0].type).toBe('text');
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed).toMatchObject({
+        createdAt: '',
+        updatedAt: '',
+        id: 'TODO',
+        attributes: {},
+        environment: '',
+        project: '',
+        status: 'TODO',
+        size: 0,
+        type: '',
+        isLive: false,
+        createdBy: '',
+        expiresAt: '',
+        meta: {},
+        index: 0,
+        commitId: '',
+        safe: false,
+        sizeOfVolumes: 0,
+        volumes: [],
+        code: '',
+        resources: [],
+        description: '',
       });
     });
 
-    it('should handle different environments', async () => {
+    it('should return the mocked backup object for get-backup with different environments', async () => {
       const callback = toolCallbacks['get-backup'];
       const params = {
         project_id: 'test-project-13',
@@ -255,13 +298,30 @@ describe('Backup Command Module', () => {
 
       const result = await callback(params);
 
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('TODO', null, 2),
-          },
-        ],
+      expect(result.content[0].type).toBe('text');
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed).toMatchObject({
+        createdAt: '',
+        updatedAt: '',
+        id: 'TODO',
+        attributes: {},
+        environment: '',
+        project: '',
+        status: 'TODO',
+        size: 0,
+        type: '',
+        isLive: false,
+        createdBy: '',
+        expiresAt: '',
+        meta: {},
+        index: 0,
+        commitId: '',
+        safe: false,
+        sizeOfVolumes: 0,
+        volumes: [],
+        code: '',
+        resources: [],
+        description: '',
       });
     });
   });
@@ -280,13 +340,31 @@ describe('Backup Command Module', () => {
 
       const result = await callback(params);
 
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('TODO', null, 2),
-          },
-        ],
+      expect(result.content[0].type).toBe('text');
+      const parsed = JSON.parse(result.content[0].text);
+      expect(Array.isArray(parsed)).toBe(true);
+      expect(parsed[0]).toMatchObject({
+        createdAt: '',
+        updatedAt: '',
+        id: 'TODO',
+        attributes: {},
+        environment: '',
+        project: '',
+        status: 'TODO',
+        size: 0,
+        type: '',
+        isLive: false,
+        createdBy: '',
+        expiresAt: '',
+        meta: {},
+        index: 0,
+        commitId: '',
+        safe: false,
+        sizeOfVolumes: 0,
+        volumes: [],
+        code: '',
+        resources: [],
+        description: '',
       });
     });
 
@@ -299,13 +377,31 @@ describe('Backup Command Module', () => {
 
       const result = await callback(params);
 
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('TODO', null, 2),
-          },
-        ],
+      expect(result.content[0].type).toBe('text');
+      const parsed = JSON.parse(result.content[0].text);
+      expect(Array.isArray(parsed)).toBe(true);
+      expect(parsed[0]).toMatchObject({
+        createdAt: '',
+        updatedAt: '',
+        id: 'TODO',
+        attributes: {},
+        environment: '',
+        project: '',
+        status: 'TODO',
+        size: 0,
+        type: '',
+        isLive: false,
+        createdBy: '',
+        expiresAt: '',
+        meta: {},
+        index: 0,
+        commitId: '',
+        safe: false,
+        sizeOfVolumes: 0,
+        volumes: [],
+        code: '',
+        resources: [],
+        description: '',
       });
     });
   });
@@ -454,15 +550,79 @@ describe('Backup Command Module', () => {
       for (const { name, params } of callbacks) {
         const callback = toolCallbacks[name];
         const result = await callback(params);
-
-        expect(result).toEqual({
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify('TODO', null, 2),
-            },
-          ],
-        });
+        let expected;
+        if (name === 'get-backup') {
+          expect(result.content[0].type).toBe('text');
+          const parsed = JSON.parse(result.content[0].text);
+          expect(parsed).toMatchObject({
+            createdAt: '',
+            updatedAt: '',
+            id: 'TODO',
+            attributes: {},
+            environment: '',
+            project: '',
+            status: 'TODO',
+            size: 0,
+            type: '',
+            isLive: false,
+            createdBy: '',
+            expiresAt: '',
+            meta: {},
+            index: 0,
+            commitId: '',
+            safe: false,
+            sizeOfVolumes: 0,
+            volumes: [],
+            code: '',
+            resources: [],
+            description: '',
+          });
+        } else if (name === 'list-backup') {
+          expect(result.content[0].type).toBe('text');
+          const parsed = JSON.parse(result.content[0].text);
+          expect(Array.isArray(parsed)).toBe(true);
+          expect(parsed[0]).toMatchObject({
+            createdAt: '',
+            updatedAt: '',
+            id: 'TODO',
+            attributes: {},
+            environment: '',
+            project: '',
+            status: 'TODO',
+            size: 0,
+            type: '',
+            isLive: false,
+            createdBy: '',
+            expiresAt: '',
+            meta: {},
+            index: 0,
+            commitId: '',
+            safe: false,
+            sizeOfVolumes: 0,
+            volumes: [],
+            code: '',
+            resources: [],
+            description: '',
+          });
+        } else if (name === 'restore-backup') {
+          expect(result).toEqual({
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify('TODO', null, 2),
+              },
+            ],
+          });
+        } else {
+          expect(result).toEqual({
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(acceptedResponse, null, 2),
+              },
+            ],
+          });
+        }
       }
     });
 
@@ -480,7 +640,7 @@ describe('Backup Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify(acceptedResponse, null, 2),
           },
         ],
       });

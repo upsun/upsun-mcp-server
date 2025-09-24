@@ -21,6 +21,7 @@ import {
   registerSshKey,
 } from './command/index.js';
 import { registerConfig } from './task/config.js';
+import { WritableMode } from './core/authentication.js';
 
 /**
  * Upsun MCP Server implementation.
@@ -67,7 +68,7 @@ export class UpsunMcpServer implements McpAdapter {
    * ```
    */
   constructor(
-    public mode: string | undefined = 'readonly',
+    public mode: WritableMode = WritableMode.READONLY,
     public readonly server: McpServer = new McpServer({
       name: 'upsun-server',
       version: pjson.default.version,
@@ -124,6 +125,7 @@ export class UpsunMcpServer implements McpAdapter {
    */
   connectWithBearer(transport: Transport, bearerToken: string): Promise<void> {
     log.info('Connecting with Bearer token authentication');
+
     this.client = new UpsunClient();
     this.client.setBearerToken(bearerToken);
     return this.server.connect(transport);
@@ -150,15 +152,15 @@ export class UpsunMcpServer implements McpAdapter {
    */
   connectWithApiKey(transport: Transport, apiKey: string): Promise<void> {
     log.info('Connecting with API key authentication');
-    // TODO: Different processing for API key will be handled in Upsun client library
+
     this.client = new UpsunClient({ apiKey } as UpsunConfig);
     return this.server.connect(transport);
   }
 
   isMode(): boolean {
     if (this.mode === undefined) {
-      this.mode = 'readonly';
+      this.mode = WritableMode.READONLY;
     }
-    return this.mode !== 'readonly';
+    return this.mode !== WritableMode.READONLY;
   }
 }

@@ -4,6 +4,20 @@ import { createLogger } from './logger.js';
 // Create logger instance
 const log = createLogger('Auth');
 
+// by priority
+export enum WritableMode {
+  READONLY = 'readonly',
+  NON_DESTRUCTIVE = 'no-destructive',
+  WRITABLE = 'writable',
+}
+
+// Header keys used in requests
+export enum HeaderKey {
+  MCP_SESSION_ID = 'mcp-session-id',
+  API_KEY = 'upsun-api-token',
+  ENABLE_WRITE = 'enable-write',
+}
+
 /**
  * Centralized authentication utilities for OAuth2 and Bearer token management.
  *
@@ -83,7 +97,6 @@ export function createAuthorizationServerMetadata(
     grant_types_supported: ['authorization_code'],
     token_endpoint_auth_methods_supported: ['none', 'client_secret_basic'],
     code_challenge_methods_supported: ['S256'],
-    //registration_endpoint: `${config.baseUrl}/register`
   };
 }
 
@@ -249,7 +262,7 @@ export function requireBearerToken(
  */
 export function extractApiKey(
   req: express.Request,
-  headerName: string = 'upsun-api-token'
+  headerName: string = HeaderKey.API_KEY
 ): string | undefined {
   const authHeader = req.headers[headerName];
   const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
@@ -265,21 +278,24 @@ export function extractApiKey(
   return apiKey;
 }
 
+/**
+ * Extracts writable mode from request headers
+ *
+ * @param req - Express request object
+ * @param headerName - Name of the header containing the mode
+ * @returns WritableMode enum value
+ */
 export function extractMode(
   req: express.Request,
-  headerName: string = 'enable-write'
-): string | undefined {
+  headerName: string = HeaderKey.ENABLE_WRITE
+): WritableMode {
   const mode = req.headers[headerName];
   log.debug(`Extracted mode from ${headerName}:`, mode);
-  return typeof mode === 'string' ? 'writable' : 'readonly';
+
+  if (typeof mode === 'string') {
+    if (mode === 'true' || mode === WritableMode.WRITABLE) {
+      return WritableMode.WRITABLE;
+    }
+  }
+  return WritableMode.READONLY;
 }
-
-/**
- * HTTP header name for Upsun API key (legacy)
- */
-export const HTTP_UPSUN_APIKEY_ATTR = 'upsun-api-token';
-
-/**
- * HTTP header name for MCP session ID
- */
-export const HTTP_SESSION_ATTR = 'mcp-session-id';

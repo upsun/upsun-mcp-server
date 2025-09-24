@@ -83,14 +83,12 @@ describe('Activity Command Module', () => {
     toolCallbacks = {};
 
     // Setup mock server.tool to capture callbacks
-    (mockAdapter.server.tool as any) = jest
-      .fn()
-      .mockImplementation((name: any, ...args: any[]) => {
-        // callback is always the last argument
-        const callback = args[args.length - 1];
-        toolCallbacks[name] = callback;
-        return mockAdapter.server;
-      });
+    (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: any, ...args: any[]) => {
+      // callback is always the last argument
+      const callback = args[args.length - 1];
+      toolCallbacks[name] = callback;
+      return mockAdapter.server;
+    });
 
     // Setup default mock responses
     mockClient.activity.list.mockResolvedValue(mockActivityList);

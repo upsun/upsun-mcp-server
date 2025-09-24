@@ -44,13 +44,11 @@ describe('Route Command Module', () => {
 
     // Setup mock server.tool to capture callbacks
     // @ts-ignore
-    mockAdapter.server.tool = jest
-      .fn()
-      .mockImplementation((name: any, ...args: any[]) => {
-        const callback = args[args.length - 1];
-        toolCallbacks[name] = callback;
-        return mockAdapter.server;
-      }) as any;
+    mockAdapter.server.tool = jest.fn().mockImplementation((name: any, ...args: any[]) => {
+      const callback = args[args.length - 1];
+      toolCallbacks[name] = callback;
+      return mockAdapter.server;
+    }) as any;
 
     // Register routes to populate toolCallbacks
     registerRoute(mockAdapter) as any;

@@ -39,13 +39,11 @@ describe('Domain Command Module', () => {
     // Ajout du mock explicite pour isMode (already set globally)
 
     // Setup mock server.tool to capture callbacks
-    (mockAdapter.server.tool as any) = jest
-      .fn()
-      .mockImplementation((name: any, ...args: any[]) => {
-        const callback = args[args.length - 1];
-        toolCallbacks[name] = callback;
-        return mockAdapter.server;
-      });
+    (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: any, ...args: any[]) => {
+      const callback = args[args.length - 1];
+      toolCallbacks[name] = callback;
+      return mockAdapter.server;
+    });
   });
 
   afterEach(() => {

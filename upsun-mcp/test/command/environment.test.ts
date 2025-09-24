@@ -91,13 +91,11 @@ describe('Environment Command Module', () => {
     mockLogger.error.mockClear();
 
     // Setup mock server.tool to capture callbacks
-    (mockAdapter.server.tool as any) = jest
-      .fn()
-      .mockImplementation((name: any, ...args: any[]) => {
-        const callback = args[args.length - 1];
-        toolCallbacks[name] = callback;
-        return mockAdapter.server;
-      });
+    (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: any, ...args: any[]) => {
+      const callback = args[args.length - 1];
+      toolCallbacks[name] = callback;
+      return mockAdapter.server;
+    });
 
     // Setup default mock responses
     mockClient.environment.activate.mockResolvedValue(mockOperationResult);

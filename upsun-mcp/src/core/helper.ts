@@ -20,7 +20,10 @@ export class Schema {
    * @returns A Zod string schema for validating project IDs
    */
   static projectId(): z.ZodString {
-    return z.string().length(13, 'Project ID must be 13 characters long');
+    return z
+      .string()
+      .length(13, 'Project ID must be 13 characters long')
+      .describe('Find it in file .upsun/local/project.yaml if exist.');
   }
 
   /**

@@ -64,7 +64,7 @@ export function registerBackup(adapter: McpAdapter): void {
         log.debug(
           `Create Backup in Project ${project_id}, Environment ${environment_name}, is_live: ${is_live}`
         );
-        const result = 'TODO'; //await adapter.client.backup.create(project_id, environment_name);
+        const result = await adapter.client.backup.create(project_id, environment_name, is_live);
 
         return Response.json(result);
       }
@@ -97,7 +97,7 @@ export function registerBackup(adapter: McpAdapter): void {
         log.debug(
           `Delete Backup ${backup_id} in Project ${project_id}, Environment ${environment_name}`
         );
-        const result = 'TODO'; //await adapter.client.backup.delete(project_id, environment_name);
+        const result = await adapter.client.backup.delete(project_id, environment_name, backup_id);
 
         return Response.json(result);
       }
@@ -129,7 +129,7 @@ export function registerBackup(adapter: McpAdapter): void {
       log.debug(
         `Get Backup ${backup_id} in Project ${project_id}, Environment ${environment_name}`
       );
-      const result = 'TODO'; //await adapter.client.backup.get(project_id, environment_name);
+      const result = await adapter.client.backup.get(project_id, environment_name, backup_id);
 
       return Response.json(result);
     }
@@ -156,7 +156,7 @@ export function registerBackup(adapter: McpAdapter): void {
     },
     async ({ project_id, environment_name }) => {
       log.debug(`List Backups in Project ${project_id}, Environment ${environment_name}`);
-      const result = 'TODO'; //await adapter.client.backup.list(project_id, environment_name);
+      const result = await adapter.client.backup.list(project_id, environment_name);
 
       return Response.json(result);
     }

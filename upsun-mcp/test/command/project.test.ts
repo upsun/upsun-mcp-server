@@ -85,11 +85,13 @@ describe('Project Command Module', () => {
     mockLogger.error.mockClear();
 
     // Setup mock server.tool to capture callbacks
-    (mockAdapter.server.tool as unknown as jest.Mock) = jest.fn().mockImplementation((...args: any[]) => {
-      const [name, , , callback] = args;
-      toolCallbacks[name] = callback;
-      return mockAdapter.server;
-    });
+    (mockAdapter.server.tool as unknown as jest.Mock) = jest
+      .fn()
+      .mockImplementation((...args: any[]) => {
+        const [name, , , callback] = args;
+        toolCallbacks[name] = callback;
+        return mockAdapter.server;
+      });
 
     // Setup default mock responses
     mockClient.project.create.mockResolvedValue(mockCreateResult);
@@ -110,11 +112,13 @@ describe('Project Command Module', () => {
     it('should register all project tools', () => {
       // Reset mock call count before testing
       jest.clearAllMocks();
-      (mockAdapter.server.tool as unknown as jest.Mock) = jest.fn().mockImplementation((...args: any[]) => {
-        const [name, , , callback] = args;
-        toolCallbacks[name] = callback;
-        return mockAdapter.server;
-      });
+      (mockAdapter.server.tool as unknown as jest.Mock) = jest
+        .fn()
+        .mockImplementation((...args: any[]) => {
+          const [name, , , callback] = args;
+          toolCallbacks[name] = callback;
+          return mockAdapter.server;
+        });
 
       registerProject(mockAdapter);
 

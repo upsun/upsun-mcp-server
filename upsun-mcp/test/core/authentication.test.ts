@@ -9,8 +9,7 @@ import {
   validateBearerToken,
   requireBearerToken,
   extractApiKey,
-  HTTP_UPSUN_APIKEY_ATTR,
-  HTTP_SESSION_ATTR,
+  HeaderKey,
 } from '../../src/core/authentication.js';
 
 describe('Authentication Module', () => {
@@ -376,8 +375,8 @@ describe('Authentication Module', () => {
 
   describe('Constants', () => {
     it('should export correct HTTP header constants', () => {
-      expect(HTTP_UPSUN_APIKEY_ATTR).toBe('upsun-api-token');
-      expect(HTTP_SESSION_ATTR).toBe('mcp-session-id');
+      expect(HeaderKey.API_KEY).toBe('upsun-api-token');
+      expect(HeaderKey.MCP_SESSION_ID).toBe('mcp-session-id');
     });
   });
 });

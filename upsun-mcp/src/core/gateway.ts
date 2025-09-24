@@ -13,11 +13,11 @@ import {
   setupOAuth2Direct,
   extractBearerToken,
   extractApiKey,
-  HTTP_SESSION_ATTR,
   extractMode,
+  WritableMode,
+  HeaderKey,
 } from './authentication.js';
 import { createLogger } from './logger.js';
-import { env } from 'process';
 
 /** Keep-alive interval for SSE connections (25 seconds) */
 const KEEP_ALIVE_INTERVAL_MS = 25000;
@@ -45,6 +45,7 @@ const coreLog = createLogger('Core');
 export class LocalServer<A extends McpAdapter> {
   /** The MCP adapter server instance */
   public readonly server: A;
+
   /** The stdio transport for local communication */
   private readonly transport: StdioServerTransport;
 
@@ -53,10 +54,10 @@ export class LocalServer<A extends McpAdapter> {
    *
    * @param mcpAdapterServerFactory - Factory function to create MCP adapter instances
    */
-  constructor(private readonly mcpAdapterServerFactory: new (mode: string | undefined) => A) {
+  constructor(private readonly mcpAdapterServerFactory: new (mode: WritableMode) => A) {
     coreLog.info('Initializing local server instance...');
     this.transport = new StdioServerTransport();
-    this.server = new this.mcpAdapterServerFactory(process.env.MODE);
+    this.server = new this.mcpAdapterServerFactory(process.env.MODE as WritableMode);
     coreLog.info('Local server instance initialized!');
   }
 
@@ -137,7 +138,7 @@ export class GatewayServer<A extends McpAdapter> {
    * ```
    */
   constructor(
-    private readonly mcpAdapterServerFactory: new (mode: string | undefined) => A,
+    private readonly mcpAdapterServerFactory: new (mode: WritableMode) => A,
     public readonly app: core.Express = express()
   ) {
     coreLog.info('Initializing gateway server instance...');
@@ -161,7 +162,7 @@ export class GatewayServer<A extends McpAdapter> {
    * @returns A new MCP adapter instance
    * @private
    */
-  private makeInstanceAdapterMcpServer(mode: string | undefined = undefined): McpAdapter {
+  private makeInstanceAdapterMcpServer(mode: WritableMode = WritableMode.READONLY): McpAdapter {
     coreLog.debug('Creating new MCP adapter instance...');
     return new this.mcpAdapterServerFactory(mode);
   }
@@ -191,18 +192,19 @@ export class GatewayServer<A extends McpAdapter> {
 
     // Handle POST requests for client-to-server communication
     this.app.post(HTTP_MCP_PATH, async (req, res) => {
-      // Check for existing session ID
-      const sessionId = req.headers[HTTP_SESSION_ATTR] as string | undefined;
       httpLog.info('Received POST request to /mcp (Streamable transport)');
+
+      // Check for existing session ID
+      const sessionId = req.headers[HeaderKey.MCP_SESSION_ID] as string | undefined;
+      const bearer = extractBearerToken(req);
+      const apiKey = extractApiKey(req);
+      const mode = extractMode(req);
 
       if (sessionId && this.transports.streamable[sessionId]) {
         // Reuse existing transport - inject fresh authentication token
         const { transport, server } = this.transports.streamable[sessionId];
 
         // Extract authentication token (Bearer or API key - exclusive)
-        const bearer = extractBearerToken(req);
-        const apiKey = extractApiKey(req);
-
         if (!bearer && !apiKey) {
           httpLog.warn('Rejecting request: No bearer token or API key found in existing session');
           res.status(401).json({
@@ -222,9 +224,6 @@ export class GatewayServer<A extends McpAdapter> {
       } else if (!sessionId && isInitializeRequest(req.body)) {
         // New session initialization request - check for authentication token
         httpLog.info('New session initialization request');
-        const bearer = extractBearerToken(req);
-        const apiKey = extractApiKey(req);
-        const mode = extractMode(req);
 
         if (!bearer && !apiKey) {
           httpLog.warn('Rejecting initialization: No bearer token or API key found');
@@ -292,7 +291,7 @@ export class GatewayServer<A extends McpAdapter> {
     ): Promise<void> => {
       httpLog.info('Received GET/DELETE request to /mcp (Streamable transport)');
 
-      const sessionId = req.headers[HTTP_SESSION_ATTR] as string | undefined;
+      const sessionId = req.headers[HeaderKey.MCP_SESSION_ID] as string | undefined;
       if (!sessionId || !this.transports.streamable[sessionId]) {
         res.status(400).send('Invalid or missing session ID');
         return;
