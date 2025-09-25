@@ -10,7 +10,7 @@ import {
   requireBearerToken,
   extractApiKey,
   HeaderKey,
-} from '../../src/core/authentication.js';
+} from '../../src/core/authentication';
 
 describe('Authentication Module', () => {
   describe('OAuth2 Configuration', () => {

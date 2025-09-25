@@ -1,18 +1,18 @@
 // @ts-nocheck
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { GatewayServer, LocalServer } from '../../src/core/gateway.js';
-import { McpAdapter } from '../../src/core/adapter.js';
+import { GatewayServer, LocalServer } from '../../src/core/gateway';
+import { McpAdapter } from '../../src/core/adapter';
 
 // Mock Express application
 jest.mock('express');
 
 // Mock MCP SDK transports
-jest.mock('@modelcontextprotocol/sdk/server/streamableHttp.js');
-jest.mock('@modelcontextprotocol/sdk/server/sse.js');
-jest.mock('@modelcontextprotocol/sdk/server/stdio.js');
+jest.mock('@modelcontextprotocol/sdk/server/streamableHttp');
+jest.mock('@modelcontextprotocol/sdk/server/sse');
+jest.mock('@modelcontextprotocol/sdk/server/stdio');
 
 // Mock authentication module
-jest.mock('../../src/core/authentication.js');
+jest.mock('../../src/core/authentication');
 
 describe('LocalServer', () => {
   let mockAdapterFactory: jest.MockedClass<typeof McpAdapter>;
@@ -77,13 +77,11 @@ describe('GatewayServer', () => {
   });
 
   describe('constructor', () => {
-    it('should initialize the Express app and set up transports', () => {
+    it('should initialize the Express app and transports', () => {
       expect(gatewayServer).toBeDefined();
       expect(gatewayServer.app).toBeDefined();
-      expect(gatewayServer.transports).toBeDefined();
-      expect(gatewayServer.transports.streamable).toBeDefined();
-      expect(gatewayServer.transports.sse).toBeDefined();
-      expect(gatewayServer.sseConnections).toBeDefined();
+      expect(gatewayServer.httpTransport).toBeDefined();
+      expect(gatewayServer.sseTransport).toBeDefined();
     });
   });
 
@@ -101,13 +99,9 @@ describe('GatewayServer', () => {
   });
 
   describe('transport management', () => {
-    it('should store and manage streamable transport sessions', () => {
-      expect(gatewayServer.transports.streamable).toEqual({});
-    });
-
-    it('should manage SSE connections', () => {
-      expect(gatewayServer.sseConnections).toBeDefined();
-      expect(gatewayServer.sseConnections.size).toBe(0);
+    // Transport management tests are now in dedicated files
+    it('should not test transport internals here (see http.test.ts, sse.test.ts)', () => {
+      expect(true).toBe(true);
     });
   });
 

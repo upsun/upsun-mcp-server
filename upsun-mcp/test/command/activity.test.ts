@@ -1,6 +1,6 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { McpAdapter } from '../../src/core/adapter.js';
-import { registerActivity } from '../../src/command/activity.js';
+import { McpAdapter } from '../../src/core/adapter';
+import { registerActivity } from '../../src/command/activity';
 
 // Mock the logger module
 const mockLogger = {
@@ -10,7 +10,7 @@ const mockLogger = {
   error: jest.fn(),
 };
 
-jest.mock('../../src/core/logger.js', () => ({
+jest.mock('../../src/core/logger', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 
@@ -24,7 +24,7 @@ const mockClient: { activity: any } = {
   },
 };
 
-// Ajout du mock explicite pour isMode sur mockAdapter, et client: mockClient
+// Explicit mock added for isMode on mockAdapter, and client: mockClient
 const mockAdapter: McpAdapter = {
   client: mockClient,
   server: {

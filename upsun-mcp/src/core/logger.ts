@@ -73,7 +73,7 @@ const basePinoLogger = pino({
   level: toPinoLevel(getLogLevel()),
   ...(process.env.NODE_ENV !== 'production'
     ? {
-        // Development: Pretty formatted logs avec le format demandé
+        // Development: Pretty formatted logs with the requested format
         transport: {
           target: 'pino-pretty',
           options: {

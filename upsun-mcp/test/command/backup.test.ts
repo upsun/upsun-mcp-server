@@ -1,6 +1,6 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { McpAdapter } from '../../src/core/adapter.js';
-import { registerBackup } from '../../src/command/backup.js';
+import { McpAdapter } from '../../src/core/adapter';
+import { registerBackup } from '../../src/command/backup';
 
 // --- GLOBAL MOCKS & CONSTANTS ---
 const acceptedResponse = { code: 200, message: 'TODO', status: 'TODO' };
@@ -35,7 +35,7 @@ const backup = {
 const mockLogger = Object.fromEntries(
   ['debug', 'info', 'warn', 'error'].map(fn => [fn, jest.fn()])
 );
-jest.mock('../../src/core/logger.js', () => ({ createLogger: jest.fn(() => mockLogger) }));
+jest.mock('../../src/core/logger', () => ({ createLogger: jest.fn(() => mockLogger) }));
 
 const makeMockBackupTask = () =>
   ({

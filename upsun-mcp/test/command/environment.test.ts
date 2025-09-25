@@ -1,6 +1,6 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { McpAdapter } from '../../src/core/adapter.js';
-import { registerEnvironment } from '../../src/command/environment.js';
+import { McpAdapter } from '../../src/core/adapter';
+import { registerEnvironment } from '../../src/command/environment';
 
 // Mock the logger module
 const mockLogger = {
@@ -10,11 +10,11 @@ const mockLogger = {
   error: jest.fn(),
 };
 
-jest.mock('../../src/core/logger.js', () => ({
+jest.mock('../../src/core/logger', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 
-// Ajout du mock explicite pour isMode sur mockAdapter (single global declaration)
+// Explicit mock added for isMode on mockAdapter (single global declaration)
 const mockClient: { environment: any } = {
   environment: {
     activate: jest.fn(),
@@ -27,6 +27,7 @@ const mockClient: { environment: any } = {
     resume: jest.fn(),
     url: jest.fn(),
     urls: jest.fn(),
+    logs: jest.fn(),
   },
 };
 const mockAdapter: McpAdapter = {
@@ -108,6 +109,7 @@ describe('Environment Command Module', () => {
     mockClient.environment.resume.mockResolvedValue(mockOperationResult);
     mockClient.environment.url.mockResolvedValue(mockUrls);
     mockClient.environment.urls.mockResolvedValue(mockUrls);
+    mockClient.environment.logs.mockResolvedValue(['log1', 'log2']);
   });
 
   afterEach(() => {
@@ -318,7 +320,7 @@ describe('Environment Command Module', () => {
       registerEnvironment(mockAdapter);
     });
 
-    it('should return not implemented message', async () => {
+    it('should return logs for the application', async () => {
       const callback = toolCallbacks['logs-environment'];
       const params = {
         project_id: 'test-project-13',
@@ -328,11 +330,12 @@ describe('Environment Command Module', () => {
 
       const result = await callback(params);
 
+      expect(mockClient.environment.logs).toHaveBeenCalledWith('test-project-13', 'main', 'web');
       expect(result).toEqual({
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ throw: 'Not implemented !' }, null, 2),
+            text: JSON.stringify(['log1', 'log2'], null, 2),
           },
         ],
       });

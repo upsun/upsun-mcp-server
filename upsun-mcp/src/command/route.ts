@@ -105,8 +105,9 @@ export function registerRoute(adapter: McpAdapter): void {
     },
     async ({ project_id }) => {
       log.debug(`Get Console URL of Project: ${project_id}`);
-      // const result = (await adapter.client.route.web(project_id)).ui;
+      //const result = (await adapter.client.route.web(project_id)).ui;
       const result = 'Not implemented';
+
       return Response.json(result);
     }
   );

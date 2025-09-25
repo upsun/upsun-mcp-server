@@ -1,11 +1,7 @@
 import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
-import { GatewayServer } from '../src/core/gateway.js';
-import { UpsunMcpServer } from '../src/mcpUpsun.js';
+import { GatewayServer } from '../src/core/gateway';
+import { UpsunMcpServer } from '../src/mcpUpsun';
 import dotenv from 'dotenv';
-
-// Mock process.exit to prevent test termination
-const originalExit = process.exit;
-process.exit = jest.fn() as any;
 
 describe('index.ts functionality', () => {
   // Save original environment variables

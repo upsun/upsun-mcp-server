@@ -50,13 +50,12 @@ export function registerProject(adapter: McpAdapter): void {
       'Create a new upsun project',
       {
         organization_id: Schema.organizationId(),
-        //region_host: z.string().default("eu-5.platform.sh").optional(),
+        region_host: z.string().default('eu-5.platform.sh'),
         name: z.string(),
         default_branch: z.string().default('main').optional(),
       },
-      async ({ organization_id, name, default_branch }) => {
+      async ({ organization_id, name, default_branch, region_host }) => {
         log.debug(`Create Project: ${name} in Organization: ${organization_id}`);
-        const region_host = 'eu-5.platform.sh';
         const subCreated = await adapter.client.project.create(
           organization_id,
           region_host,
