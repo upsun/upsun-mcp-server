@@ -32,10 +32,17 @@ const backup = {
   automated: false,
 };
 
-const mockLogger = Object.fromEntries(
-  ['debug', 'info', 'warn', 'error'].map(fn => [fn, jest.fn()])
-);
-jest.mock('../../src/core/logger', () => ({ createLogger: jest.fn(() => mockLogger) }));
+// Mock the logger module
+const mockLogger = {
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+};
+
+jest.mock('../../src/core/logger', () => ({
+  createLogger: jest.fn(() => mockLogger),
+}));
 
 const makeMockBackupTask = () =>
   ({

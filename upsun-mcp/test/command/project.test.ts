@@ -2,10 +2,17 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
 import { McpAdapter } from '../../src/core/adapter';
 import { registerProject } from '../../src/command/project';
 
-// Mock logger
-const mockLogger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
-jest.mock('../../src/core/logger', () => ({ createLogger: () => mockLogger }));
+// Mock the logger module
+const mockLogger = {
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+};
 
+jest.mock('../../src/core/logger', () => ({
+  createLogger: jest.fn(() => mockLogger),
+}));
 // Mock adapter and client
 const mockClient: any = {
   project: {
