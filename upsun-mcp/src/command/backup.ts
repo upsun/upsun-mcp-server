@@ -45,8 +45,6 @@ export function registerBackup(adapter: McpAdapter): void {
    * The backup includes all data, code, and configuration for the environment.
    * Backups can be used for disaster recovery or environment cloning.
    *
-   * @todo Implementation is pending
-   *
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment to backup
    * @param is_live - Whether to create a backup of the live environment (default: true)
@@ -77,8 +75,6 @@ export function registerBackup(adapter: McpAdapter): void {
    *
    * @warning This operation is irreversible and will permanently remove
    * the backup and its data.
-   *
-   * @todo Implementation is pending
    *
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment
@@ -111,8 +107,6 @@ export function registerBackup(adapter: McpAdapter): void {
    * Returns comprehensive backup details including creation time,
    * size, status, and associated metadata.
    *
-   * @todo Implementation is pending
-   *
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment
    * @param backup_id - The unique identifier of the backup
@@ -141,8 +135,6 @@ export function registerBackup(adapter: McpAdapter): void {
    *
    * Returns an array of backups with basic information such as
    * backup ID, creation time, size, and status.
-   *
-   * @todo Implementation is pending
    *
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment

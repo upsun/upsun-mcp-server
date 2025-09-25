@@ -23,9 +23,6 @@ const log = createLogger('MCP:Tool:certificate-commands');
  * - get-certificate: Retrieves information about a specific certificate
  * - list-certificate: Lists all certificates for a project
  *
- * @note Many of these tools are currently marked as "TODO" and will return
- * placeholder responses until implementation is complete.
- *
  * @param adapter - The MCP adapter instance to register tools with
  *
  * @example
@@ -45,8 +42,6 @@ export function registerCertificate(adapter: McpAdapter): void {
    * Let's Encrypt certificates, for cases where wildcard certificates or
    * Extended Validation (EV) certificates are required.
    *
-   * @todo Implementation is pending
-   *
    * @param project_id - The project ID to add the certificate to
    * @param certificate - The public certificate in PEM format
    * @param key - The private key in PEM format
@@ -60,11 +55,11 @@ export function registerCertificate(adapter: McpAdapter): void {
         project_id: Schema.projectId(),
         certificate: z.string(),
         key: z.string(),
-        chain: z.string(),
+        chain: z.any(),
       },
       async ({ project_id, certificate, key, chain }) => {
         log.debug(`Add Certificate in Project ${project_id}`);
-        const result = 'TODO'; //await adapter.client.certificate.add(project_id, certificate, key, chain);
+        const result = await adapter.client.certificate.add(project_id, certificate, key, chain);
 
         return Response.json(result);
       }
@@ -77,8 +72,6 @@ export function registerCertificate(adapter: McpAdapter): void {
    *
    * @warning This operation is irreversible and may impact HTTPS access
    * to domains associated with this certificate.
-   *
-   * @todo Implementation is pending
    *
    * @param project_id - The project ID containing the certificate
    * @param certificate_id - The unique identifier of the certificate to delete
@@ -93,7 +86,7 @@ export function registerCertificate(adapter: McpAdapter): void {
       },
       async ({ project_id, certificate_id }) => {
         log.debug(`Delete Certificate ${certificate_id} in Project ${project_id}`);
-        const result = 'TODO'; //await adapter.client.certificate.delete(project_id, certificate_id);
+        const result = await adapter.client.certificate.delete(project_id, certificate_id);
 
         return Response.json(result);
       }
@@ -107,8 +100,6 @@ export function registerCertificate(adapter: McpAdapter): void {
    * Returns comprehensive certificate details including validity dates,
    * domains covered, issuer information, and current status.
    *
-   * @todo Implementation is pending
-   *
    * @param project_id - The project ID containing the certificate
    * @param certificate_id - The unique identifier of the certificate
    */
@@ -121,7 +112,7 @@ export function registerCertificate(adapter: McpAdapter): void {
     },
     async ({ project_id, certificate_id }) => {
       log.debug(`Get Certificate ${certificate_id} in Project ${project_id}`);
-      const result = 'TODO'; //await adapter.client.certificate.get(project_id, certificate_id);
+      const result = await adapter.client.certificate.get(project_id, certificate_id);
 
       return Response.json(result);
     }
@@ -134,8 +125,6 @@ export function registerCertificate(adapter: McpAdapter): void {
    * Returns an array of certificates with basic information such as
    * certificate ID, domains covered, validity dates, and status.
    *
-   * @todo Implementation is pending
-   *
    * @param project_id - The project ID to list certificates from
    */
   adapter.server.tool(
@@ -146,7 +135,7 @@ export function registerCertificate(adapter: McpAdapter): void {
     },
     async ({ project_id }) => {
       log.debug(`List Certificates in Project ${project_id}`);
-      const result = 'TODO'; //await adapter.client.certificate.list(project_id);
+      const result = await adapter.client.certificate.list(project_id);
 
       return Response.json(result);
     }

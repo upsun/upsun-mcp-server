@@ -143,8 +143,6 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * Tool: logs-environment
    * Displays application logs for a specific environment.
    *
-   * @todo This tool is not yet implemented and will return an error message.
-   *
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment
    * @param application_name - The name of the application to get logs from
@@ -161,7 +159,11 @@ export function registerEnvironment(adapter: McpAdapter): void {
       log.debug(
         `Get Logs of Application ${application_name} in Environment ${environment_name}, Project ${project_id}`
       );
-      const result = { throw: 'Not implemented !' };
+      const result = await adapter.client.environment.logs(
+        project_id,
+        environment_name,
+        application_name
+      );
 
       return Response.json(result);
     }

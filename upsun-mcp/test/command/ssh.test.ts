@@ -1,6 +1,6 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { McpAdapter } from '../../src/core/adapter.js';
-import { registerSshKey } from '../../src/command/ssh.js';
+import { McpAdapter } from '../../src/core/adapter';
+import { registerSshKey } from '../../src/command/ssh';
 
 // Mock the logger module
 const mockLogger = {
@@ -10,14 +10,14 @@ const mockLogger = {
   error: jest.fn(),
 };
 
-jest.mock('../../src/core/logger.js', () => ({
+jest.mock('../../src/core/logger', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 
-// Mock the Upsun client (ajoute ici les méthodes si besoin)
-const mockClient = {};
+// Mock the Upsun client (add methods here if needed)
+const mockClient: any = {};
 
-// Mock the adapter (une seule déclaration globale)
+// Mock the adapter (single global declaration)
 const mockAdapter: McpAdapter = {
   client: mockClient,
   server: {
@@ -45,6 +45,25 @@ describe('SSH Key Command Module', () => {
       toolCallbacks[name] = callback;
       return mockAdapter.server;
     });
+
+    // Add the complete mock for ssh with explicit typing to avoid TS warning
+    // Use jest.Mock<any, any> to avoid 'never' type error
+    // Explicitly type as any to avoid TS 'never' assignment errors
+    // Declare sshMock with jest.fn() only
+    const sshMock = {
+      add: jest.fn() as jest.Mock,
+      delete: jest.fn() as jest.Mock,
+      get: jest.fn() as jest.Mock,
+      list: jest.fn() as jest.Mock,
+    };
+    (sshMock.add as any).mockResolvedValue('sshkey-added');
+    (sshMock.delete as any).mockResolvedValue('sshkey-deleted');
+    (sshMock.get as any).mockResolvedValue({ id: 'sshkey-1', type: 'rsa' });
+    (sshMock.list as any).mockResolvedValue([
+      { id: 'sshkey-1', type: 'rsa' },
+      { id: 'sshkey-2', type: 'ed25519' },
+    ]);
+    (mockAdapter as any).client.ssh = sshMock;
   });
 
   afterEach(() => {
@@ -96,7 +115,7 @@ describe('SSH Key Command Module', () => {
       registerSshKey(mockAdapter);
     });
 
-    it('should return TODO for add SSH key with RSA key', async () => {
+    it('should register and return the added SSH key with RSA key', async () => {
       const callback = toolCallbacks['add-sshkey'];
       const params = {
         user_id: 'user-123',
@@ -107,16 +126,11 @@ describe('SSH Key Command Module', () => {
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('TODO', null, 2),
-          },
-        ],
+        content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
       });
     });
 
-    it('should return TODO for add SSH key with ED25519 key', async () => {
+    it('should register and return the added SSH key with ED25519 key', async () => {
       const callback = toolCallbacks['add-sshkey'];
       const params = {
         user_id: 'user-456',
@@ -127,12 +141,7 @@ describe('SSH Key Command Module', () => {
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('TODO', null, 2),
-          },
-        ],
+        content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
       });
     });
 
@@ -154,12 +163,7 @@ describe('SSH Key Command Module', () => {
       for (const params of testCases) {
         const result = await callback(params);
         expect(result).toEqual({
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify('TODO', null, 2),
-            },
-          ],
+          content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
         });
       }
     });
@@ -175,12 +179,7 @@ describe('SSH Key Command Module', () => {
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('TODO', null, 2),
-          },
-        ],
+        content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
       });
     });
 
@@ -195,12 +194,7 @@ describe('SSH Key Command Module', () => {
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('TODO', null, 2),
-          },
-        ],
+        content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
       });
     });
   });
@@ -220,12 +214,7 @@ describe('SSH Key Command Module', () => {
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('TODO', null, 2),
-          },
-        ],
+        content: [{ type: 'text', text: JSON.stringify('sshkey-deleted', null, 2) }],
       });
     });
 
@@ -240,12 +229,7 @@ describe('SSH Key Command Module', () => {
       for (const params of testCases) {
         const result = await callback(params);
         expect(result).toEqual({
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify('TODO', null, 2),
-            },
-          ],
+          content: [{ type: 'text', text: JSON.stringify('sshkey-deleted', null, 2) }],
         });
       }
     });
@@ -260,12 +244,7 @@ describe('SSH Key Command Module', () => {
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('TODO', null, 2),
-          },
-        ],
+        content: [{ type: 'text', text: JSON.stringify('sshkey-deleted', null, 2) }],
       });
     });
 
@@ -279,12 +258,7 @@ describe('SSH Key Command Module', () => {
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('TODO', null, 2),
-          },
-        ],
+        content: [{ type: 'text', text: JSON.stringify('sshkey-deleted', null, 2) }],
       });
     });
   });
@@ -306,7 +280,14 @@ describe('SSH Key Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify(
+              [
+                { id: 'sshkey-1', type: 'rsa' },
+                { id: 'sshkey-2', type: 'ed25519' },
+              ],
+              null,
+              2
+            ),
           },
         ],
       });
@@ -327,7 +308,14 @@ describe('SSH Key Command Module', () => {
           content: [
             {
               type: 'text',
-              text: JSON.stringify('TODO', null, 2),
+              text: JSON.stringify(
+                [
+                  { id: 'sshkey-1', type: 'rsa' },
+                  { id: 'sshkey-2', type: 'ed25519' },
+                ],
+                null,
+                2
+              ),
             },
           ],
         });
@@ -346,7 +334,14 @@ describe('SSH Key Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify(
+              [
+                { id: 'sshkey-1', type: 'rsa' },
+                { id: 'sshkey-2', type: 'ed25519' },
+              ],
+              null,
+              2
+            ),
           },
         ],
       });
@@ -364,7 +359,14 @@ describe('SSH Key Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify(
+              [
+                { id: 'sshkey-1', type: 'rsa' },
+                { id: 'sshkey-2', type: 'ed25519' },
+              ],
+              null,
+              2
+            ),
           },
         ],
       });
@@ -404,14 +406,19 @@ describe('SSH Key Command Module', () => {
       for (const { name, params } of callbacks) {
         const callback = toolCallbacks[name];
         const result = await callback(params);
-
+        let expected;
+        if (name === 'add-sshkey') {
+          expected = 'sshkey-added';
+        } else if (name === 'delete-sshkey') {
+          expected = 'sshkey-deleted';
+        } else if (name === 'list-sshkey') {
+          expected = [
+            { id: 'sshkey-1', type: 'rsa' },
+            { id: 'sshkey-2', type: 'ed25519' },
+          ];
+        }
         expect(result).toEqual({
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify('TODO', null, 2),
-            },
-          ],
+          content: [{ type: 'text', text: JSON.stringify(expected, null, 2) }],
         });
       }
     });
@@ -428,12 +435,7 @@ describe('SSH Key Command Module', () => {
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('TODO', null, 2),
-          },
-        ],
+        content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
       });
     });
 
@@ -449,7 +451,14 @@ describe('SSH Key Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify(
+              [
+                { id: 'sshkey-1', type: 'rsa' },
+                { id: 'sshkey-2', type: 'ed25519' },
+              ],
+              null,
+              2
+            ),
           },
         ],
       });
@@ -465,12 +474,7 @@ describe('SSH Key Command Module', () => {
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('TODO', null, 2),
-          },
-        ],
+        content: [{ type: 'text', text: JSON.stringify('sshkey-deleted', null, 2) }],
       });
     });
 
@@ -485,12 +489,7 @@ describe('SSH Key Command Module', () => {
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('TODO', null, 2),
-          },
-        ],
+        content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
       });
     });
 
@@ -505,12 +504,7 @@ describe('SSH Key Command Module', () => {
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('TODO', null, 2),
-          },
-        ],
+        content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
       });
     });
   });

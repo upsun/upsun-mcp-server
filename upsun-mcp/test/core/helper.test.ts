@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { Schema, Assert, Response } from '../../src/core/helper.js';
+import { Schema, Assert, Response } from '../../src/core/helper';
 import { z } from 'zod';
 
 describe('Helper Module', () => {

@@ -24,9 +24,6 @@ const log = createLogger('MCP:Tool:domain-commands');
  * - list-domain: Lists all domains for a project
  * - update-domain: Updates configuration for an existing domain
  *
- * @note Many of these tools are currently marked as "TODO" and will return
- * placeholder responses until implementation is complete.
- *
  * @param adapter - The MCP adapter instance to register tools with
  *
  * @example
@@ -46,8 +43,6 @@ export function registerDomain(adapter: McpAdapter): void {
    * processes to secure the domain with HTTPS. The domain owner must configure
    * the appropriate DNS records to point to Upsun.
    *
-   * @todo Implementation is pending
-   *
    * @param project_id - The project ID to add the domain to
    * @param domain_name - The domain name to add (e.g., example.com)
    */
@@ -61,7 +56,7 @@ export function registerDomain(adapter: McpAdapter): void {
       },
       async ({ project_id, domain_name }) => {
         log.debug(`Add Domain ${domain_name} to Project ${project_id}`);
-        const result = 'TODO'; //await adapter.client.domain.add(project_id, domain_name);
+        const result = await adapter.client.domain.add(project_id, domain_name);
 
         return Response.json(result);
       }
@@ -74,8 +69,6 @@ export function registerDomain(adapter: McpAdapter): void {
    *
    * @warning This operation will make the project inaccessible via this domain.
    * Any certificates associated with this domain will also be removed.
-   *
-   * @todo Implementation is pending
    *
    * @param project_id - The project ID containing the domain
    * @param domain_name - The domain name to remove
@@ -90,7 +83,7 @@ export function registerDomain(adapter: McpAdapter): void {
       },
       async ({ project_id, domain_name }) => {
         log.debug(`Delete Domain ${domain_name} from Project ${project_id}`);
-        const result = 'TODO'; //await adapter.client.domain.delete(project_id, domain_name);
+        const result = await adapter.client.domain.delete(project_id, domain_name);
 
         return Response.json(result);
       }
@@ -104,8 +97,6 @@ export function registerDomain(adapter: McpAdapter): void {
    * Returns comprehensive domain details including status, SSL configuration,
    * DNS validation status, and associated environments.
    *
-   * @todo Implementation is pending
-   *
    * @param project_id - The project ID containing the domain
    * @param domain_name - The domain name to query
    */
@@ -118,7 +109,7 @@ export function registerDomain(adapter: McpAdapter): void {
     },
     async ({ project_id, domain_name }) => {
       log.debug(`Get Domain ${domain_name} in Project ${project_id}`);
-      const result = 'TODO'; //await adapter.client.domain.get(project_id, domain_name);
+      const result = await adapter.client.domain.get(project_id, domain_name);
 
       return Response.json(result);
     }
@@ -131,8 +122,6 @@ export function registerDomain(adapter: McpAdapter): void {
    * Returns an array of domains with basic information such as
    * domain name, status, SSL configuration, and creation date.
    *
-   * @todo Implementation is pending
-   *
    * @param project_id - The project ID to list domains from
    */
   adapter.server.tool(
@@ -143,7 +132,7 @@ export function registerDomain(adapter: McpAdapter): void {
     },
     async ({ project_id }) => {
       log.debug(`List Domains in Project ${project_id}`);
-      const result = 'TODO'; //await adapter.client.domain.list(project_id);
+      const result = await adapter.client.domain.list(project_id);
 
       return Response.json(result);
     }
@@ -155,8 +144,6 @@ export function registerDomain(adapter: McpAdapter): void {
    *
    * This can be used to modify SSL settings, routing rules,
    * or other domain-specific configurations.
-   *
-   * @todo Implementation is pending
    *
    * @param project_id - The project ID containing the domain
    * @param domain_name - The domain name to update
@@ -171,7 +158,7 @@ export function registerDomain(adapter: McpAdapter): void {
       },
       async ({ project_id, domain_name }) => {
         log.debug(`Update Domain ${domain_name} in Project ${project_id}`);
-        const result = 'TODO'; //await adapter.client.domain.update(project_id, domain_name);
+        const result = await adapter.client.domain.update(project_id, domain_name);
 
         return Response.json(result);
       }

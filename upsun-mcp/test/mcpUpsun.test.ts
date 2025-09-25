@@ -2,13 +2,13 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 describe('UpsunMcpServer', () => {
   it('should use default MCP server if none provided', async () => {
-    const { UpsunMcpServer } = await import('../src/mcpUpsun.js');
+    const { UpsunMcpServer } = await import('../src/mcpUpsun');
     const server = new UpsunMcpServer();
     expect(server.server).toBeInstanceOf(McpServer);
   });
 
   it('should use provided MCP server instance', async () => {
-    const { UpsunMcpServer } = await import('../src/mcpUpsun.js');
+    const { UpsunMcpServer } = await import('../src/mcpUpsun');
     const customServer = new McpServer({ name: 'custom', version: '1.2.3' });
     const server = new UpsunMcpServer(undefined, customServer);
     expect(server.server).toBe(customServer);
@@ -103,25 +103,25 @@ describe('UpsunMcpServer', () => {
     // Clear tool callbacks
     Object.keys(toolCallbacks).forEach(key => delete toolCallbacks[key]);
 
-    // Crée une vraie instance de McpServer
+    // Create a real instance of McpServer
     const realMcpServer = new McpServer({
       name: 'upsun-server',
       version: '0.1.0',
       description: 'Upsun server MCP',
     });
-    // Mock la méthode tool pour capturer les tools dans toolCallbacks
+    // Mock the tool method to capture tools in toolCallbacks
     (realMcpServer as any).tool = jest.fn((...args: any[]) => {
       const [name, , , callback] = args;
       toolCallbacks[name] = callback;
       return realMcpServer;
     });
-    // Mock la méthode prompt si besoin
+    // Mock the prompt method if needed
     (realMcpServer as any).prompt = jest.fn(() => realMcpServer);
-    // Mock la méthode connect si besoin
+    // Mock the connect method if needed
     (realMcpServer as any).connect = jest.fn(() => Promise.resolve());
-    // Ajoute explicitement isMode toujours true sur l'instance server
-    // (sera utilisé par UpsunMcpServer)
-    // Create the server with notre vrai McpServer mocké
+    // Explicitly add isMode always true on the server instance
+    // (will be used by UpsunMcpServer)
+    // Create the server with our real mocked McpServer
     server = new UpsunMcpServer('writable', realMcpServer as any);
     (server as any).isMode = () => true;
   });

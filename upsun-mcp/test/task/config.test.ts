@@ -1,6 +1,6 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { McpAdapter } from '../../src/core/adapter.js';
-import { registerConfig } from '../../src/task/config.js';
+import { McpAdapter } from '../../src/core/adapter';
+import { registerConfig } from '../../src/task/config';
 
 // Mock the logger module
 const mockLogger = {
@@ -10,7 +10,7 @@ const mockLogger = {
   error: jest.fn(),
 };
 
-jest.mock('../../src/core/logger.js', () => ({
+jest.mock('../../src/core/logger', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 

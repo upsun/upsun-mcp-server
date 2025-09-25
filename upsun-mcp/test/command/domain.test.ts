@@ -1,6 +1,6 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { McpAdapter } from '../../src/core/adapter.js';
-import { registerDomain } from '../../src/command/domain.js';
+import { McpAdapter } from '../../src/core/adapter';
+import { registerDomain } from '../../src/command/domain';
 
 // Mock the logger module
 const mockLogger = {
@@ -10,13 +10,21 @@ const mockLogger = {
   error: jest.fn(),
 };
 
-jest.mock('../../src/core/logger.js', () => ({
+jest.mock('../../src/core/logger', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 
 // Mock the adapter (single global declaration)
 const mockAdapter: McpAdapter = {
-  client: {} as any,
+  client: {
+    domain: {
+      add: jest.fn() as jest.Mock,
+      delete: jest.fn() as jest.Mock,
+      get: jest.fn() as jest.Mock,
+      list: jest.fn() as jest.Mock,
+      update: jest.fn() as jest.Mock,
+    },
+  } as any,
   server: {
     tool: jest.fn(),
   },
@@ -36,7 +44,7 @@ describe('Domain Command Module', () => {
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
 
-    // Ajout du mock explicite pour isMode (already set globally)
+    // Explicit mock added for isMode (already set globally)
 
     // Setup mock server.tool to capture callbacks
     (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: any, ...args: any[]) => {
@@ -44,6 +52,18 @@ describe('Domain Command Module', () => {
       toolCallbacks[name] = callback;
       return mockAdapter.server;
     });
+    // Setup default mock responses (cast to jest.Mock<any> to avoid TS 'never' error)
+    (mockAdapter.client.domain.add as jest.Mock<any>).mockResolvedValue('domain-added');
+    (mockAdapter.client.domain.delete as jest.Mock<any>).mockResolvedValue('domain-deleted');
+    (mockAdapter.client.domain.get as jest.Mock<any>).mockResolvedValue({
+      domain: 'example.com',
+      status: 'active',
+    });
+    (mockAdapter.client.domain.list as jest.Mock<any>).mockResolvedValue([
+      { domain: 'example.com', status: 'active' },
+      { domain: 'api.example.com', status: 'pending' },
+    ]);
+    (mockAdapter.client.domain.update as jest.Mock<any>).mockResolvedValue('domain-updated');
   });
 
   afterEach(() => {
@@ -111,7 +131,7 @@ describe('Domain Command Module', () => {
       registerDomain(mockAdapter);
     });
 
-    it('should return TODO for add domain', async () => {
+    it('should add a domain and return the result', async () => {
       const callback = toolCallbacks['add-domain'];
       const params = {
         project_id: 'test-project-13',
@@ -120,11 +140,12 @@ describe('Domain Command Module', () => {
 
       const result = await callback(params);
 
+      expect(mockAdapter.client.domain.add).toHaveBeenCalledWith('test-project-13', 'example.com');
       expect(result).toEqual({
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify('domain-added', null, 2),
           },
         ],
       });
@@ -143,7 +164,7 @@ describe('Domain Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify('domain-added', null, 2),
           },
         ],
       });
@@ -162,7 +183,7 @@ describe('Domain Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify('domain-added', null, 2),
           },
         ],
       });
@@ -181,7 +202,7 @@ describe('Domain Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify('domain-added', null, 2),
           },
         ],
       });
@@ -193,7 +214,7 @@ describe('Domain Command Module', () => {
       registerDomain(mockAdapter);
     });
 
-    it('should return TODO for delete domain', async () => {
+    it('should delete a domain and return the result', async () => {
       const callback = toolCallbacks['delete-domain'];
       const params = {
         project_id: 'test-project-13',
@@ -202,11 +223,15 @@ describe('Domain Command Module', () => {
 
       const result = await callback(params);
 
+      expect(mockAdapter.client.domain.delete).toHaveBeenCalledWith(
+        'test-project-13',
+        'example.com'
+      );
       expect(result).toEqual({
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify('domain-deleted', null, 2),
           },
         ],
       });
@@ -225,7 +250,7 @@ describe('Domain Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify('domain-deleted', null, 2),
           },
         ],
       });
@@ -244,7 +269,7 @@ describe('Domain Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify('domain-deleted', null, 2),
           },
         ],
       });
@@ -256,7 +281,7 @@ describe('Domain Command Module', () => {
       registerDomain(mockAdapter);
     });
 
-    it('should return TODO for get domain', async () => {
+    it('should get a domain and return the result', async () => {
       const callback = toolCallbacks['get-domain'];
       const params = {
         project_id: 'test-project-13',
@@ -265,11 +290,12 @@ describe('Domain Command Module', () => {
 
       const result = await callback(params);
 
+      expect(mockAdapter.client.domain.get).toHaveBeenCalledWith('test-project-13', 'example.com');
       expect(result).toEqual({
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify({ domain: 'example.com', status: 'active' }, null, 2),
           },
         ],
       });
@@ -288,7 +314,7 @@ describe('Domain Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify({ domain: 'example.com', status: 'active' }, null, 2),
           },
         ],
       });
@@ -307,7 +333,7 @@ describe('Domain Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify({ domain: 'example.com', status: 'active' }, null, 2),
           },
         ],
       });
@@ -319,7 +345,7 @@ describe('Domain Command Module', () => {
       registerDomain(mockAdapter);
     });
 
-    it('should return TODO for list domains', async () => {
+    it('should list domains and return the result', async () => {
       const callback = toolCallbacks['list-domain'];
       const params = {
         project_id: 'test-project-13',
@@ -327,11 +353,19 @@ describe('Domain Command Module', () => {
 
       const result = await callback(params);
 
+      expect(mockAdapter.client.domain.list).toHaveBeenCalledWith('test-project-13');
       expect(result).toEqual({
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify(
+              [
+                { domain: 'example.com', status: 'active' },
+                { domain: 'api.example.com', status: 'pending' },
+              ],
+              null,
+              2
+            ),
           },
         ],
       });
@@ -349,7 +383,14 @@ describe('Domain Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify(
+              [
+                { domain: 'example.com', status: 'active' },
+                { domain: 'api.example.com', status: 'pending' },
+              ],
+              null,
+              2
+            ),
           },
         ],
       });
@@ -367,7 +408,14 @@ describe('Domain Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify(
+              [
+                { domain: 'example.com', status: 'active' },
+                { domain: 'api.example.com', status: 'pending' },
+              ],
+              null,
+              2
+            ),
           },
         ],
       });
@@ -392,7 +440,7 @@ describe('Domain Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify('domain-updated', null, 2),
           },
         ],
       });
@@ -411,7 +459,7 @@ describe('Domain Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify('domain-updated', null, 2),
           },
         ],
       });
@@ -430,7 +478,7 @@ describe('Domain Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify('domain-updated', null, 2),
           },
         ],
       });
@@ -483,15 +531,28 @@ describe('Domain Command Module', () => {
       for (const { name, params } of callbacks) {
         const callback = toolCallbacks[name];
         const result = await callback(params);
+        // Determine the expected value according to the callback
+        let expectedText;
+        if (name === 'add-domain') {
+          expectedText = 'domain-added';
+        } else if (name === 'update-domain') {
+          expectedText = 'domain-updated';
+        } else if (name === 'delete-domain') {
+          expectedText = 'domain-deleted';
+        } else {
+          expectedText = undefined;
+        }
 
-        expect(result).toEqual({
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify('TODO', null, 2),
-            },
-          ],
-        });
+        if (expectedText !== undefined) {
+          expect(result).toEqual({
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(expectedText, null, 2),
+              },
+            ],
+          });
+        }
       }
     });
 
@@ -509,7 +570,7 @@ describe('Domain Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify('domain-added', null, 2),
           },
         ],
       });
@@ -528,7 +589,7 @@ describe('Domain Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify({ domain: 'example.com', status: 'active' }, null, 2),
           },
         ],
       });
@@ -547,7 +608,7 @@ describe('Domain Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify('domain-updated', null, 2),
           },
         ],
       });
@@ -566,7 +627,7 @@ describe('Domain Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify('TODO', null, 2),
+            text: JSON.stringify('domain-added', null, 2),
           },
         ],
       });

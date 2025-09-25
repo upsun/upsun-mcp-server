@@ -1,4 +1,4 @@
-import { McpAdapter } from '../../src/core/adapter.js';
+import { McpAdapter } from '../../src/core/adapter';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
