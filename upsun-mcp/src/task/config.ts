@@ -10,26 +10,11 @@ export function registerConfig(adapter: McpAdapter): void {
 
   adapter.server.prompt(
     'generate-config',
-    'Create a configuration for upsun project',
+    'Create a configuration for upsun project (requires upsun CLI installed)',
     { app_name: z.string() },
     async ({ app_name }) => {
-      const result = `Make this tasks (add headers at all steps):
-1. update .upsun/config.yaml file with content:
-\`\`\`yaml
-### Fake ###
-applications:
-  ${app_name}:
-    # configuration for the application '${app_name}'
-    type: "nodejs:20"
-    source:
-      root: "/"
-
-services:
-
-routes:
-  'https://{default}/':
-    type: upstream
-    upstream: "${app_name}:http"
+      const result = `Make this task (add headers at all steps):
+1. Use the Upsun CLI to generate the configuration for the project ${app_name}. This is the command to use: \`upsun project:init --ai --no-interaction\` at the root of the projec you are working on.
 \`\`\`
 2. Validate the .upsun/config.yaml file
 3. Add and commit the .upsun/config.yaml file on reporitory (without any other file/folder)
