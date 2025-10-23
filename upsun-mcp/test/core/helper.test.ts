@@ -383,7 +383,7 @@ describe('Helper Module', () => {
   describe('ToolWrapper class', () => {
     describe('trace', () => {
       it('should wrap a tool handler and return result', async () => {
-        const handler = ToolWrapper.trace('test-tool', async ({ value }) => {
+        const handler = ToolWrapper.trace('test-tool', async ({ value }: { value: number }) => {
           return Response.json({ result: value * 2 });
         });
 
@@ -395,7 +395,7 @@ describe('Helper Module', () => {
       });
 
       it('should handle async operations', async () => {
-        const handler = ToolWrapper.trace('async-tool', async ({ delay }) => {
+        const handler = ToolWrapper.trace('async-tool', async ({ delay }: { delay: number }) => {
           await new Promise(resolve => setTimeout(resolve, delay));
           return Response.text('completed');
         });
@@ -427,7 +427,7 @@ describe('Helper Module', () => {
       });
 
       it('should work with Response.text', async () => {
-        const handler = ToolWrapper.trace('text-tool', async ({ message }) => {
+        const handler = ToolWrapper.trace('text-tool', async ({ message }: { message: string }) => {
           return Response.text(message);
         });
 
@@ -441,11 +441,11 @@ describe('Helper Module', () => {
       it('should wrap handler and extract metrics', async () => {
         const handler = ToolWrapper.traceWithMetrics(
           'metrics-tool',
-          async ({ count }) => {
+          async ({ count }: { count: number }) => {
             const items = Array(count).fill('item');
             return Response.json(items);
           },
-          (result, params) => ({
+          (result: any, params: { count: number }) => ({
             'item.count': params.count,
             'result.type': 'array',
           })

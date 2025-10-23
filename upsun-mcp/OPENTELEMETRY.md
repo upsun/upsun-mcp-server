@@ -27,13 +27,13 @@ The Upsun MCP Server integrates OpenTelemetry for distributed tracing, providing
 
 ### OTLP Exporter Settings
 
-| Variable                    | Description                                      | Default                           | Required When             |
-| --------------------------- | ------------------------------------------------ | --------------------------------- | ------------------------- |
-| `OTEL_EXPORTER_ENDPOINT`    | OTLP collector endpoint URL                      | `http://localhost:4318/v1/traces` | `OTEL_EXPORTER_TYPE=otlp` |
-| `OTEL_EXPORTER_HEADERS`     | Custom headers (comma-separated key=value pairs) | (empty)                           | Optional                  |
-| `OTEL_EXPORTER_TIMEOUT`     | Timeout in milliseconds                          | `10000`                           | Optional                  |
-| `OTEL_SERVICE_NAMESPACE`    | Service namespace (for grouping)                 | (none)                            | Optional                  |
-| `OTEL_SERVICE_INSTANCE_ID`  | Unique instance identifier                       | Auto-generated                    | Optional                  |
+| Variable                   | Description                                      | Default                           | Required When             |
+| -------------------------- | ------------------------------------------------ | --------------------------------- | ------------------------- |
+| `OTEL_EXPORTER_ENDPOINT`   | OTLP collector endpoint URL                      | `http://localhost:4318/v1/traces` | `OTEL_EXPORTER_TYPE=otlp` |
+| `OTEL_EXPORTER_HEADERS`    | Custom headers (comma-separated key=value pairs) | (empty)                           | Optional                  |
+| `OTEL_EXPORTER_TIMEOUT`    | Timeout in milliseconds                          | `10000`                           | Optional                  |
+| `OTEL_SERVICE_NAMESPACE`   | Service namespace (for grouping)                 | (none)                            | Optional                  |
+| `OTEL_SERVICE_INSTANCE_ID` | Unique instance identifier                       | Auto-generated                    | Optional                  |
 
 > **💡 Tip**: For production setup examples with popular platforms (Jaeger, Grafana, Honeycomb, etc.), see [OTEL_PLATFORMS.md](./OTEL_PLATFORMS.md)
 

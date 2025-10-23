@@ -40,7 +40,7 @@ function parseHeaders(headersString: string | undefined): Record<string, string>
   const pairs = headersString.split(',');
 
   for (const pair of pairs) {
-    const [key, value] = pair.split('=').map((s) => s.trim());
+    const [key, value] = pair.split('=').map(s => s.trim());
     if (key && value) {
       headers[key] = value;
     }
