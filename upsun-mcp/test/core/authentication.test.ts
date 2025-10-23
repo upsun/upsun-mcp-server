@@ -14,42 +14,34 @@ import {
 
 describe('Authentication Module', () => {
   describe('OAuth2 Configuration', () => {
-    it('should return default OAuth2 configuration', () => {
+    it('should return OAuth2 configuration from centralized config', () => {
       const config = getOAuth2Config();
 
+      // Test that getOAuth2Config returns values from oauth2Config
       expect(config.authorizationUrl).toBe('https://auth.upsun.com/oauth2/authorize');
       expect(config.tokenUrl).toBe('https://auth.upsun.com/oauth2/token');
       expect(config.revocationUrl).toBe('https://auth.upsun.com/oauth2/revoke');
       expect(config.issuerUrl).toBe('https://auth.upsun.com');
       expect(config.baseUrl).toBe('http://127.0.0.1:3000/');
       expect(config.scope).toBe('offline_access');
-      expect(config.documentationUrl).toBe('https://docs.example.com/');
+      expect(config.documentationUrl).toBe('https://docs.upsun.com/');
     });
 
-    it('should use environment variables when available', () => {
-      const originalEnv = process.env;
-      process.env = {
-        ...originalEnv,
-        OAUTH_AUTH_URL: 'https://custom.auth.com/authorize',
-        OAUTH_TOKEN_URL: 'https://custom.auth.com/token',
-        OAUTH_REVOCATION_URL: 'https://custom.auth.com/revoke',
-        OAUTH_ISSUER_URL: 'https://custom.auth.com',
-        OAUTH_BASE_URL: 'https://custom.server.com/',
-        OAUTH_SCOPE: 'read write',
-        OAUTH_DOC_URL: 'https://custom.docs.com/',
-      };
-
+    it('should have all required OAuth2 properties', () => {
       const config = getOAuth2Config();
 
-      expect(config.authorizationUrl).toBe('https://custom.auth.com/authorize');
-      expect(config.tokenUrl).toBe('https://custom.auth.com/token');
-      expect(config.revocationUrl).toBe('https://custom.auth.com/revoke');
-      expect(config.issuerUrl).toBe('https://custom.auth.com');
-      expect(config.baseUrl).toBe('https://custom.server.com/');
-      expect(config.scope).toBe('read write');
-      expect(config.documentationUrl).toBe('https://custom.docs.com/');
-
-      process.env = originalEnv;
+      expect(config.authorizationUrl).toBeDefined();
+      expect(config.tokenUrl).toBeDefined();
+      expect(config.revocationUrl).toBeDefined();
+      expect(config.issuerUrl).toBeDefined();
+      expect(config.baseUrl).toBeDefined();
+      expect(config.scope).toBeDefined();
+      expect(typeof config.authorizationUrl).toBe('string');
+      expect(typeof config.tokenUrl).toBe('string');
+      expect(typeof config.revocationUrl).toBe('string');
+      expect(typeof config.issuerUrl).toBe('string');
+      expect(typeof config.baseUrl).toBe('string');
+      expect(typeof config.scope).toBe('string');
     });
 
     it('should create authorization server metadata correctly', () => {
@@ -62,7 +54,7 @@ describe('Authentication Module', () => {
       expect(metadata.revocation_endpoint).toBe(config.revocationUrl);
       expect(metadata.scopes_supported).toEqual(config.scope.split(' '));
       expect(metadata.response_types_supported).toEqual(['code']);
-      expect(metadata.grant_types_supported).toEqual(['authorization_code']);
+      expect(metadata.grant_types_supported).toEqual(['authorization_code', 'refresh_token']);
       expect(metadata.token_endpoint_auth_methods_supported).toEqual([
         'none',
         'client_secret_basic',

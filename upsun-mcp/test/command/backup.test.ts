@@ -1,6 +1,7 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 import { McpAdapter } from '../../src/core/adapter';
 import { registerBackup } from '../../src/command/backup';
+import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
 
 // --- GLOBAL MOCKS & CONSTANTS ---
 const acceptedResponse = { code: 200, message: 'TODO', status: 'TODO' };
@@ -67,8 +68,10 @@ const makeMockAdapter = () =>
 describe('Backup Command Module', () => {
   let toolCallbacks: Record<string, any> = {};
   let mockAdapter: McpAdapter;
+  const originalEnv = process.env;
 
   beforeEach(() => {
+    setupTestEnvironment(jest, originalEnv);
     jest.clearAllMocks();
     Object.values(mockLogger).forEach(fn => fn.mockClear());
     toolCallbacks = {};
@@ -82,6 +85,7 @@ describe('Backup Command Module', () => {
   });
 
   afterEach(() => {
+    teardownTestEnvironment(originalEnv);
     jest.restoreAllMocks();
   });
 

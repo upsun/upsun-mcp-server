@@ -1,11 +1,12 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { UpsunClient, UpsunConfig } from 'upsun-sdk-node';
+import { DEFAULT_UPSUN_CONFIG, UpsunClient, UpsunConfig } from 'upsun-sdk-node';
 
 import * as pjson from '../package.json' with { type: 'json' };
 import { McpAdapter } from './core/adapter.js';
 import { createLogger } from './core/logger.js';
 import { withSpanAsync, addSpanAttribute, addSpanEvent } from './core/telemetry.js';
+import { apiConfig, oauth2Config } from './core/config.js';
 
 // Create logger for MCP operations
 const log = createLogger('mcp-server');
@@ -127,10 +128,13 @@ export class UpsunMcpServer implements McpAdapter {
   connectWithBearer(transport: Transport, bearerToken: string): Promise<void> {
     return withSpanAsync('mcp-server', 'connect.bearer', async () => {
       log.info('Connecting with Bearer token authentication');
+
+      const config = this.createConfig();
+
       addSpanAttribute('auth.type', 'bearer');
       addSpanEvent('client.initializing');
 
-      this.client = new UpsunClient();
+      this.client = new UpsunClient(config);
       this.client.setBearerToken(bearerToken);
 
       addSpanEvent('server.connecting');
@@ -161,15 +165,27 @@ export class UpsunMcpServer implements McpAdapter {
   connectWithApiKey(transport: Transport, apiKey: string): Promise<void> {
     return withSpanAsync('mcp-server', 'connect.apikey', async () => {
       log.info('Connecting with API key authentication');
+
+      const config = this.createConfig();
+
       addSpanAttribute('auth.type', 'apikey');
       addSpanEvent('client.initializing');
 
-      this.client = new UpsunClient({ apiKey } as UpsunConfig);
+      this.client = new UpsunClient({ apiKey, ...config } as UpsunConfig);
 
       addSpanEvent('server.connecting');
       await this.server.connect(transport);
       addSpanEvent('server.connected');
     });
+  }
+
+  private createConfig(): UpsunConfig {
+    const config: UpsunConfig = { ...DEFAULT_UPSUN_CONFIG };
+
+    config.base_url = apiConfig.baseUrl;
+    config.auth_url = oauth2Config.authUrl;
+
+    return config;
   }
 
   isMode(): boolean {

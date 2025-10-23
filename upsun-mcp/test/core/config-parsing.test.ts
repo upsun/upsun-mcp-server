@@ -5,19 +5,18 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
+import { WritableMode, McpType } from '../../src/core/types.js';
 
 describe('Configuration Parsing', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
-    // Clear module cache to force re-evaluation with new env vars
-    jest.resetModules();
-    process.env = { ...originalEnv };
+    setupTestEnvironment(jest, originalEnv);
   });
 
   afterEach(() => {
-    // Restore original environment
-    process.env = originalEnv;
+    teardownTestEnvironment(originalEnv);
     jest.resetModules();
   });
 
@@ -196,8 +195,8 @@ describe('Configuration Parsing', () => {
 
     it('should set environment from NODE_ENV', async () => {
       process.env.NODE_ENV = 'production';
-      const { otelConfig } = await import('../../src/core/config.js');
-      expect(otelConfig.environment).toBe('production');
+      const { appConfig } = await import('../../src/core/config.js');
+      expect(appConfig.nodeEnv).toBe('production');
     });
   });
 
@@ -205,25 +204,25 @@ describe('Configuration Parsing', () => {
     it('should set type env from env', async () => {
       process.env.TYPE_ENV = 'local';
       const { appConfig } = await import('../../src/core/config.js');
-      expect(appConfig.typeEnv).toBe('local');
+      expect(appConfig.typeEnv).toBe(McpType.LOCAL);
     });
 
     it('should default type env to remote', async () => {
       delete process.env.TYPE_ENV;
       const { appConfig } = await import('../../src/core/config.js');
-      expect(appConfig.typeEnv).toBe('remote');
+      expect(appConfig.typeEnv).toBe(McpType.REMOTE);
     });
 
     it('should set mode from env', async () => {
       process.env.MODE = 'WRITABLE';
       const { appConfig } = await import('../../src/core/config.js');
-      expect(appConfig.mode).toBe('WRITABLE');
+      expect(appConfig.mode).toBe(WritableMode.WRITABLE);
     });
 
     it('should default mode to READONLY', async () => {
       delete process.env.MODE;
       const { appConfig } = await import('../../src/core/config.js');
-      expect(appConfig.mode).toBe('READONLY');
+      expect(appConfig.mode).toBe(WritableMode.READONLY);
     });
 
     it('should set API key from env', async () => {

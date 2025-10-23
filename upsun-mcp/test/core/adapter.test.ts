@@ -2,19 +2,23 @@ import { McpAdapter } from '../../src/core/adapter';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
 
 // Mock the MCP SDK
 jest.mock('@modelcontextprotocol/sdk/server/mcp.js', () => {
   return {
     McpServer: jest.fn().mockImplementation(() => ({
-      connect: jest.fn().mockResolvedValue(undefined),
+      connect: jest.fn().mockImplementation(() => Promise.resolve()),
       tool: jest.fn(),
     })),
   };
 });
 
 describe('McpAdapter Interface', () => {
+  const originalEnv = process.env;
+
   beforeEach(() => {
+    setupTestEnvironment(jest, originalEnv);
     // Reset all mocks
     jest.clearAllMocks();
   });
@@ -51,7 +55,7 @@ describe('McpAdapter Interface', () => {
 
       constructor() {
         this.server = {
-          connect: jest.fn().mockResolvedValue(undefined),
+          connect: jest.fn().mockImplementation(() => Promise.resolve()),
         };
       }
 

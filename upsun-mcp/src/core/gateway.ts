@@ -9,6 +9,7 @@ import { createLogger } from './logger.js';
 import { HttpTransport } from './transport/http.js';
 import { HTTP_MSG_PATH, SseTransport } from './transport/sse.js';
 import { withSpanAsync, addSpanAttribute, addSpanEvent } from './telemetry.js';
+import { appConfig } from './config.js';
 
 /** HTTP path for MCP streamable transport endpoint */
 const HTTP_MCP_PATH = '/mcp';
@@ -41,7 +42,7 @@ export class LocalServer<A extends McpAdapter> {
   constructor(private readonly mcpAdapterServerFactory: new (mode: WritableMode) => A) {
     coreLog.info('Initializing local server instance...');
     this.transport = new StdioServerTransport();
-    this.server = new this.mcpAdapterServerFactory(process.env.MODE as WritableMode);
+    this.server = new this.mcpAdapterServerFactory(appConfig.mode as WritableMode);
     coreLog.info('Local server instance initialized!');
   }
 
@@ -58,7 +59,7 @@ export class LocalServer<A extends McpAdapter> {
       addSpanAttribute('server.type', 'local');
       addSpanAttribute('transport', 'stdio');
 
-      const apiKey = process.env.UPSUN_API_KEY || '';
+      const apiKey = appConfig.apiKey;
       if (!apiKey) {
         addSpanEvent('authentication.failed', { reason: 'missing_api_key' });
         throw new Error('UPSUN_API_KEY environment variable is required for LocalServer');

@@ -39,6 +39,8 @@ describe('LocalServer', () => {
   describe('listen', () => {
     it('should connect the server with API key from environment', async () => {
       process.env.UPSUN_API_KEY = 'test-api-key';
+      jest.resetModules();
+      const { LocalServer } = await import('../../src/core/gateway.js');
       const server = new LocalServer(mockAdapterFactory);
 
       await server.listen();
