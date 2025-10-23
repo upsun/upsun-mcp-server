@@ -17,18 +17,18 @@ The Upsun MCP Server integrates OpenTelemetry for distributed tracing, providing
 
 ### Core Settings
 
-| Variable | Description | Default | Values |
-|----------|-------------|---------|--------|
-| `OTEL_ENABLED` | Enable/disable OpenTelemetry tracing | `true` | `true`, `false` |
-| `OTEL_SAMPLING_RATE` | Percentage of traces to capture (0.0 to 1.0) | `1.0` | `0.0` - `1.0` |
-| `OTEL_EXPORTER_TYPE` | Type of trace exporter to use | `console` | `console`, `otlp`, `none` |
-| `OTEL_SERVICE_NAME` | Service name in traces | `upsun-mcp-server` | Any string |
-| `NODE_ENV` | Application environment | `development` | `development`, `production` |
+| Variable             | Description                                  | Default            | Values                      |
+| -------------------- | -------------------------------------------- | ------------------ | --------------------------- |
+| `OTEL_ENABLED`       | Enable/disable OpenTelemetry tracing         | `true`             | `true`, `false`             |
+| `OTEL_SAMPLING_RATE` | Percentage of traces to capture (0.0 to 1.0) | `1.0`              | `0.0` - `1.0`               |
+| `OTEL_EXPORTER_TYPE` | Type of trace exporter to use                | `console`          | `console`, `otlp`, `none`   |
+| `OTEL_SERVICE_NAME`  | Service name in traces                       | `upsun-mcp-server` | Any string                  |
+| `NODE_ENV`           | Application environment                      | `development`      | `development`, `production` |
 
 ### OTLP Exporter Settings
 
-| Variable | Description | Default | Required When |
-|----------|-------------|---------|---------------|
+| Variable                 | Description                 | Default                           | Required When             |
+| ------------------------ | --------------------------- | --------------------------------- | ------------------------- |
 | `OTEL_EXPORTER_ENDPOINT` | OTLP collector endpoint URL | `http://localhost:4318/v1/traces` | `OTEL_EXPORTER_TYPE=otlp` |
 
 ## Configuration Examples
@@ -72,24 +72,30 @@ OTEL_ENABLED=false
 ## Sampling Strategies
 
 ### Development (100% Sampling)
+
 ```bash
 OTEL_SAMPLING_RATE=1.0
 ```
+
 - Captures all traces
 - Useful for debugging and development
 - Higher resource usage
 
 ### Production (10% Sampling)
+
 ```bash
 OTEL_SAMPLING_RATE=0.1
 ```
+
 - Captures 10% of traces
 - Reduces overhead
 - Still provides good observability
 - Recommended for production workloads
 
 ### Custom Sampling
+
 You can set any value between 0.0 and 1.0:
+
 ```bash
 OTEL_SAMPLING_RATE=0.25  # 25% of traces
 OTEL_SAMPLING_RATE=0.5   # 50% of traces
@@ -98,29 +104,38 @@ OTEL_SAMPLING_RATE=0.5   # 50% of traces
 ## Exporter Types
 
 ### Console Exporter
+
 Best for development and debugging:
+
 ```bash
 OTEL_EXPORTER_TYPE=console
 ```
+
 - Outputs traces to console
 - Easy to read and debug
 - No external dependencies
 
 ### OTLP Exporter
+
 Best for production with observability platforms:
+
 ```bash
 OTEL_EXPORTER_TYPE=otlp
 OTEL_EXPORTER_ENDPOINT=https://your-collector.example.com/v1/traces
 ```
+
 - Sends traces to OTLP-compatible collectors
 - Works with Jaeger, Grafana Tempo, Honeycomb, etc.
 - Requires OTLP endpoint configuration
 
 ### None Exporter
+
 Traces are collected but not exported:
+
 ```bash
 OTEL_EXPORTER_TYPE=none
 ```
+
 - Useful for testing without overhead
 - Tracing code runs but doesn't send data
 
@@ -207,6 +222,7 @@ OTEL_EXPORTER_ENDPOINT=http://xray-collector:4318/v1/traces
 ## Next Steps
 
 After configuring OpenTelemetry, you can:
+
 - View distributed traces across your infrastructure
 - Set up alerts on latency or error rates
 - Analyze performance bottlenecks

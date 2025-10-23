@@ -8,7 +8,7 @@
  */
 
 import { McpAdapter } from '../core/adapter.js';
-import { Response, Schema } from '../core/helper.js';
+import { Response, Schema, ToolWrapper } from '../core/helper.js';
 import { z } from 'zod';
 import { createLogger } from '../core/logger.js';
 
@@ -54,12 +54,16 @@ export function registerSshKey(adapter: McpAdapter): void {
         ssh_key: z.string(),
         key_id: z.string(),
       },
-      async ({ user_id, ssh_key, key_id }) => {
-        log.debug(`Add SSH Key for User: ${user_id}, Key ID: ${key_id}`);
-        const result = await adapter.client.ssh.add(user_id, ssh_key, key_id);
+      ToolWrapper.trace(
+        'add-sshkey',
+        async ({ user_id, ssh_key, key_id }) => {
+          log.debug(`Add SSH Key for User: ${user_id}, Key ID: ${key_id}`);
+          const result = await adapter.client.ssh.add(user_id, ssh_key, key_id);
 
-        return Response.json(result);
-      }
+          return Response.json(result);
+        },
+        { logParams: false }
+      )
     );
   }
 
@@ -82,12 +86,12 @@ export function registerSshKey(adapter: McpAdapter): void {
         user_id: z.string(),
         key_id: z.string(),
       },
-      async ({ user_id, key_id }) => {
+      ToolWrapper.trace('delete-sshkey', async ({ user_id, key_id }) => {
         log.debug(`Delete SSH Key for User: ${user_id}, Key ID: ${key_id}`);
         const result = await adapter.client.ssh.delete(user_id, key_id);
 
         return Response.json(result);
-      }
+      })
     );
   }
 
@@ -106,11 +110,11 @@ export function registerSshKey(adapter: McpAdapter): void {
     {
       user_id: z.string(),
     },
-    async ({ user_id }) => {
+    ToolWrapper.trace('list-sshkey', async ({ user_id }) => {
       log.debug(`List SSH Keys for User: ${user_id}`);
       const result = await adapter.client.ssh.list(user_id);
 
       return Response.json(result);
-    }
+    })
   );
 }

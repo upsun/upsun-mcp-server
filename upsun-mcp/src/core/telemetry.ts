@@ -12,7 +12,7 @@ import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { TraceIdRatioBasedSampler } from '@opentelemetry/sdk-trace-base';
-import { trace, context, SpanStatusCode, Span } from '@opentelemetry/api';
+import { trace, context, SpanStatusCode, Span, Tracer } from '@opentelemetry/api';
 
 import * as pjson from '../../package.json' with { type: 'json' };
 import { otelConfig } from './config.js';
@@ -30,7 +30,7 @@ let isInitialized = false;
 /**
  * Get the appropriate span exporter based on configuration
  */
-function getSpanExporter() {
+function getSpanExporter(): ConsoleSpanExporter | OTLPTraceExporter {
   switch (otelConfig.exporterType) {
     case 'console':
       log.info('Using Console span exporter');
@@ -179,7 +179,7 @@ export async function shutdownTelemetry(): Promise<void> {
  * const span = tracer.startSpan('process_request');
  * ```
  */
-export function getTracer(name: string) {
+export function getTracer(name: string): Tracer {
   return trace.getTracer(name, pjson.default.version);
 }
 
@@ -329,7 +329,10 @@ export function addSpanAttribute(key: string, value: string | number | boolean):
  * addSpanEvent('validation.failed', { 'error': 'Invalid input' });
  * ```
  */
-export function addSpanEvent(name: string, attributes?: Record<string, string | number | boolean>): void {
+export function addSpanEvent(
+  name: string,
+  attributes?: Record<string, string | number | boolean>
+): void {
   const span = getCurrentSpan();
   if (span) {
     span.addEvent(name, attributes);

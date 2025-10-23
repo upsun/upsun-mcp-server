@@ -12,7 +12,7 @@ import { createLogger } from '../core/logger.js';
 
 // Create logger for activity operations
 const log = createLogger('MCP:Tool:activity-commands');
-import { Response, Schema } from '../core/helper.js';
+import { Response, Schema, ToolWrapper } from '../core/helper.js';
 
 /**
  * Registers activity management tools with the MCP server.
@@ -53,12 +53,11 @@ export function registerActivity(adapter: McpAdapter): void {
         project_id: Schema.projectId(),
         activity_id: Schema.activityId(),
       },
-      async ({ project_id, activity_id }) => {
+      ToolWrapper.trace('cancel-activity', async ({ project_id, activity_id }) => {
         log.debug(`Cancel Activity ${activity_id} in Project ${project_id}`);
         const result = await adapter.client.activity.cancel(project_id, activity_id);
-
         return Response.json(result);
-      }
+      })
     );
   }
 
@@ -79,12 +78,11 @@ export function registerActivity(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
       activity_id: Schema.activityId(),
     },
-    async ({ project_id, activity_id }) => {
+    ToolWrapper.trace('get-activity', async ({ project_id, activity_id }) => {
       log.debug(`Get Activity ${activity_id} in Project ${project_id}`);
       const result = await adapter.client.activity.get(project_id, activity_id);
-
       return Response.json(result);
-    }
+    })
   );
 
   /**
@@ -103,12 +101,11 @@ export function registerActivity(adapter: McpAdapter): void {
     {
       project_id: Schema.projectId(),
     },
-    async ({ project_id }) => {
+    ToolWrapper.trace('list-activity', async ({ project_id }) => {
       log.debug(`List Activities in Project ${project_id}`);
       const result = await adapter.client.activity.list(project_id);
-
       return Response.json(result);
-    }
+    })
   );
 
   /**
@@ -129,11 +126,10 @@ export function registerActivity(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
       activity_id: Schema.activityId(),
     },
-    async ({ project_id, activity_id }) => {
+    ToolWrapper.trace('log-activity', async ({ project_id, activity_id }) => {
       log.debug(`Get Logs for Activity ${activity_id} in Project ${project_id}`);
       const result = await adapter.client.activity.log(project_id, activity_id);
-
       return Response.json(result);
-    }
+    })
   );
 }

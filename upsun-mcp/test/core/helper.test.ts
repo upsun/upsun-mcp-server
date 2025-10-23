@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { Schema, Assert, Response } from '../../src/core/helper';
+import { Schema, Assert, Response, ToolWrapper } from '../../src/core/helper';
 import { z } from 'zod';
 
 describe('Helper Module', () => {
@@ -376,6 +376,109 @@ describe('Helper Module', () => {
             },
           ],
         });
+      });
+    });
+  });
+
+  describe('ToolWrapper class', () => {
+    describe('trace', () => {
+      it('should wrap a tool handler and return result', async () => {
+        const handler = ToolWrapper.trace('test-tool', async ({ value }) => {
+          return Response.json({ result: value * 2 });
+        });
+
+        const result = await handler({ value: 21 });
+
+        expect(result).toBeDefined();
+        expect(result.content).toBeDefined();
+        expect(result.content[0].type).toBe('text');
+      });
+
+      it('should handle async operations', async () => {
+        const handler = ToolWrapper.trace('async-tool', async ({ delay }) => {
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return Response.text('completed');
+        });
+
+        const result = await handler({ delay: 10 });
+
+        expect(result).toBeDefined();
+        expect(result.content[0].text).toBe('completed');
+      });
+
+      it('should propagate errors from handler', async () => {
+        const handler = ToolWrapper.trace('error-tool', async () => {
+          throw new Error('Test error');
+        });
+
+        await expect(handler({})).rejects.toThrow('Test error');
+      });
+
+      it('should work with Response.json', async () => {
+        const handler = ToolWrapper.trace('json-tool', async ({ data }) => {
+          return Response.json(data);
+        });
+
+        const testData = { key: 'value', number: 42 };
+        const result = await handler({ data: testData });
+
+        expect(result.content[0].text).toContain('key');
+        expect(result.content[0].text).toContain('value');
+      });
+
+      it('should work with Response.text', async () => {
+        const handler = ToolWrapper.trace('text-tool', async ({ message }) => {
+          return Response.text(message);
+        });
+
+        const result = await handler({ message: 'Hello, World!' });
+
+        expect(result.content[0].text).toBe('Hello, World!');
+      });
+    });
+
+    describe('traceWithMetrics', () => {
+      it('should wrap handler and extract metrics', async () => {
+        const handler = ToolWrapper.traceWithMetrics(
+          'metrics-tool',
+          async ({ count }) => {
+            const items = Array(count).fill('item');
+            return Response.json(items);
+          },
+          (result, params) => ({
+            'item.count': params.count,
+            'result.type': 'array',
+          })
+        );
+
+        const result = await handler({ count: 5 });
+
+        expect(result).toBeDefined();
+      });
+
+      it('should work without metrics extractor', async () => {
+        const handler = ToolWrapper.traceWithMetrics('simple-tool', async ({ value }) => {
+          return Response.text(String(value));
+        });
+
+        const result = await handler({ value: 42 });
+
+        expect(result).toBeDefined();
+        expect(result.content[0].text).toBe('42');
+      });
+
+      it('should handle errors in handler', async () => {
+        const handler = ToolWrapper.traceWithMetrics(
+          'error-metrics-tool',
+          async () => {
+            throw new Error('Handler error');
+          },
+          () => ({
+            metric: 'value',
+          })
+        );
+
+        await expect(handler({})).rejects.toThrow('Handler error');
       });
     });
   });

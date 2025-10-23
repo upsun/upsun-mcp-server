@@ -8,7 +8,7 @@
  */
 
 import { McpAdapter } from '../core/adapter.js';
-import { Response, Schema } from '../core/helper.js';
+import { Response, Schema, ToolWrapper } from '../core/helper.js';
 import { createLogger } from '../core/logger.js';
 
 // Create logger for environment operations
@@ -55,12 +55,12 @@ export function registerEnvironment(adapter: McpAdapter): void {
         project_id: Schema.projectId(),
         environment_name: Schema.environmentName(),
       },
-      async ({ project_id, environment_name }) => {
+      ToolWrapper.trace('activate-environment', async ({ project_id, environment_name }) => {
         log.debug(`Activate Environment ${environment_name} in Project ${project_id}`);
         const result = await adapter.client.environment.activate(project_id, environment_name);
 
         return Response.json(result);
-      }
+      })
     );
   }
 
@@ -82,12 +82,12 @@ export function registerEnvironment(adapter: McpAdapter): void {
         project_id: Schema.projectId(),
         environment_name: Schema.environmentName(),
       },
-      async ({ project_id, environment_name }) => {
+      ToolWrapper.trace('delete-environment', async ({ project_id, environment_name }) => {
         log.debug(`Delete Environment ${environment_name} from Project ${project_id}`);
         const result = await adapter.client.environment.delete(project_id, environment_name);
 
         return Response.json(result);
-      }
+      })
     );
   }
 
@@ -108,12 +108,12 @@ export function registerEnvironment(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
       environment_name: Schema.environmentName(),
     },
-    async ({ project_id, environment_name }) => {
+    ToolWrapper.trace('info-environment', async ({ project_id, environment_name }) => {
       log.debug(`Get Info of Environment ${environment_name} in Project ${project_id}`);
       const result = await adapter.client.environment.info(project_id, environment_name);
 
       return Response.json(result);
-    }
+    })
   );
 
   /**
@@ -131,12 +131,12 @@ export function registerEnvironment(adapter: McpAdapter): void {
     {
       project_id: Schema.projectId(),
     },
-    async ({ project_id }) => {
+    ToolWrapper.trace('list-environment', async ({ project_id }) => {
       log.debug(`List Environments in Project ${project_id}`);
       const result = await adapter.client.environment.list(project_id);
 
       return Response.json(result);
-    }
+    })
   );
 
   /**
@@ -155,18 +155,21 @@ export function registerEnvironment(adapter: McpAdapter): void {
       environment_name: Schema.environmentName(),
       application_name: Schema.applicationName(),
     },
-    async ({ project_id, environment_name, application_name }) => {
-      log.debug(
-        `Get Logs of Application ${application_name} in Environment ${environment_name}, Project ${project_id}`
-      );
-      const result = await adapter.client.environment.logs(
-        project_id,
-        environment_name,
-        application_name
-      );
+    ToolWrapper.trace(
+      'logs-environment',
+      async ({ project_id, environment_name, application_name }) => {
+        log.debug(
+          `Get Logs of Application ${application_name} in Environment ${environment_name}, Project ${project_id}`
+        );
+        const result = await adapter.client.environment.logs(
+          project_id,
+          environment_name,
+          application_name
+        );
 
-      return Response.json(result);
-    }
+        return Response.json(result);
+      }
+    )
   );
 
   /**
@@ -187,12 +190,12 @@ export function registerEnvironment(adapter: McpAdapter): void {
         project_id: Schema.projectId(),
         environment_name: Schema.environmentName(),
       },
-      async ({ project_id, environment_name }) => {
+      ToolWrapper.trace('merge-environment', async ({ project_id, environment_name }) => {
         log.debug(`Merge Environment ${environment_name} in Project ${project_id}`);
         const result = await adapter.client.environment.merge(project_id, environment_name);
 
         return Response.json(result);
-      }
+      })
     );
   }
 
@@ -214,12 +217,12 @@ export function registerEnvironment(adapter: McpAdapter): void {
         project_id: Schema.projectId(),
         environment_name: Schema.environmentName(),
       },
-      async ({ project_id, environment_name }) => {
+      ToolWrapper.trace('pause-environment', async ({ project_id, environment_name }) => {
         log.debug(`Pause Environment ${environment_name} in Project ${project_id}`);
         const result = await adapter.client.environment.pause(project_id, environment_name);
 
         return Response.json(result);
-      }
+      })
     );
   }
 
@@ -243,12 +246,12 @@ export function registerEnvironment(adapter: McpAdapter): void {
         environment_name: Schema.environmentName(),
         application_name: Schema.applicationName().optional(),
       },
-      async ({ project_id, environment_name }) => {
+      ToolWrapper.trace('redeploy-environment', async ({ project_id, environment_name }) => {
         log.debug(`Redeploy Environment ${environment_name} in Project ${project_id}`);
         const result = await adapter.client.environment.redeploy(project_id, environment_name);
 
         return Response.json(result);
-      }
+      })
     );
   }
 
@@ -269,12 +272,12 @@ export function registerEnvironment(adapter: McpAdapter): void {
         project_id: Schema.projectId(),
         environment_name: Schema.environmentName(),
       },
-      async ({ project_id, environment_name }) => {
+      ToolWrapper.trace('resume-environment', async ({ project_id, environment_name }) => {
         log.debug(`Resume Environment ${environment_name} in Project ${project_id}`);
         const result = await adapter.client.environment.resume(project_id, environment_name);
 
         return Response.json(result);
-      }
+      })
     );
   }
 
@@ -295,11 +298,11 @@ export function registerEnvironment(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
       environment_name: Schema.environmentName(),
     },
-    async ({ project_id, environment_name }) => {
+    ToolWrapper.trace('urls-environment', async ({ project_id, environment_name }) => {
       log.debug(`Get URLs of Environment ${environment_name} in Project ${project_id}`);
       const result = await adapter.client.environment.urls(project_id, environment_name);
 
       return Response.json(result);
-    }
+    })
   );
 }

@@ -151,9 +151,9 @@ describe('Telemetry Module', () => {
 
       expect(() => {
         addSpanEvent('test.event', {
-          'str': 'value',
-          'num': 42,
-          'bool': false,
+          str: 'value',
+          num: 42,
+          bool: false,
         });
       }).not.toThrow();
     });
@@ -171,19 +171,11 @@ describe('Telemetry Module', () => {
     it('should propagate context in withSpan', async () => {
       const { withSpan } = await import('../../src/core/telemetry.js');
 
-      const result = withSpan(
-        'test',
-        'outer-span',
-        () => {
-          return withSpan(
-            'test',
-            'inner-span',
-            () => {
-              return 'nested-result';
-            }
-          );
-        }
-      );
+      const result = withSpan('test', 'outer-span', () => {
+        return withSpan('test', 'inner-span', () => {
+          return 'nested-result';
+        });
+      });
 
       expect(result).toBe('nested-result');
     });
@@ -191,19 +183,11 @@ describe('Telemetry Module', () => {
     it('should propagate context in withSpanAsync', async () => {
       const { withSpanAsync } = await import('../../src/core/telemetry.js');
 
-      const result = await withSpanAsync(
-        'test',
-        'outer-span',
-        async () => {
-          return await withSpanAsync(
-            'test',
-            'inner-span',
-            async () => {
-              return 'async-nested-result';
-            }
-          );
-        }
-      );
+      const result = await withSpanAsync('test', 'outer-span', async () => {
+        return await withSpanAsync('test', 'inner-span', async () => {
+          return 'async-nested-result';
+        });
+      });
 
       expect(result).toBe('async-nested-result');
     });

@@ -7,7 +7,7 @@
  */
 
 import { McpAdapter } from '../core/adapter.js';
-import { Response, Schema } from '../core/helper.js';
+import { Response, Schema, ToolWrapper } from '../core/helper.js';
 import { z } from 'zod';
 import { createLogger } from '../core/logger.js';
 
@@ -57,12 +57,15 @@ export function registerCertificate(adapter: McpAdapter): void {
         key: z.string(),
         chain: z.any(),
       },
-      async ({ project_id, certificate, key, chain }) => {
-        log.debug(`Add Certificate in Project ${project_id}`);
-        const result = await adapter.client.certificate.add(project_id, certificate, key, chain);
-
-        return Response.json(result);
-      }
+      ToolWrapper.trace(
+        'add-certificate',
+        async ({ project_id, certificate, key, chain }) => {
+          log.debug(`Add Certificate in Project ${project_id}`);
+          const result = await adapter.client.certificate.add(project_id, certificate, key, chain);
+          return Response.json(result);
+        },
+        { logParams: false }
+      ) // Ne pas logger les certificats/clés
     );
   }
 
@@ -84,12 +87,11 @@ export function registerCertificate(adapter: McpAdapter): void {
         project_id: Schema.projectId(),
         certificate_id: Schema.certificateId(),
       },
-      async ({ project_id, certificate_id }) => {
+      ToolWrapper.trace('delete-certificate', async ({ project_id, certificate_id }) => {
         log.debug(`Delete Certificate ${certificate_id} in Project ${project_id}`);
         const result = await adapter.client.certificate.delete(project_id, certificate_id);
-
         return Response.json(result);
-      }
+      })
     );
   }
 
@@ -110,12 +112,11 @@ export function registerCertificate(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
       certificate_id: Schema.certificateId(),
     },
-    async ({ project_id, certificate_id }) => {
+    ToolWrapper.trace('get-certificate', async ({ project_id, certificate_id }) => {
       log.debug(`Get Certificate ${certificate_id} in Project ${project_id}`);
       const result = await adapter.client.certificate.get(project_id, certificate_id);
-
       return Response.json(result);
-    }
+    })
   );
 
   /**
@@ -133,11 +134,10 @@ export function registerCertificate(adapter: McpAdapter): void {
     {
       project_id: Schema.projectId(),
     },
-    async ({ project_id }) => {
+    ToolWrapper.trace('list-certificate', async ({ project_id }) => {
       log.debug(`List Certificates in Project ${project_id}`);
       const result = await adapter.client.certificate.list(project_id);
-
       return Response.json(result);
-    }
+    })
   );
 }

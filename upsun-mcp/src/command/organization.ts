@@ -11,7 +11,7 @@
  */
 
 import { McpAdapter } from '../core/adapter.js';
-import { Response, Schema } from '../core/helper.js';
+import { Response, Schema, ToolWrapper } from '../core/helper.js';
 import { createLogger } from '../core/logger.js';
 
 // Create logger for organization operations
@@ -53,12 +53,12 @@ export function registerOrganization(adapter: McpAdapter): void {
       {
         organization_name: Schema.organizationName(),
       },
-      async ({ organization_name }) => {
+      ToolWrapper.trace('create-organization', async ({ organization_name }) => {
         log.debug(`Create Organization: ${organization_name}`);
         const result = await adapter.client.organization.create(organization_name);
 
         return Response.json(result);
-      }
+      })
     );
   }
 
@@ -79,12 +79,12 @@ export function registerOrganization(adapter: McpAdapter): void {
       {
         organization_id: Schema.organizationId(),
       },
-      async ({ organization_id }) => {
+      ToolWrapper.trace('delete-organization', async ({ organization_id }) => {
         log.debug(`Delete Organization: ${organization_id}`);
         const result = await adapter.client.organization.delete(organization_id);
 
         return Response.json(result);
-      }
+      })
     );
   }
 
@@ -103,12 +103,12 @@ export function registerOrganization(adapter: McpAdapter): void {
     {
       organization_id: Schema.organizationId(),
     },
-    async ({ organization_id }) => {
+    ToolWrapper.trace('info-organization', async ({ organization_id }) => {
       log.debug(`Get Information of Organization: ${organization_id}`);
       const result = await adapter.client.organization.info(organization_id);
 
       return Response.json(result);
-    }
+    })
   );
 
   /**
@@ -121,10 +121,15 @@ export function registerOrganization(adapter: McpAdapter): void {
    * This tool doesn't require any parameters as it uses the authenticated
    * user's context to determine which organizations to list.
    */
-  adapter.server.tool('list-organization', 'List all my organizations on upsun', {}, async () => {
-    log.debug(`List all my organizations`);
-    const result = await adapter.client.organization.list();
+  adapter.server.tool(
+    'list-organization',
+    'List all my organizations on upsun',
+    {},
+    ToolWrapper.trace('list-organization', async () => {
+      log.debug(`List all my organizations`);
+      const result = await adapter.client.organization.list();
 
-    return Response.json(result);
-  });
+      return Response.json(result);
+    })
+  );
 }

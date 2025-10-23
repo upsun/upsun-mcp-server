@@ -7,7 +7,7 @@
  */
 
 import { McpAdapter } from '../core/adapter.js';
-import { Response, Schema } from '../core/helper.js';
+import { Response, Schema, ToolWrapper } from '../core/helper.js';
 import { createLogger } from '../core/logger.js';
 
 // Create logger for backup operations
@@ -58,14 +58,13 @@ export function registerBackup(adapter: McpAdapter): void {
         environment_name: Schema.environmentName(),
         is_live: z.boolean().default(true).optional(),
       },
-      async ({ project_id, environment_name, is_live }) => {
+      ToolWrapper.trace('create-backup', async ({ project_id, environment_name, is_live }) => {
         log.debug(
           `Create Backup in Project ${project_id}, Environment ${environment_name}, is_live: ${is_live}`
         );
         const result = await adapter.client.backup.create(project_id, environment_name, is_live);
-
         return Response.json(result);
-      }
+      })
     );
   }
 
@@ -89,14 +88,13 @@ export function registerBackup(adapter: McpAdapter): void {
         environment_name: Schema.environmentName(),
         backup_id: Schema.backupId(),
       },
-      async ({ project_id, environment_name, backup_id }) => {
+      ToolWrapper.trace('delete-backup', async ({ project_id, environment_name, backup_id }) => {
         log.debug(
           `Delete Backup ${backup_id} in Project ${project_id}, Environment ${environment_name}`
         );
         const result = await adapter.client.backup.delete(project_id, environment_name, backup_id);
-
         return Response.json(result);
-      }
+      })
     );
   }
 
@@ -119,14 +117,13 @@ export function registerBackup(adapter: McpAdapter): void {
       environment_name: Schema.environmentName(),
       backup_id: Schema.backupId(),
     },
-    async ({ project_id, environment_name, backup_id }) => {
+    ToolWrapper.trace('get-backup', async ({ project_id, environment_name, backup_id }) => {
       log.debug(
         `Get Backup ${backup_id} in Project ${project_id}, Environment ${environment_name}`
       );
       const result = await adapter.client.backup.get(project_id, environment_name, backup_id);
-
       return Response.json(result);
-    }
+    })
   );
 
   /**
@@ -146,12 +143,11 @@ export function registerBackup(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
       environment_name: Schema.environmentName(),
     },
-    async ({ project_id, environment_name }) => {
+    ToolWrapper.trace('list-backup', async ({ project_id, environment_name }) => {
       log.debug(`List Backups in Project ${project_id}, Environment ${environment_name}`);
       const result = await adapter.client.backup.list(project_id, environment_name);
-
       return Response.json(result);
-    }
+    })
   );
 
   /**
@@ -183,21 +179,23 @@ export function registerBackup(adapter: McpAdapter): void {
         no_resources: z.boolean().default(false).optional(),
         resources_init: z.string().default('backup').optional(),
       },
-      async ({
-        project_id,
-        environment_name,
-        target_environment_name,
-        no_code,
-        no_resources,
-        resources_init,
-      }) => {
-        log.debug(
-          `Restore Backup from Environment ${environment_name} to ${target_environment_name} in Project ${project_id}, no_code: ${no_code}, no_resources: ${no_resources}, resources_init: ${resources_init}`
-        );
-        const result = 'TODO'; //await adapter.client.backup.restore(project_id, environment_name, target_environment_name, no_code, no_resources, resources_init);
-
-        return Response.json(result);
-      }
+      ToolWrapper.trace(
+        'restore-backup',
+        async ({
+          project_id,
+          environment_name,
+          target_environment_name,
+          no_code,
+          no_resources,
+          resources_init,
+        }) => {
+          log.debug(
+            `Restore Backup from Environment ${environment_name} to ${target_environment_name} in Project ${project_id}, no_code: ${no_code}, no_resources: ${no_resources}, resources_init: ${resources_init}`
+          );
+          const result = 'TODO'; //await adapter.client.backup.restore(project_id, environment_name, target_environment_name, no_code, no_resources, resources_init);
+          return Response.json(result);
+        }
+      )
     );
   }
 }

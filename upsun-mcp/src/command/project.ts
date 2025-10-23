@@ -12,7 +12,7 @@ import { createLogger } from '../core/logger.js';
 
 // Create logger for project operations
 const log = createLogger('MCP:Tool:project-commands');
-import { Response, Schema } from '../core/helper.js';
+import { Response, Schema, ToolWrapper } from '../core/helper.js';
 import { z } from 'zod';
 
 /**
@@ -54,30 +54,33 @@ export function registerProject(adapter: McpAdapter): void {
         name: z.string(),
         default_branch: z.string().default('main').optional(),
       },
-      async ({ organization_id, name, default_branch, region_host }) => {
-        log.debug(`Create Project: ${name} in Organization: ${organization_id}`);
-        const subCreated = await adapter.client.project.create(
-          organization_id,
-          region_host,
-          name,
-          default_branch
-        ); // region, default_branch
+      ToolWrapper.trace(
+        'create-project',
+        async ({ organization_id, name, default_branch, region_host }) => {
+          log.debug(`Create Project: ${name} in Organization: ${organization_id}`);
+          const subCreated = await adapter.client.project.create(
+            organization_id,
+            region_host,
+            name,
+            default_branch
+          ); // region, default_branch
 
-        let prjCreated = await adapter.client.project.getSubscription(
-          organization_id,
-          subCreated.id || ''
-        );
-        while (prjCreated.status !== SubscriptionStatusEnum.Active) {
-          log.info('Waiting for project to be active...');
-          await delay(10000);
-          prjCreated = await adapter.client.project.getSubscription(
+          let prjCreated = await adapter.client.project.getSubscription(
             organization_id,
             subCreated.id || ''
           );
-        }
+          while (prjCreated.status !== SubscriptionStatusEnum.Active) {
+            log.info('Waiting for project to be active...');
+            await delay(10000);
+            prjCreated = await adapter.client.project.getSubscription(
+              organization_id,
+              subCreated.id || ''
+            );
+          }
 
-        return Response.json(prjCreated);
-      }
+          return Response.json(prjCreated);
+        }
+      )
     );
   }
 
@@ -97,12 +100,12 @@ export function registerProject(adapter: McpAdapter): void {
       {
         project_id: Schema.projectId(),
       },
-      async ({ project_id }) => {
+      ToolWrapper.trace('delete-project', async ({ project_id }) => {
         log.debug(`Delete Project: ${project_id}`);
         const result = await adapter.client.project.delete(project_id);
 
         return Response.json(result);
-      }
+      })
     );
   }
 
@@ -121,12 +124,11 @@ export function registerProject(adapter: McpAdapter): void {
     {
       project_id: Schema.projectId(),
     },
-    async ({ project_id }) => {
+    ToolWrapper.trace('info-project', async ({ project_id }) => {
       log.debug(`Get Information of Project: ${project_id}`);
       const result = await adapter.client.project.info(project_id);
-
       return Response.json(result);
-    }
+    })
   );
 
   /**
@@ -144,12 +146,17 @@ export function registerProject(adapter: McpAdapter): void {
     {
       organization_id: Schema.organizationId(),
     },
-    async ({ organization_id }) => {
-      log.debug(`List all my projects in Organization: ${organization_id}`);
-      const result = await adapter.client.project.list(organization_id);
-
-      return Response.json(result);
-    }
+    ToolWrapper.traceWithMetrics(
+      'list-project',
+      async ({ organization_id }) => {
+        log.debug(`List all my projects in Organization: ${organization_id}`);
+        const result = await adapter.client.project.list(organization_id);
+        return Response.json(result);
+      },
+      result => ({
+        'result.has_content': !!result,
+      })
+    )
   );
 }
 

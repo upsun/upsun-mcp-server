@@ -8,6 +8,7 @@ import { setupOAuth2Direct, WritableMode } from './authentication.js';
 import { createLogger } from './logger.js';
 import { HttpTransport } from './transport/http.js';
 import { HTTP_MSG_PATH, SseTransport } from './transport/sse.js';
+import { withSpanAsync, addSpanAttribute, addSpanEvent } from './telemetry.js';
 
 /** HTTP path for MCP streamable transport endpoint */
 const HTTP_MCP_PATH = '/mcp';
@@ -53,11 +54,20 @@ export class LocalServer<A extends McpAdapter> {
    * @throws Error if connection fails or API key is missing
    */
   async listen(): Promise<void> {
-    const apiKey = process.env.UPSUN_API_KEY || '';
-    if (!apiKey) {
-      throw new Error('UPSUN_API_KEY environment variable is required for LocalServer');
-    }
-    await this.server.connectWithApiKey(this.transport, apiKey);
+    return withSpanAsync('gateway', 'local-server.listen', async () => {
+      addSpanAttribute('server.type', 'local');
+      addSpanAttribute('transport', 'stdio');
+
+      const apiKey = process.env.UPSUN_API_KEY || '';
+      if (!apiKey) {
+        addSpanEvent('authentication.failed', { reason: 'missing_api_key' });
+        throw new Error('UPSUN_API_KEY environment variable is required for LocalServer');
+      }
+
+      addSpanEvent('server.connecting');
+      await this.server.connectWithApiKey(this.transport, apiKey);
+      addSpanEvent('server.connected');
+    });
   }
 }
 
@@ -120,7 +130,10 @@ export class GatewayServer<A extends McpAdapter> {
    */
   public makeInstanceAdapterMcpServer(mode: WritableMode = WritableMode.READONLY): McpAdapter {
     coreLog.debug('Creating new MCP adapter instance...');
-    return new this.mcpAdapterServerFactory(mode);
+    addSpanEvent('mcp-adapter.creating', { mode });
+    const adapter = new this.mcpAdapterServerFactory(mode);
+    addSpanEvent('mcp-adapter.created', { mode });
+    return adapter;
   }
 
   //=============================================================================
