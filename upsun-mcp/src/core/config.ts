@@ -31,6 +31,25 @@ function parseNumber(
 }
 
 /**
+ * Parse OTLP headers from comma-separated key=value pairs
+ */
+function parseHeaders(headersString: string | undefined): Record<string, string> {
+  if (!headersString) return {};
+
+  const headers: Record<string, string> = {};
+  const pairs = headersString.split(',');
+
+  for (const pair of pairs) {
+    const [key, value] = pair.split('=').map((s) => s.trim());
+    if (key && value) {
+      headers[key] = value;
+    }
+  }
+
+  return headers;
+}
+
+/**
  * OpenTelemetry configuration
  */
 export const otelConfig = {
@@ -46,8 +65,21 @@ export const otelConfig = {
   /** OTLP exporter endpoint URL */
   exporterEndpoint: process.env.OTEL_EXPORTER_ENDPOINT || 'http://localhost:4318/v1/traces',
 
+  /** OTLP exporter headers (for authentication, API keys, etc.) */
+  exporterHeaders: parseHeaders(process.env.OTEL_EXPORTER_HEADERS),
+
+  /** OTLP exporter timeout in milliseconds */
+  exporterTimeout: parseNumber(process.env.OTEL_EXPORTER_TIMEOUT, 10000, 1000, 60000),
+
   /** Service name for telemetry */
   serviceName: process.env.OTEL_SERVICE_NAME || 'upsun-mcp-server',
+
+  /** Service namespace (for grouping services) */
+  serviceNamespace: process.env.OTEL_SERVICE_NAMESPACE || undefined,
+
+  /** Service instance ID (auto-generated if not provided) */
+  serviceInstanceId:
+    process.env.OTEL_SERVICE_INSTANCE_ID || `${process.pid}-${Date.now().toString(36)}`,
 
   /** Current environment */
   environment: process.env.NODE_ENV || 'development',
@@ -74,13 +106,20 @@ export const appConfig = {
  * Get a human-readable configuration summary
  */
 export function getConfigSummary(): string {
+  const headerCount = Object.keys(otelConfig.exporterHeaders).length;
+  const headersInfo = headerCount > 0 ? ` (${headerCount} headers configured)` : '';
+
   return `
 Configuration:
   OpenTelemetry:
     - Enabled: ${otelConfig.enabled}
     - Sampling Rate: ${(otelConfig.samplingRate * 100).toFixed(0)}%
-    - Exporter: ${otelConfig.exporterType}
-    - Service Name: ${otelConfig.serviceName}
+    - Exporter: ${otelConfig.exporterType}${otelConfig.exporterType === 'otlp' ? headersInfo : ''}
+    - Endpoint: ${otelConfig.exporterType === 'otlp' ? otelConfig.exporterEndpoint : 'N/A'}
+    - Timeout: ${otelConfig.exporterTimeout}ms
+    - Service: ${otelConfig.serviceName}
+    - Namespace: ${otelConfig.serviceNamespace || 'N/A'}
+    - Instance: ${otelConfig.serviceInstanceId}
     - Environment: ${otelConfig.environment}
   
   Application:

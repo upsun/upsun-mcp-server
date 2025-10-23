@@ -36,12 +36,18 @@ function getSpanExporter(): ConsoleSpanExporter | OTLPTraceExporter {
       log.info('Using Console span exporter');
       return new ConsoleSpanExporter();
 
-    case 'otlp':
-      log.info(`Using OTLP span exporter: ${otelConfig.exporterEndpoint}`);
+    case 'otlp': {
+      const headerCount = Object.keys(otelConfig.exporterHeaders).length;
+      const headersInfo = headerCount > 0 ? ` with ${headerCount} custom headers` : '';
+      log.info(`Using OTLP span exporter: ${otelConfig.exporterEndpoint}${headersInfo}`);
+      log.debug(`OTLP timeout: ${otelConfig.exporterTimeout}ms`);
+
       return new OTLPTraceExporter({
         url: otelConfig.exporterEndpoint,
-        headers: {},
+        headers: otelConfig.exporterHeaders,
+        timeoutMillis: otelConfig.exporterTimeout,
       });
+    }
 
     case 'none':
       log.info('Using no span exporter (traces collected but not exported)');
@@ -83,17 +89,29 @@ export async function initTelemetry(): Promise<void> {
     log.info('Initializing OpenTelemetry...');
     log.info(`Service: ${otelConfig.serviceName} v${pjson.default.version}`);
     log.info(`Environment: ${otelConfig.environment}`);
+    log.info(`Instance: ${otelConfig.serviceInstanceId}`);
     log.info(`Sampling rate: ${(otelConfig.samplingRate * 100).toFixed(0)}%`);
     log.info(`Exporter: ${otelConfig.exporterType}`);
 
+    // Create resource with enriched service information
+    const resourceAttributes: Record<string, string> = {
+      [ATTR_SERVICE_NAME]: otelConfig.serviceName,
+      [ATTR_SERVICE_VERSION]: pjson.default.version,
+      'service.instance.id': otelConfig.serviceInstanceId,
+      'deployment.environment': otelConfig.environment,
+      'process.pid': process.pid.toString(),
+      'process.runtime.name': 'nodejs',
+      'process.runtime.version': process.version,
+    };
+
+    // Add service namespace if configured
+    if (otelConfig.serviceNamespace) {
+      resourceAttributes['service.namespace'] = otelConfig.serviceNamespace;
+      log.info(`Namespace: ${otelConfig.serviceNamespace}`);
+    }
+
     // Create resource with service information
-    const resource = Resource.default().merge(
-      new Resource({
-        [ATTR_SERVICE_NAME]: otelConfig.serviceName,
-        [ATTR_SERVICE_VERSION]: pjson.default.version,
-        'deployment.environment': otelConfig.environment,
-      })
-    );
+    const resource = Resource.default().merge(new Resource(resourceAttributes));
 
     // Create sampler based on configured sampling rate
     const sampler = new TraceIdRatioBasedSampler(otelConfig.samplingRate);

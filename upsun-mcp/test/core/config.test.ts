@@ -25,6 +25,10 @@ describe('Configuration Module', () => {
       expect(otelConfig.samplingRate).toBeLessThanOrEqual(1);
       expect(otelConfig.exporterType).toMatch(/^(console|otlp|none)$/);
       expect(otelConfig.serviceName).toBe('upsun-mcp-server');
+      expect(otelConfig.exporterEndpoint).toBeDefined();
+      expect(otelConfig.exporterHeaders).toBeDefined();
+      expect(otelConfig.exporterTimeout).toBeGreaterThan(0);
+      expect(otelConfig.serviceInstanceId).toBeDefined();
     });
 
     it('should use environment variable for enabled state', () => {
@@ -38,6 +42,21 @@ describe('Configuration Module', () => {
 
     it('should have valid exporter type', () => {
       expect(['console', 'otlp', 'none']).toContain(otelConfig.exporterType);
+    });
+
+    it('should parse OTLP headers correctly', () => {
+      expect(typeof otelConfig.exporterHeaders).toBe('object');
+      expect(otelConfig.exporterHeaders).not.toBeNull();
+    });
+
+    it('should have valid timeout range', () => {
+      expect(otelConfig.exporterTimeout).toBeGreaterThanOrEqual(1000);
+      expect(otelConfig.exporterTimeout).toBeLessThanOrEqual(60000);
+    });
+
+    it('should have service instance ID', () => {
+      expect(otelConfig.serviceInstanceId).toBeTruthy();
+      expect(typeof otelConfig.serviceInstanceId).toBe('string');
     });
   });
 
@@ -60,6 +79,11 @@ describe('Configuration Module', () => {
       const summary = getConfigSummary();
       expect(typeof summary).toBe('string');
       expect(summary.length).toBeGreaterThan(0);
+    });
+
+    it('should include instance ID', () => {
+      const summary = getConfigSummary();
+      expect(summary).toContain('Instance:');
     });
 
     it('should include OpenTelemetry configuration', () => {
