@@ -3,6 +3,33 @@ import { z } from 'zod';
 import { withSpanAsync, addSpanAttribute, addSpanEvent } from './telemetry.js';
 
 /**
+ * List of sensitive parameter names that should be excluded from telemetry logs.
+ * These parameters may contain credentials, secrets, or other sensitive data.
+ */
+export const SENSITIVE_PARAM_KEYWORDS = [
+  'token',
+  'password',
+  'secret',
+  'key',
+  'apikey',
+  'api_key',
+  'auth',
+  'credential',
+] as const;
+
+/**
+ * Checks if a parameter name contains sensitive keywords.
+ * Used to filter out sensitive data from telemetry logs.
+ *
+ * @param paramName - The parameter name to check
+ * @returns True if the parameter name contains sensitive keywords, false otherwise
+ */
+export function isSensitiveParam(paramName: string): boolean {
+  const lowerName = paramName.toLowerCase();
+  return SENSITIVE_PARAM_KEYWORDS.some(keyword => lowerName.includes(keyword));
+}
+
+/**
  * Schema validation utilities for Upsun MCP server.
  * Provides Zod schema definitions for various Upsun platform entities.
  */
@@ -229,12 +256,7 @@ export class ToolWrapper {
               typeof value === 'boolean'
             ) {
               // Skip parameters that might contain sensitive data
-              if (
-                !key.toLowerCase().includes('token') &&
-                !key.toLowerCase().includes('password') &&
-                !key.toLowerCase().includes('secret') &&
-                !key.toLowerCase().includes('key')
-              ) {
+              if (!isSensitiveParam(key)) {
                 addSpanAttribute(`param.${key}`, value);
               }
             }
@@ -309,12 +331,7 @@ export class ToolWrapper {
             typeof value === 'number' ||
             typeof value === 'boolean'
           ) {
-            if (
-              !key.toLowerCase().includes('token') &&
-              !key.toLowerCase().includes('password') &&
-              !key.toLowerCase().includes('secret') &&
-              !key.toLowerCase().includes('key')
-            ) {
+            if (!isSensitiveParam(key)) {
               addSpanAttribute(`param.${key}`, value);
             }
           }

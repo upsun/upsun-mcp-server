@@ -65,7 +65,7 @@ export function registerCertificate(adapter: McpAdapter): void {
           return Response.json(result);
         },
         { logParams: false }
-      ) // Ne pas logger les certificats/clés
+      ) // Do not log certificates/keys
     );
   }
 

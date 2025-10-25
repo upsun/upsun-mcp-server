@@ -1,8 +1,83 @@
 import { describe, expect, it } from '@jest/globals';
-import { Schema, Assert, Response, ToolWrapper } from '../../src/core/helper';
+import {
+  Schema,
+  Assert,
+  Response,
+  ToolWrapper,
+  isSensitiveParam,
+  SENSITIVE_PARAM_KEYWORDS,
+} from '../../src/core/helper';
 import { z } from 'zod';
 
 describe('Helper Module', () => {
+  describe('isSensitiveParam function', () => {
+    it('should detect token-related parameters', () => {
+      expect(isSensitiveParam('bearer_token')).toBe(true);
+      expect(isSensitiveParam('access_token')).toBe(true);
+      expect(isSensitiveParam('refresh_token')).toBe(true);
+      expect(isSensitiveParam('myToken')).toBe(true);
+    });
+
+    it('should detect password-related parameters', () => {
+      expect(isSensitiveParam('password')).toBe(true);
+      expect(isSensitiveParam('user_password')).toBe(true);
+      expect(isSensitiveParam('myPassword')).toBe(true);
+    });
+
+    it('should detect secret-related parameters', () => {
+      expect(isSensitiveParam('client_secret')).toBe(true);
+      expect(isSensitiveParam('api_secret')).toBe(true);
+      expect(isSensitiveParam('mySecret')).toBe(true);
+    });
+
+    it('should detect key-related parameters', () => {
+      expect(isSensitiveParam('api_key')).toBe(true);
+      expect(isSensitiveParam('apikey')).toBe(true);
+      expect(isSensitiveParam('private_key')).toBe(true);
+      expect(isSensitiveParam('ssh_key')).toBe(true);
+    });
+
+    it('should detect auth and credential parameters', () => {
+      expect(isSensitiveParam('authorization')).toBe(true);
+      expect(isSensitiveParam('auth_token')).toBe(true);
+      expect(isSensitiveParam('credentials')).toBe(true);
+      expect(isSensitiveParam('user_credential')).toBe(true);
+    });
+
+    it('should be case insensitive', () => {
+      expect(isSensitiveParam('TOKEN')).toBe(true);
+      expect(isSensitiveParam('PASSWORD')).toBe(true);
+      expect(isSensitiveParam('Secret')).toBe(true);
+      expect(isSensitiveParam('API_KEY')).toBe(true);
+    });
+
+    it('should not flag non-sensitive parameters', () => {
+      expect(isSensitiveParam('project_id')).toBe(false);
+      expect(isSensitiveParam('environment_name')).toBe(false);
+      expect(isSensitiveParam('user_name')).toBe(false);
+      expect(isSensitiveParam('organization_id')).toBe(false);
+      expect(isSensitiveParam('backup_id')).toBe(false);
+    });
+  });
+
+  describe('SENSITIVE_PARAM_KEYWORDS constant', () => {
+    it('should contain expected sensitive keywords', () => {
+      expect(SENSITIVE_PARAM_KEYWORDS).toContain('token');
+      expect(SENSITIVE_PARAM_KEYWORDS).toContain('password');
+      expect(SENSITIVE_PARAM_KEYWORDS).toContain('secret');
+      expect(SENSITIVE_PARAM_KEYWORDS).toContain('key');
+      expect(SENSITIVE_PARAM_KEYWORDS).toContain('apikey');
+      expect(SENSITIVE_PARAM_KEYWORDS).toContain('api_key');
+      expect(SENSITIVE_PARAM_KEYWORDS).toContain('auth');
+      expect(SENSITIVE_PARAM_KEYWORDS).toContain('credential');
+    });
+
+    it('should be a readonly array', () => {
+      // TypeScript ensures this is readonly at compile time
+      expect(Array.isArray(SENSITIVE_PARAM_KEYWORDS)).toBe(true);
+    });
+  });
+
   describe('Schema class', () => {
     describe('activityId', () => {
       it('should return a string schema for activity IDs', () => {

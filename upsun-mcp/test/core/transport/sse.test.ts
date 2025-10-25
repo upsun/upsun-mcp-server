@@ -238,7 +238,7 @@ describe('SseTransport', () => {
   });
 
   it('should call closeAllSessions and clear sse', async () => {
-    // Simule une session ouverte
+    // Simulate an open session
     sseTransport.sse['abc'] = { transport: { close: jest.fn() }, server: {} } as any;
     await sseTransport.closeAllSessions();
     expect(sseTransport.sse['abc']).toBeUndefined();

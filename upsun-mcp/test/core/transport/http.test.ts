@@ -132,7 +132,7 @@ describe('HttpTransport', () => {
   });
 
   it('should call closeAllSessions and clear streamable', async () => {
-    // Simule une session ouverte
+    // Simulate an open session
     httpTransport.streamable['abc'] = { transport: { close: jest.fn() }, server: {} } as any;
     await httpTransport.closeAllSessions();
     expect(httpTransport.streamable['abc']).toBeUndefined();
