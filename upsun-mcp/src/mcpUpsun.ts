@@ -5,6 +5,7 @@ import { UpsunClient, UpsunConfig } from 'upsun-sdk-node';
 import * as pjson from '../package.json' with { type: 'json' };
 import { McpAdapter } from './core/adapter.js';
 import { createLogger } from './core/logger.js';
+import { withSpanAsync, addSpanAttribute, addSpanEvent } from './core/telemetry.js';
 
 // Create logger for MCP operations
 const log = createLogger('mcp-server');
@@ -124,11 +125,18 @@ export class UpsunMcpServer implements McpAdapter {
    * ```
    */
   connectWithBearer(transport: Transport, bearerToken: string): Promise<void> {
-    log.info('Connecting with Bearer token authentication');
+    return withSpanAsync('mcp-server', 'connect.bearer', async () => {
+      log.info('Connecting with Bearer token authentication');
+      addSpanAttribute('auth.type', 'bearer');
+      addSpanEvent('client.initializing');
 
-    this.client = new UpsunClient();
-    this.client.setBearerToken(bearerToken);
-    return this.server.connect(transport);
+      this.client = new UpsunClient();
+      this.client.setBearerToken(bearerToken);
+
+      addSpanEvent('server.connecting');
+      await this.server.connect(transport);
+      addSpanEvent('server.connected');
+    });
   }
 
   /**
@@ -151,10 +159,17 @@ export class UpsunMcpServer implements McpAdapter {
    * ```
    */
   connectWithApiKey(transport: Transport, apiKey: string): Promise<void> {
-    log.info('Connecting with API key authentication');
+    return withSpanAsync('mcp-server', 'connect.apikey', async () => {
+      log.info('Connecting with API key authentication');
+      addSpanAttribute('auth.type', 'apikey');
+      addSpanEvent('client.initializing');
 
-    this.client = new UpsunClient({ apiKey } as UpsunConfig);
-    return this.server.connect(transport);
+      this.client = new UpsunClient({ apiKey } as UpsunConfig);
+
+      addSpanEvent('server.connecting');
+      await this.server.connect(transport);
+      addSpanEvent('server.connected');
+    });
   }
 
   isMode(): boolean {

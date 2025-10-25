@@ -71,7 +71,7 @@ describe('Config Task Module', () => {
 
       expect(promptCalls[0]).toEqual([
         'generate-config',
-        'Create a configuration for upsun project',
+        'Create a configuration for upsun project (requires upsun CLI installed)',
         expect.any(Object),
         expect.any(Function),
       ]);
@@ -122,9 +122,6 @@ describe('Config Task Module', () => {
       });
 
       expect(result.messages[0].content.text).toContain('.upsun/config.yaml');
-      expect(result.messages[0].content.text).toContain('applications:');
-      expect(result.messages[0].content.text).toContain('my-app:');
-      expect(result.messages[0].content.text).toContain('type: "nodejs:20"');
     });
 
     it('should include all required steps in config generation', async () => {
@@ -134,7 +131,9 @@ describe('Config Task Module', () => {
 
       const content = result.messages[0].content.text;
 
-      expect(content).toContain('1. update .upsun/config.yaml file');
+      expect(content).toContain(
+        '1. Use the Upsun CLI to generate the configuration for the project test-app'
+      );
       expect(content).toContain('2. Validate the .upsun/config.yaml file');
       expect(content).toContain('3. Add and commit the .upsun/config.yaml file');
       expect(content).toContain('4. And push them on upsun remote');
@@ -149,7 +148,6 @@ describe('Config Task Module', () => {
         });
 
         expect(result.messages[0].content.text).toContain(appName);
-        expect(result.messages[0].content.text).toContain(`upstream: "${appName}:http"`);
       }
     });
   });
@@ -325,7 +323,6 @@ describe('Config Task Module', () => {
         app_name: '',
       });
 
-      expect(result.messages[0].content.text).toContain('applications:');
       expect(result.messages[0].content.text).toContain(':');
     });
 

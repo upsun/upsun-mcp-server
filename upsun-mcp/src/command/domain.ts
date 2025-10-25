@@ -7,7 +7,7 @@
  */
 
 import { McpAdapter } from '../core/adapter.js';
-import { Response, Schema } from '../core/helper.js';
+import { Response, Schema, ToolWrapper } from '../core/helper.js';
 import { z } from 'zod';
 import { createLogger } from '../core/logger.js';
 
@@ -54,12 +54,12 @@ export function registerDomain(adapter: McpAdapter): void {
         project_id: Schema.projectId(),
         domain_name: Schema.domainName(),
       },
-      async ({ project_id, domain_name }) => {
+      ToolWrapper.trace('add-domain', async ({ project_id, domain_name }) => {
         log.debug(`Add Domain ${domain_name} to Project ${project_id}`);
         const result = await adapter.client.domain.add(project_id, domain_name);
 
         return Response.json(result);
-      }
+      })
     );
   }
 
@@ -81,12 +81,12 @@ export function registerDomain(adapter: McpAdapter): void {
         project_id: Schema.projectId(),
         domain_name: Schema.domainName(),
       },
-      async ({ project_id, domain_name }) => {
+      ToolWrapper.trace('delete-domain', async ({ project_id, domain_name }) => {
         log.debug(`Delete Domain ${domain_name} from Project ${project_id}`);
         const result = await adapter.client.domain.delete(project_id, domain_name);
 
         return Response.json(result);
-      }
+      })
     );
   }
 
@@ -107,12 +107,12 @@ export function registerDomain(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
       domain_name: Schema.domainName(),
     },
-    async ({ project_id, domain_name }) => {
+    ToolWrapper.trace('get-domain', async ({ project_id, domain_name }) => {
       log.debug(`Get Domain ${domain_name} in Project ${project_id}`);
       const result = await adapter.client.domain.get(project_id, domain_name);
 
       return Response.json(result);
-    }
+    })
   );
 
   /**
@@ -130,12 +130,12 @@ export function registerDomain(adapter: McpAdapter): void {
     {
       project_id: Schema.projectId(),
     },
-    async ({ project_id }) => {
+    ToolWrapper.trace('list-domain', async ({ project_id }) => {
       log.debug(`List Domains in Project ${project_id}`);
       const result = await adapter.client.domain.list(project_id);
 
       return Response.json(result);
-    }
+    })
   );
 
   /**
@@ -156,12 +156,12 @@ export function registerDomain(adapter: McpAdapter): void {
         project_id: Schema.projectId(),
         domain_name: Schema.domainName(),
       },
-      async ({ project_id, domain_name }) => {
+      ToolWrapper.trace('update-domain', async ({ project_id, domain_name }) => {
         log.debug(`Update Domain ${domain_name} in Project ${project_id}`);
         const result = await adapter.client.domain.update(project_id, domain_name);
 
         return Response.json(result);
-      }
+      })
     );
   }
 }

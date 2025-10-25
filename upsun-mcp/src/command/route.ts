@@ -7,7 +7,7 @@
  */
 
 import { McpAdapter } from '../core/adapter.js';
-import { Response, Schema } from '../core/helper.js';
+import { Response, Schema, ToolWrapper } from '../core/helper.js';
 import { z } from 'zod';
 import { createLogger } from '../core/logger.js';
 
@@ -52,14 +52,14 @@ export function registerRoute(adapter: McpAdapter): void {
       environment_name: Schema.environmentName(),
       route_id: z.string().optional(),
     },
-    async ({ project_id, environment_name, route_id }) => {
+    ToolWrapper.trace('get-route', async ({ project_id, environment_name, route_id }) => {
       log.debug(
         `Get Route: ${route_id || 'primary'} in Environment: ${environment_name} of Project: ${project_id}`
       );
       const result = await adapter.client.route.get(project_id, environment_name, route_id || '');
 
       return Response.json(result);
-    }
+    })
   );
 
   /**
@@ -79,12 +79,12 @@ export function registerRoute(adapter: McpAdapter): void {
       project_id: Schema.projectId(),
       environment_name: Schema.environmentName(),
     },
-    async ({ project_id, environment_name }) => {
+    ToolWrapper.trace('list-route', async ({ project_id, environment_name }) => {
       log.debug(`List Routes in Environment: ${environment_name} of Project: ${project_id}`);
       const result = await adapter.client.route.list(project_id, environment_name);
 
       return Response.json(result);
-    }
+    })
   );
 
   /**
@@ -103,12 +103,12 @@ export function registerRoute(adapter: McpAdapter): void {
     {
       project_id: Schema.projectId(),
     },
-    async ({ project_id }) => {
+    ToolWrapper.trace('get-console', async ({ project_id }) => {
       log.debug(`Get Console URL of Project: ${project_id}`);
       //const result = (await adapter.client.route.web(project_id)).ui;
       const result = 'Not implemented';
 
       return Response.json(result);
-    }
+    })
   );
 }

@@ -1,8 +1,83 @@
 import { describe, expect, it } from '@jest/globals';
-import { Schema, Assert, Response } from '../../src/core/helper';
+import {
+  Schema,
+  Assert,
+  Response,
+  ToolWrapper,
+  isSensitiveParam,
+  SENSITIVE_PARAM_KEYWORDS,
+} from '../../src/core/helper';
 import { z } from 'zod';
 
 describe('Helper Module', () => {
+  describe('isSensitiveParam function', () => {
+    it('should detect token-related parameters', () => {
+      expect(isSensitiveParam('bearer_token')).toBe(true);
+      expect(isSensitiveParam('access_token')).toBe(true);
+      expect(isSensitiveParam('refresh_token')).toBe(true);
+      expect(isSensitiveParam('myToken')).toBe(true);
+    });
+
+    it('should detect password-related parameters', () => {
+      expect(isSensitiveParam('password')).toBe(true);
+      expect(isSensitiveParam('user_password')).toBe(true);
+      expect(isSensitiveParam('myPassword')).toBe(true);
+    });
+
+    it('should detect secret-related parameters', () => {
+      expect(isSensitiveParam('client_secret')).toBe(true);
+      expect(isSensitiveParam('api_secret')).toBe(true);
+      expect(isSensitiveParam('mySecret')).toBe(true);
+    });
+
+    it('should detect key-related parameters', () => {
+      expect(isSensitiveParam('api_key')).toBe(true);
+      expect(isSensitiveParam('apikey')).toBe(true);
+      expect(isSensitiveParam('private_key')).toBe(true);
+      expect(isSensitiveParam('ssh_key')).toBe(true);
+    });
+
+    it('should detect auth and credential parameters', () => {
+      expect(isSensitiveParam('authorization')).toBe(true);
+      expect(isSensitiveParam('auth_token')).toBe(true);
+      expect(isSensitiveParam('credentials')).toBe(true);
+      expect(isSensitiveParam('user_credential')).toBe(true);
+    });
+
+    it('should be case insensitive', () => {
+      expect(isSensitiveParam('TOKEN')).toBe(true);
+      expect(isSensitiveParam('PASSWORD')).toBe(true);
+      expect(isSensitiveParam('Secret')).toBe(true);
+      expect(isSensitiveParam('API_KEY')).toBe(true);
+    });
+
+    it('should not flag non-sensitive parameters', () => {
+      expect(isSensitiveParam('project_id')).toBe(false);
+      expect(isSensitiveParam('environment_name')).toBe(false);
+      expect(isSensitiveParam('user_name')).toBe(false);
+      expect(isSensitiveParam('organization_id')).toBe(false);
+      expect(isSensitiveParam('backup_id')).toBe(false);
+    });
+  });
+
+  describe('SENSITIVE_PARAM_KEYWORDS constant', () => {
+    it('should contain expected sensitive keywords', () => {
+      expect(SENSITIVE_PARAM_KEYWORDS).toContain('token');
+      expect(SENSITIVE_PARAM_KEYWORDS).toContain('password');
+      expect(SENSITIVE_PARAM_KEYWORDS).toContain('secret');
+      expect(SENSITIVE_PARAM_KEYWORDS).toContain('key');
+      expect(SENSITIVE_PARAM_KEYWORDS).toContain('apikey');
+      expect(SENSITIVE_PARAM_KEYWORDS).toContain('api_key');
+      expect(SENSITIVE_PARAM_KEYWORDS).toContain('auth');
+      expect(SENSITIVE_PARAM_KEYWORDS).toContain('credential');
+    });
+
+    it('should be a readonly array', () => {
+      // TypeScript ensures this is readonly at compile time
+      expect(Array.isArray(SENSITIVE_PARAM_KEYWORDS)).toBe(true);
+    });
+  });
+
   describe('Schema class', () => {
     describe('activityId', () => {
       it('should return a string schema for activity IDs', () => {
@@ -376,6 +451,109 @@ describe('Helper Module', () => {
             },
           ],
         });
+      });
+    });
+  });
+
+  describe('ToolWrapper class', () => {
+    describe('trace', () => {
+      it('should wrap a tool handler and return result', async () => {
+        const handler = ToolWrapper.trace('test-tool', async ({ value }: { value: number }) => {
+          return Response.json({ result: value * 2 });
+        });
+
+        const result = await handler({ value: 21 });
+
+        expect(result).toBeDefined();
+        expect(result.content).toBeDefined();
+        expect(result.content[0].type).toBe('text');
+      });
+
+      it('should handle async operations', async () => {
+        const handler = ToolWrapper.trace('async-tool', async ({ delay }: { delay: number }) => {
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return Response.text('completed');
+        });
+
+        const result = await handler({ delay: 10 });
+
+        expect(result).toBeDefined();
+        expect(result.content[0].text).toBe('completed');
+      });
+
+      it('should propagate errors from handler', async () => {
+        const handler = ToolWrapper.trace('error-tool', async () => {
+          throw new Error('Test error');
+        });
+
+        await expect(handler({})).rejects.toThrow('Test error');
+      });
+
+      it('should work with Response.json', async () => {
+        const handler = ToolWrapper.trace('json-tool', async ({ data }) => {
+          return Response.json(data);
+        });
+
+        const testData = { key: 'value', number: 42 };
+        const result = await handler({ data: testData });
+
+        expect(result.content[0].text).toContain('key');
+        expect(result.content[0].text).toContain('value');
+      });
+
+      it('should work with Response.text', async () => {
+        const handler = ToolWrapper.trace('text-tool', async ({ message }: { message: string }) => {
+          return Response.text(message);
+        });
+
+        const result = await handler({ message: 'Hello, World!' });
+
+        expect(result.content[0].text).toBe('Hello, World!');
+      });
+    });
+
+    describe('traceWithMetrics', () => {
+      it('should wrap handler and extract metrics', async () => {
+        const handler = ToolWrapper.traceWithMetrics(
+          'metrics-tool',
+          async ({ count }: { count: number }) => {
+            const items = Array(count).fill('item');
+            return Response.json(items);
+          },
+          (result: any, params: { count: number }) => ({
+            'item.count': params.count,
+            'result.type': 'array',
+          })
+        );
+
+        const result = await handler({ count: 5 });
+
+        expect(result).toBeDefined();
+      });
+
+      it('should work without metrics extractor', async () => {
+        const handler = ToolWrapper.traceWithMetrics('simple-tool', async ({ value }) => {
+          return Response.text(String(value));
+        });
+
+        const result = await handler({ value: 42 });
+
+        expect(result).toBeDefined();
+        expect(result.content[0].text).toBe('42');
+      });
+
+      it('should handle errors in handler', async () => {
+        const handler = ToolWrapper.traceWithMetrics(
+          'error-metrics-tool',
+          async () => {
+            throw new Error('Handler error');
+          },
+          () => ({
+            metric: 'value',
+          })
+        );
+
+        await expect(handler({})).rejects.toThrow('Handler error');
       });
     });
   });

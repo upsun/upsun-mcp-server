@@ -1,5 +1,33 @@
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
+import { withSpanAsync, addSpanAttribute, addSpanEvent } from './telemetry.js';
+
+/**
+ * List of sensitive parameter names that should be excluded from telemetry logs.
+ * These parameters may contain credentials, secrets, or other sensitive data.
+ */
+export const SENSITIVE_PARAM_KEYWORDS = [
+  'token',
+  'password',
+  'secret',
+  'key',
+  'apikey',
+  'api_key',
+  'auth',
+  'credential',
+] as const;
+
+/**
+ * Checks if a parameter name contains sensitive keywords.
+ * Used to filter out sensitive data from telemetry logs.
+ *
+ * @param paramName - The parameter name to check
+ * @returns True if the parameter name contains sensitive keywords, false otherwise
+ */
+export function isSensitiveParam(paramName: string): boolean {
+  const lowerName = paramName.toLowerCase();
+  return SENSITIVE_PARAM_KEYWORDS.some(keyword => lowerName.includes(keyword));
+}
 
 /**
  * Schema validation utilities for Upsun MCP server.
@@ -149,6 +177,193 @@ export class Response {
           text: JSON.stringify(json, null, 2),
         },
       ],
+    };
+  }
+}
+
+/**
+ * Tool execution wrapper with automatic OpenTelemetry tracing.
+ *
+ * This utility wraps tool handler functions with distributed tracing,
+ * automatically capturing tool name, parameters, execution time, and results.
+ *
+ * @example
+ * ```typescript
+ * adapter.server.tool(
+ *   'my-tool',
+ *   'Description',
+ *   { param: z.string() },
+ *   ToolWrapper.trace('my-tool', async ({ param }) => {
+ *     const result = await doSomething(param);
+ *     return Response.json(result);
+ *   })
+ * );
+ * ```
+ */
+export class ToolWrapper {
+  /**
+   * Wraps a tool handler function with OpenTelemetry tracing.
+   *
+   * Automatically:
+   * - Creates a span for the tool execution
+   * - Records tool name and parameters as attributes
+   * - Logs start and completion events
+   * - Captures errors with stack traces
+   * - Measures execution time
+   *
+   * @param toolName - The name of the tool being executed
+   * @param handler - The async function that implements the tool logic
+   * @param options - Optional configuration for tracing behavior
+   * @returns A wrapped handler function with tracing
+   *
+   * @example
+   * ```typescript
+   * ToolWrapper.trace('info-project', async ({ project_id }) => {
+   *   const result = await client.project.info(project_id);
+   *   return Response.json(result);
+   * })
+   * ```
+   */
+  static trace<TParams extends Record<string, unknown>, TResult>(
+    toolName: string,
+    handler: (params: TParams) => Promise<TResult>,
+    options?: {
+      /** Additional attributes to add to the span */
+      attributes?: Record<string, string | number | boolean>;
+      /** Whether to log parameter values (default: true, set false for sensitive data) */
+      logParams?: boolean;
+    }
+  ): (params: TParams) => Promise<TResult> {
+    return async (params: TParams): Promise<TResult> => {
+      return withSpanAsync('mcp-tool', toolName, async () => {
+        // Add base attributes
+        addSpanAttribute('tool.name', toolName);
+
+        // Add custom attributes if provided
+        if (options?.attributes) {
+          for (const [key, value] of Object.entries(options.attributes)) {
+            addSpanAttribute(key, value);
+          }
+        }
+
+        // Log parameters (unless disabled for sensitive data)
+        if (options?.logParams !== false) {
+          // Add safe parameter attributes (avoid logging sensitive data)
+          for (const [key, value] of Object.entries(params)) {
+            if (
+              typeof value === 'string' ||
+              typeof value === 'number' ||
+              typeof value === 'boolean'
+            ) {
+              // Skip parameters that might contain sensitive data
+              if (!isSensitiveParam(key)) {
+                addSpanAttribute(`param.${key}`, value);
+              }
+            }
+          }
+        }
+
+        // Log start event
+        addSpanEvent('tool.execution.start', { tool: toolName });
+
+        try {
+          // Execute the actual tool handler
+          const result = await handler(params);
+
+          // Log completion event
+          addSpanEvent('tool.execution.complete', {
+            tool: toolName,
+            success: true,
+          });
+
+          return result;
+        } catch (error) {
+          // Error is automatically recorded by withSpanAsync
+          addSpanEvent('tool.execution.failed', {
+            tool: toolName,
+            error: (error as Error).message,
+          });
+          throw error;
+        }
+      });
+    };
+  }
+
+  /**
+   * Wraps a tool handler with tracing and additional context extraction.
+   *
+   * This variant allows extracting specific values from the result to add as span attributes,
+   * useful for recording metrics like item counts, IDs, or status codes.
+   *
+   * @param toolName - The name of the tool being executed
+   * @param handler - The async function that implements the tool logic
+   * @param extractMetrics - Function to extract metrics from the result
+   * @returns A wrapped handler function with tracing and metrics
+   *
+   * @example
+   * ```typescript
+   * ToolWrapper.traceWithMetrics(
+   *   'list-project',
+   *   async ({ org_id }) => {
+   *     const projects = await client.project.list(org_id);
+   *     return Response.json(projects);
+   *   },
+   *   (result, params) => ({
+   *     'project.count': Array.isArray(result) ? result.length : 0,
+   *     'organization.id': params.org_id
+   *   })
+   * )
+   * ```
+   */
+  static traceWithMetrics<TParams extends Record<string, unknown>, TResult>(
+    toolName: string,
+    handler: (params: TParams) => Promise<TResult>,
+    extractMetrics?: (result: TResult, params: TParams) => Record<string, string | number | boolean>
+  ): (params: TParams) => Promise<TResult> {
+    return async (params: TParams): Promise<TResult> => {
+      return withSpanAsync('mcp-tool', toolName, async () => {
+        addSpanAttribute('tool.name', toolName);
+
+        // Log safe parameters
+        for (const [key, value] of Object.entries(params)) {
+          if (
+            typeof value === 'string' ||
+            typeof value === 'number' ||
+            typeof value === 'boolean'
+          ) {
+            if (!isSensitiveParam(key)) {
+              addSpanAttribute(`param.${key}`, value);
+            }
+          }
+        }
+
+        addSpanEvent('tool.execution.start', { tool: toolName });
+
+        try {
+          const result = await handler(params);
+
+          // Extract and record metrics from result
+          if (extractMetrics) {
+            const metrics = extractMetrics(result, params);
+            for (const [key, value] of Object.entries(metrics)) {
+              addSpanAttribute(key, value);
+            }
+          }
+
+          addSpanEvent('tool.execution.complete', {
+            tool: toolName,
+            success: true,
+          });
+
+          return result;
+        } catch (error) {
+          addSpanEvent('tool.execution.failed', {
+            tool: toolName,
+            error: (error as Error).message,
+          });
+          throw error;
+        }
+      });
     };
   }
 }

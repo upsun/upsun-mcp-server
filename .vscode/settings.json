@@ -1,0 +1,7 @@
+{
+  "jest.jestCommandLine": "npm test --",
+  "jest.rootPath": "upsun-mcp",
+  "jest.nodeEnv": {
+    "NODE_OPTIONS": "--experimental-vm-modules"
+  }
+}
