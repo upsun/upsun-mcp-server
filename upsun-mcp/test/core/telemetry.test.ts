@@ -192,4 +192,127 @@ describe('Telemetry Module', () => {
       expect(result).toBe('async-nested-result');
     });
   });
+
+  describe('Advanced Telemetry Scenarios', () => {
+    it('should handle withSpan with attributes', async () => {
+      const { withSpan } = await import('../../src/core/telemetry.js');
+
+      const result = withSpan(
+        'test',
+        'span-with-attrs',
+        () => {
+          return 'result';
+        },
+        { 'custom.attr': 'value', 'numeric.attr': 123 }
+      );
+
+      expect(result).toBe('result');
+    });
+
+    it('should handle withSpanAsync with attributes', async () => {
+      const { withSpanAsync } = await import('../../src/core/telemetry.js');
+
+      const result = await withSpanAsync(
+        'test',
+        'async-span-with-attrs',
+        async () => {
+          return 'async-result';
+        },
+        { 'async.attr': 'value' }
+      );
+
+      expect(result).toBe('async-result');
+    });
+
+    it('should handle multiple shutdown calls safely', async () => {
+      const { shutdownTelemetry } = await import('../../src/core/telemetry.js');
+
+      await shutdownTelemetry();
+      await expect(shutdownTelemetry()).resolves.not.toThrow();
+    });
+
+    it('should handle initTelemetry with different exporter types', async () => {
+      process.env.OTEL_ENABLED = 'true';
+      process.env.OTEL_EXPORTER_TYPE = 'console';
+
+      const { initTelemetry, shutdownTelemetry } = await import('../../src/core/telemetry.js');
+
+      await expect(initTelemetry()).resolves.not.toThrow();
+      await shutdownTelemetry();
+    });
+
+    it('should handle initTelemetry with none exporter', async () => {
+      process.env.OTEL_ENABLED = 'true';
+      process.env.OTEL_EXPORTER_TYPE = 'none';
+
+      const { initTelemetry, shutdownTelemetry } = await import('../../src/core/telemetry.js');
+
+      await expect(initTelemetry()).resolves.not.toThrow();
+      await shutdownTelemetry();
+    });
+
+    it('should handle initTelemetry with otlp exporter', async () => {
+      process.env.OTEL_ENABLED = 'true';
+      process.env.OTEL_EXPORTER_TYPE = 'otlp';
+      process.env.OTEL_EXPORTER_ENDPOINT = 'http://localhost:4318/v1/traces';
+
+      const { initTelemetry, shutdownTelemetry } = await import('../../src/core/telemetry.js');
+
+      await expect(initTelemetry()).resolves.not.toThrow();
+      await shutdownTelemetry();
+    });
+
+    it('should handle initTelemetry with custom headers', async () => {
+      process.env.OTEL_ENABLED = 'true';
+      process.env.OTEL_EXPORTER_TYPE = 'otlp';
+      process.env.OTEL_EXPORTER_HEADERS = 'x-api-key=test123,authorization=Bearer token';
+
+      const { initTelemetry, shutdownTelemetry } = await import('../../src/core/telemetry.js');
+
+      await expect(initTelemetry()).resolves.not.toThrow();
+      await shutdownTelemetry();
+    });
+
+    it('should handle initTelemetry with service namespace', async () => {
+      process.env.OTEL_ENABLED = 'true';
+      process.env.OTEL_SERVICE_NAMESPACE = 'test-namespace';
+
+      const { initTelemetry, shutdownTelemetry } = await import('../../src/core/telemetry.js');
+
+      await expect(initTelemetry()).resolves.not.toThrow();
+      await shutdownTelemetry();
+    });
+
+    it('should handle nested spans with errors', async () => {
+      const { withSpanAsync } = await import('../../src/core/telemetry.js');
+
+      await expect(
+        withSpanAsync('test', 'outer', async () => {
+          await withSpanAsync('test', 'inner', async () => {
+            throw new Error('Nested error');
+          });
+        })
+      ).rejects.toThrow('Nested error');
+    });
+
+    it('should create different tracers for different names', async () => {
+      const { getTracer } = await import('../../src/core/telemetry.js');
+
+      const tracer1 = getTracer('tracer1');
+      const tracer2 = getTracer('tracer2');
+
+      expect(tracer1).toBeDefined();
+      expect(tracer2).toBeDefined();
+    });
+
+    it('should create spans with tracer', async () => {
+      const { getTracer } = await import('../../src/core/telemetry.js');
+
+      const tracer = getTracer('test-tracer');
+      const span = tracer.startSpan('test-span');
+
+      expect(span).toBeDefined();
+      span.end();
+    });
+  });
 });

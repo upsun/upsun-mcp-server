@@ -148,7 +148,97 @@ describe('SseTransport', () => {
     expect(res.json).toHaveBeenCalledWith({ status: 'healthy' });
   });
 
+  it('should handle getSessionRequest with missing authorization', async () => {
+    const req = { headers: {}, ip: '127.0.0.1' } as any;
+    const res = {
+      writableEnded: false,
+      status: jest.fn().mockReturnThis(),
+      end: jest.fn(),
+      on: jest.fn(),
+    } as any;
+
+    await sseTransport.getSessionRequest(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.end).toHaveBeenCalledWith(
+      'Missing authentication token (Bearer token in Authorization header or API key in upsun-api-token header)'
+    );
+  });
+
+  it('should handle successful SSE connection creation', async () => {
+    const connectWithBearer = jest.fn().mockResolvedValue(undefined);
+    const fakeAdapter = {
+      connectWithBearer,
+      connectWithApiKey: jest.fn(),
+      setCurrentBearerToken: jest.fn(),
+      server: {
+        server: jest.fn(),
+        _registeredResources: [],
+        _registeredResourceTemplates: [],
+        _registeredTools: [],
+      },
+      client: {},
+      isMode: jest.fn(),
+    } as any;
+
+    sseTransport.gateway.makeInstanceAdapterMcpServer = jest.fn(() => fakeAdapter);
+
+    const req = { headers: { authorization: 'Bearer valid-token' }, ip: '127.0.0.1' } as any;
+    const res = {
+      writableEnded: false,
+      write: jest.fn(),
+      on: jest.fn(),
+    } as any;
+
+    await sseTransport.getSessionRequest(req, res);
+
+    expect(connectWithBearer).toHaveBeenCalled();
+    // The second argument should be 'valid-token'
+    expect(connectWithBearer.mock.calls[0][1]).toBe('valid-token');
+  });
+
+  it('should clean up session on connection close', async () => {
+    const connectWithBearer = jest.fn().mockResolvedValue(undefined as never);
+    const closeFn = jest.fn().mockResolvedValue(undefined as never);
+    const fakeTransport = {
+      close: closeFn,
+      sessionId: 'test-session-id',
+    };
+
+    const fakeAdapter = {
+      connectWithBearer,
+      server: {},
+      client: {},
+      isMode: jest.fn(),
+    } as any;
+
+    sseTransport.gateway.makeInstanceAdapterMcpServer = jest.fn(() => fakeAdapter);
+
+    let closeCallback: any;
+    const req = { headers: { authorization: 'Bearer token' }, ip: '127.0.0.1' } as any;
+    const res = {
+      writableEnded: false,
+      write: jest.fn(),
+      on: jest.fn((event: string, cb: any) => {
+        if (event === 'close') {
+          closeCallback = cb;
+        }
+      }),
+    } as any;
+
+    await sseTransport.getSessionRequest(req, res);
+
+    // Manually trigger close callback if it was captured
+    if (closeCallback) {
+      await closeCallback();
+    }
+
+    // Session should be cleaned up (we can't easily test this without knowing the sessionId)
+    expect(res.on).toHaveBeenCalledWith('close', expect.any(Function));
+  });
+
   it('should call closeAllSessions and clear sse', async () => {
+    // Simule une session ouverte
     sseTransport.sse['abc'] = { transport: { close: jest.fn() }, server: {} } as any;
     await sseTransport.closeAllSessions();
     expect(sseTransport.sse['abc']).toBeUndefined();

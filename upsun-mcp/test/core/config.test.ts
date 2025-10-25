@@ -101,5 +101,49 @@ describe('Configuration Module', () => {
       expect(summary).toContain('Port');
       expect(summary).toContain('Mode');
     });
+
+    it('should show OTLP endpoint when exporter is otlp', () => {
+      const summary = getConfigSummary();
+      if (otelConfig.exporterType === 'otlp') {
+        expect(summary).toContain(otelConfig.exporterEndpoint);
+      } else {
+        expect(summary).toContain('N/A');
+      }
+    });
+
+    it('should show namespace or N/A', () => {
+      const summary = getConfigSummary();
+      if (otelConfig.serviceNamespace) {
+        expect(summary).toContain(otelConfig.serviceNamespace);
+      } else {
+        expect(summary).toContain('Namespace: N/A');
+      }
+    });
+
+    it('should include timeout value', () => {
+      const summary = getConfigSummary();
+      expect(summary).toContain('Timeout');
+      expect(summary).toContain(`${otelConfig.exporterTimeout}ms`);
+    });
+
+    it('should include environment', () => {
+      const summary = getConfigSummary();
+      expect(summary).toContain('Environment');
+      expect(summary).toContain(otelConfig.environment);
+    });
+
+    it('should include service name', () => {
+      const summary = getConfigSummary();
+      expect(summary).toContain('Service');
+      expect(summary).toContain(otelConfig.serviceName);
+    });
+
+    it('should show headers info when headers are configured', () => {
+      const summary = getConfigSummary();
+      const headerCount = Object.keys(otelConfig.exporterHeaders).length;
+      if (headerCount > 0 && otelConfig.exporterType === 'otlp') {
+        expect(summary).toContain(`${headerCount} headers`);
+      }
+    });
   });
 });

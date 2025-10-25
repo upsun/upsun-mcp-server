@@ -137,4 +137,56 @@ describe('HttpTransport', () => {
     await httpTransport.closeAllSessions();
     expect(httpTransport.streamable['abc']).toBeUndefined();
   });
+
+  it('should handle handleSessionRequest with valid sessionId', async () => {
+    const handleRequest = jest.fn(async () => {});
+    httpTransport.streamable['valid-sess'] = {
+      transport: { handleRequest },
+      server: { setCurrentBearerToken: jest.fn() },
+    } as any;
+
+    const req = { headers: { 'mcp-session-id': 'valid-sess' }, body: {} } as any;
+    const res = {} as any;
+
+    await httpTransport.handleSessionRequest(req, res);
+    expect(handleRequest).toHaveBeenCalled();
+  });
+
+  it('should handle handleSessionRequest with missing sessionId', async () => {
+    const req = { headers: {} } as any;
+    const res = { status: jest.fn().mockReturnThis(), send: jest.fn() } as any;
+
+    await httpTransport.handleSessionRequest(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.send).toHaveBeenCalledWith('Invalid or missing session ID');
+  });
+
+  it('should handle POST with API key', async () => {
+    const connectWithApiKey = jest.fn().mockResolvedValue(undefined);
+    const handleRequest = jest.fn(async () => {});
+    const fakeAdapter = {
+      connectWithApiKey,
+      connectWithBearer: jest.fn(),
+      setCurrentBearerToken: jest.fn(),
+      server: {},
+      client: {},
+      isMode: jest.fn(),
+    } as any;
+
+    httpTransport.gateway.makeInstanceAdapterMcpServer = jest.fn(() => fakeAdapter);
+
+    const req = {
+      headers: { 'upsun-api-token': 'test-api-key' },
+      body: { jsonrpc: '2.0', method: 'initialize', id: 1, params: {} },
+    } as any;
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
+
+    const mod = await import('@modelcontextprotocol/sdk/server/streamableHttp.js');
+    mod.StreamableHTTPServerTransport.prototype.handleRequest = handleRequest;
+
+    await httpTransport.postSessionRequest(req, res);
+
+    expect(connectWithApiKey).toHaveBeenCalled();
+    expect(handleRequest).toHaveBeenCalled();
+  });
 });

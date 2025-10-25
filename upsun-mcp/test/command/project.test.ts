@@ -146,5 +146,78 @@ describe('Project Command Module', () => {
       expect(mockClient.project.delete).toHaveBeenCalledWith('test-project-13');
       expect(result).toHaveProperty('content');
     });
+
+    it('handles delete errors', async () => {
+      mockClient.project.delete.mockRejectedValueOnce(new Error('Delete failed'));
+      await expect(
+        toolCallbacks['delete-project']({ project_id: 'test-project-13' })
+      ).rejects.toThrow('Delete failed');
+    });
+  });
+
+  describe('info-project', () => {
+    beforeEach(() => {
+      registerProject(mockAdapter);
+    });
+
+    it('gets project info successfully', async () => {
+      const result = await toolCallbacks['info-project']({ project_id: 'test-project-13' });
+      expect(mockClient.project.info).toHaveBeenCalledWith('test-project-13');
+      expect(result).toHaveProperty('content');
+    });
+
+    it('handles info errors', async () => {
+      mockClient.project.info.mockRejectedValueOnce(new Error('Info failed'));
+      await expect(
+        toolCallbacks['info-project']({ project_id: 'test-project-13' })
+      ).rejects.toThrow('Info failed');
+    });
+  });
+
+  describe('list-project', () => {
+    beforeEach(() => {
+      registerProject(mockAdapter);
+    });
+
+    it('lists projects successfully', async () => {
+      const result = await toolCallbacks['list-project']({ organization_id: 'org-123' });
+      expect(mockClient.project.list).toHaveBeenCalledWith('org-123');
+      expect(result).toHaveProperty('content');
+    });
+
+    it('handles list errors', async () => {
+      mockClient.project.list.mockRejectedValueOnce(new Error('List failed'));
+      await expect(toolCallbacks['list-project']({ organization_id: 'org-123' })).rejects.toThrow(
+        'List failed'
+      );
+    });
+
+    it('handles empty project list', async () => {
+      mockClient.project.list.mockResolvedValueOnce([]);
+      const result = await toolCallbacks['list-project']({ organization_id: 'org-123' });
+      expect(result).toHaveProperty('content');
+    });
+  });
+
+  describe('isMode restrictions', () => {
+    it('should not register create-project when isMode is false', () => {
+      const readonlyAdapter = {
+        ...mockAdapter,
+        isMode: () => false,
+      } as any;
+
+      const toolCalls: string[] = [];
+      (readonlyAdapter.server.tool as jest.Mock) = jest.fn((...args: any[]) => {
+        toolCalls.push(args[0] as string);
+        return readonlyAdapter.server;
+      });
+
+      registerProject(readonlyAdapter);
+
+      expect(toolCalls).not.toContain('create-project');
+      expect(toolCalls).not.toContain('delete-project');
+      expect(toolCalls).toContain('info-project');
+      expect(toolCalls).toContain('list-project');
+    });
   });
 });
