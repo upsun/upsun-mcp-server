@@ -323,7 +323,6 @@ describe('Config Task Module', () => {
         app_name: '',
       });
 
-      //expect(result.messages[0].content.text).toContain('applications:');
       expect(result.messages[0].content.text).toContain(':');
     });
 

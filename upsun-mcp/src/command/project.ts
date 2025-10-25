@@ -63,7 +63,7 @@ export function registerProject(adapter: McpAdapter): void {
             region_host,
             name,
             default_branch
-          ); // region, default_branch
+          );
 
           let prjCreated = await adapter.client.project.getSubscription(
             organization_id,
@@ -127,6 +127,7 @@ export function registerProject(adapter: McpAdapter): void {
     ToolWrapper.trace('info-project', async ({ project_id }) => {
       log.debug(`Get Information of Project: ${project_id}`);
       const result = await adapter.client.project.info(project_id);
+
       return Response.json(result);
     })
   );
@@ -151,6 +152,7 @@ export function registerProject(adapter: McpAdapter): void {
       async ({ organization_id }) => {
         log.debug(`List all my projects in Organization: ${organization_id}`);
         const result = await adapter.client.project.list(organization_id);
+
         return Response.json(result);
       },
       result => ({
