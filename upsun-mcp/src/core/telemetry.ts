@@ -15,7 +15,7 @@ import { TraceIdRatioBasedSampler } from '@opentelemetry/sdk-trace-base';
 import { trace, context, SpanStatusCode, Span, Tracer } from '@opentelemetry/api';
 
 import * as pjson from '../../package.json' with { type: 'json' };
-import { otelConfig } from './config.js';
+import { otelConfig, appConfig } from './config.js';
 import { createLogger } from './logger.js';
 
 // Create logger for telemetry operations
@@ -88,7 +88,7 @@ export async function initTelemetry(): Promise<void> {
   try {
     log.info('Initializing OpenTelemetry...');
     log.info(`Service: ${otelConfig.serviceName} v${pjson.default.version}`);
-    log.info(`Environment: ${otelConfig.environment}`);
+    log.info(`Environment: ${appConfig.nodeEnv}`);
     log.info(`Instance: ${otelConfig.serviceInstanceId}`);
     log.info(`Sampling rate: ${(otelConfig.samplingRate * 100).toFixed(0)}%`);
     log.info(`Exporter: ${otelConfig.exporterType}`);
@@ -98,7 +98,7 @@ export async function initTelemetry(): Promise<void> {
       [ATTR_SERVICE_NAME]: otelConfig.serviceName,
       [ATTR_SERVICE_VERSION]: pjson.default.version,
       'service.instance.id': otelConfig.serviceInstanceId,
-      'deployment.environment': otelConfig.environment,
+      'deployment.environment': appConfig.nodeEnv,
       'process.pid': process.pid.toString(),
       'process.runtime.name': 'nodejs',
       'process.runtime.version': process.version,

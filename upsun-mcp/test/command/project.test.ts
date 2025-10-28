@@ -1,6 +1,7 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 import { McpAdapter } from '../../src/core/adapter';
 import { registerProject } from '../../src/command/project';
+import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
 
 // Mock the logger module
 const mockLogger = {
@@ -48,12 +49,15 @@ const mockDeleteResult = { success: true, message: 'Project deleted successfully
 let toolCallbacks: Record<string, any> = {};
 
 describe('Project Command Module', () => {
+  const originalEnv = process.env;
+
   beforeEach(() => {
+    setupTestEnvironment(jest, originalEnv);
     jest.clearAllMocks();
     toolCallbacks = {};
     // Setup mock server.tool to capture callbacks
-    (mockAdapter.server.tool as unknown as jest.Mock) = jest.fn(
-      (name, _desc, _schema, callback) => {
+    (mockAdapter.server.tool as any) = jest.fn(
+      (name: string, _desc: any, _schema: any, callback: any) => {
         toolCallbacks[name] = callback;
         return mockAdapter.server;
       }
@@ -66,6 +70,7 @@ describe('Project Command Module', () => {
     mockClient.project.getSubscription.mockResolvedValue({ ...mockProject, status: 'active' });
   });
   afterEach(() => {
+    teardownTestEnvironment(originalEnv);
     jest.restoreAllMocks();
   });
 

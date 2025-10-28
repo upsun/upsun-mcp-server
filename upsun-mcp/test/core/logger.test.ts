@@ -1,5 +1,6 @@
-import { logger, createLogger, getLogLevel, LogLevel, toPinoLevel } from '../../src/core/logger';
+import { logger, createLogger, LogLevel, toPinoLevel } from '../../src/core/logger';
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
 
 describe('PinoLogger logging methods', () => {
   const levels = [LogLevel.DEBUG, LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR, LogLevel.NONE];
@@ -81,51 +82,59 @@ describe('Logger', () => {
   describe('getLogLevel', () => {
     const OLD_ENV = process.env;
     beforeEach(() => {
-      jest.resetModules();
-      process.env = { ...OLD_ENV };
+      setupTestEnvironment(jest, OLD_ENV);
     });
     afterEach(() => {
-      process.env = OLD_ENV;
+      teardownTestEnvironment(OLD_ENV);
     });
 
-    it('returns DEBUG for LOG_LEVEL=DEBUG', () => {
+    it('returns DEBUG for LOG_LEVEL=DEBUG', async () => {
       process.env.LOG_LEVEL = 'DEBUG';
+      const { getLogLevel } = await import('../../src/core/logger.js');
       expect(getLogLevel()).toBe(LogLevel.DEBUG);
     });
-    it('returns INFO for LOG_LEVEL=INFO', () => {
+    it('returns INFO for LOG_LEVEL=INFO', async () => {
       process.env.LOG_LEVEL = 'INFO';
+      const { getLogLevel } = await import('../../src/core/logger.js');
       expect(getLogLevel()).toBe(LogLevel.INFO);
     });
-    it('returns WARN for LOG_LEVEL=WARN', () => {
+    it('returns WARN for LOG_LEVEL=WARN', async () => {
       process.env.LOG_LEVEL = 'WARN';
+      const { getLogLevel } = await import('../../src/core/logger.js');
       expect(getLogLevel()).toBe(LogLevel.WARN);
     });
-    it('returns ERROR for LOG_LEVEL=ERROR', () => {
+    it('returns ERROR for LOG_LEVEL=ERROR', async () => {
       process.env.LOG_LEVEL = 'ERROR';
+      const { getLogLevel } = await import('../../src/core/logger.js');
       expect(getLogLevel()).toBe(LogLevel.ERROR);
     });
-    it('returns NONE for LOG_LEVEL=NONE', () => {
+    it('returns NONE for LOG_LEVEL=NONE', async () => {
       process.env.LOG_LEVEL = 'NONE';
+      const { getLogLevel } = await import('../../src/core/logger.js');
       expect(getLogLevel()).toBe(LogLevel.NONE);
     });
-    it('returns WARN for production env default', () => {
+    it('returns WARN for production env default', async () => {
       process.env.NODE_ENV = 'production';
       delete process.env.LOG_LEVEL;
+      const { getLogLevel } = await import('../../src/core/logger.js');
       expect(getLogLevel()).toBe(LogLevel.WARN);
     });
-    it('returns ERROR for test env default', () => {
+    it('returns ERROR for test env default', async () => {
       process.env.NODE_ENV = 'test';
       delete process.env.LOG_LEVEL;
+      const { getLogLevel } = await import('../../src/core/logger.js');
       expect(getLogLevel()).toBe(LogLevel.ERROR);
     });
-    it('returns DEBUG for development env default', () => {
+    it('returns DEBUG for development env default', async () => {
       process.env.NODE_ENV = 'development';
       delete process.env.LOG_LEVEL;
+      const { getLogLevel } = await import('../../src/core/logger.js');
       expect(getLogLevel()).toBe(LogLevel.DEBUG);
     });
-    it('returns DEBUG for unknown env default', () => {
+    it('returns DEBUG for unknown env default', async () => {
       process.env.NODE_ENV = 'foo';
       delete process.env.LOG_LEVEL;
+      const { getLogLevel } = await import('../../src/core/logger.js');
       expect(getLogLevel()).toBe(LogLevel.DEBUG);
     });
   });

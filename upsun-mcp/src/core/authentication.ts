@@ -1,22 +1,13 @@
 import express from 'express';
 import { createLogger } from './logger.js';
+import { oauth2Config as appAuthConfig } from './config.js';
+import { WritableMode, HeaderKey } from './types.js';
+
+// Re-export for backward compatibility
+export { WritableMode, HeaderKey } from './types.js';
 
 // Create logger instance
 const log = createLogger('Auth');
-
-// by priority
-export enum WritableMode {
-  READONLY = 'readonly',
-  NON_DESTRUCTIVE = 'no-destructive',
-  WRITABLE = 'writable',
-}
-
-// Header keys used in requests
-export enum HeaderKey {
-  MCP_SESSION_ID = 'mcp-session-id',
-  API_KEY = 'upsun-api-token',
-  ENABLE_WRITE = 'enable-write',
-}
 
 /**
  * Centralized authentication utilities for OAuth2 and Bearer token management.
@@ -34,6 +25,7 @@ export interface OAuth2Config {
   authorizationUrl: string;
   tokenUrl: string;
   revocationUrl: string;
+  registrationUrl?: string; // Optional: for external OAuth2 servers supporting dynamic registration
   issuerUrl: string;
   baseUrl: string;
   scope: string;
@@ -44,13 +36,14 @@ export interface OAuth2Config {
  * Default OAuth2 configuration from environment variables or defaults
  */
 export const getOAuth2Config = (): OAuth2Config => ({
-  authorizationUrl: process.env.OAUTH_AUTH_URL || 'https://auth.upsun.com/oauth2/authorize',
-  tokenUrl: process.env.OAUTH_TOKEN_URL || 'https://auth.upsun.com/oauth2/token',
-  revocationUrl: process.env.OAUTH_REVOCATION_URL || 'https://auth.upsun.com/oauth2/revoke',
-  issuerUrl: process.env.OAUTH_ISSUER_URL || 'https://auth.upsun.com',
-  baseUrl: process.env.OAUTH_BASE_URL || 'http://127.0.0.1:3000/',
-  scope: process.env.OAUTH_SCOPE || 'offline_access',
-  documentationUrl: process.env.OAUTH_DOC_URL || 'https://docs.example.com/',
+  authorizationUrl: appAuthConfig.authorizationUrl,
+  tokenUrl: appAuthConfig.tokenUrl,
+  revocationUrl: appAuthConfig.revocationUrl,
+  registrationUrl: appAuthConfig.registrationUrl,
+  issuerUrl: appAuthConfig.issuerUrl,
+  baseUrl: appAuthConfig.resourceUrl,
+  scope: appAuthConfig.scope,
+  documentationUrl: appAuthConfig.documentationUrl,
 });
 
 /**
@@ -61,13 +54,12 @@ export interface OAuth2AuthorizationServerMetadata {
   authorization_endpoint: string;
   token_endpoint: string;
   revocation_endpoint: string;
+  registration_endpoint?: string; // Optional: for Dynamic Client Registration support
   scopes_supported: string[];
   response_types_supported: string[];
   grant_types_supported: string[];
   token_endpoint_auth_methods_supported: string[];
   code_challenge_methods_supported: string[];
-  // Hack for Dynamic Client Registration (not standard)
-  //registration_endpoint: string;
 }
 
 /**
@@ -83,21 +75,31 @@ export interface OAuth2ProtectedResourceMetadata {
 
 /**
  * Creates OAuth2 Authorization Server metadata from configuration
+ *
+ * Note: This creates metadata pointing to the EXTERNAL OAuth2 server.
+ * Your MCP server is just a Protected Resource, not an Authorization Server.
  */
 export function createAuthorizationServerMetadata(
   config: OAuth2Config
 ): OAuth2AuthorizationServerMetadata {
-  return {
+  const metadata: OAuth2AuthorizationServerMetadata = {
     issuer: config.issuerUrl,
     authorization_endpoint: config.authorizationUrl,
     token_endpoint: config.tokenUrl,
     revocation_endpoint: config.revocationUrl,
     scopes_supported: config.scope.split(' '),
     response_types_supported: ['code'],
-    grant_types_supported: ['authorization_code'],
+    grant_types_supported: ['authorization_code', 'refresh_token'],
     token_endpoint_auth_methods_supported: ['none', 'client_secret_basic'],
     code_challenge_methods_supported: ['S256'],
   };
+
+  // Only add registration_endpoint if configured (external OAuth2 server support)
+  if (config.registrationUrl) {
+    metadata.registration_endpoint = config.registrationUrl;
+  }
+
+  return metadata;
 }
 
 /**
@@ -122,8 +124,16 @@ export function createProtectedResourceMetadata(
  * @param config - Optional OAuth2 configuration (uses default if not provided)
  */
 export function setupOAuth2Direct(app: express.Application, config?: OAuth2Config): void {
-  log.debug('OAuth2 metadata setup initiated...');
+  // Check if OAuth2 is enabled
+  if (!appAuthConfig.enabled) {
+    log.info('OAuth2 authentication is disabled (OAUTH_ENABLED=false)');
+    return;
+  } else {
+    log.debug('OAuth2 metadata setup initiated...');
+  }
+
   const oauth2Config = config || getOAuth2Config();
+
   const authServerMetadata = createAuthorizationServerMetadata(oauth2Config);
   const protectedResourceMetadata = createProtectedResourceMetadata(oauth2Config);
 
@@ -137,22 +147,15 @@ export function setupOAuth2Direct(app: express.Application, config?: OAuth2Confi
     res.json(protectedResourceMetadata);
   });
 
-  app.post('/register', (_req, res) => {
-    res.json({
-      client_id: 'mcp',
-      client_name: 'Claude Code (test)',
-      redirect_uris: ['http://localhost:64236/callback'],
-      grant_types: ['authorization_code', 'refresh_token'],
-      response_types: ['code'],
-      token_endpoint_auth_method: ['none', 'client_secret_basic'],
-      application_type: 'native',
-      scope: 'offline_access',
-    });
-  });
-
   log.info('OAuth2 - Metadata configured automatically');
   log.info(`OAuth2 - Authorization Server: ${oauth2Config.issuerUrl}`);
   log.info(`OAuth2 - Resource Server: ${oauth2Config.baseUrl}`);
+
+  if (oauth2Config.registrationUrl) {
+    log.info(`OAuth2 - Dynamic Client Registration: ${oauth2Config.registrationUrl}`);
+  } else {
+    log.warn('OAuth2 - Dynamic Client Registration: Not configured (set OAUTH_REGISTRATION_URL)');
+  }
 }
 
 /**

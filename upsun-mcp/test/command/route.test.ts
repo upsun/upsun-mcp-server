@@ -1,6 +1,7 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 import { McpAdapter } from '../../src/core/adapter';
 import { registerRoute } from '../../src/command/route';
+import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
 
 // Mock the logger module
 const mockLogger = {
@@ -31,8 +32,10 @@ const mockAdapter: McpAdapter = {
 
 describe('Route Command Module', () => {
   let toolCallbacks: Record<string, any> = {};
+  const originalEnv = process.env;
 
   beforeEach(() => {
+    setupTestEnvironment(jest, originalEnv);
     jest.clearAllMocks() as any;
     toolCallbacks = {};
 
@@ -55,6 +58,7 @@ describe('Route Command Module', () => {
   });
 
   afterEach(() => {
+    teardownTestEnvironment(originalEnv);
     jest.restoreAllMocks();
   });
 

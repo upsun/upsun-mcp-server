@@ -3,14 +3,11 @@
  */
 
 import pino from 'pino';
+import { appConfig } from './config.js';
+import { LogLevel } from './types.js';
 
-export enum LogLevel {
-  DEBUG = 0,
-  INFO = 1,
-  WARN = 2,
-  ERROR = 3,
-  NONE = 4,
-}
+// Re-export LogLevel for backward compatibility
+export { LogLevel } from './types.js';
 
 export interface Logger {
   debug(message: string, ...args: unknown[]): void;
@@ -21,22 +18,11 @@ export interface Logger {
 
 // Configure logging level based on environment
 export const getLogLevel = (): LogLevel => {
-  const env = process.env.NODE_ENV || 'development';
-  const logLevel = process.env.LOG_LEVEL?.toUpperCase();
+  const env = appConfig.nodeEnv;
+  const logLevel = appConfig.logLevel;
 
   if (logLevel) {
-    switch (logLevel) {
-      case 'DEBUG':
-        return LogLevel.DEBUG;
-      case 'INFO':
-        return LogLevel.INFO;
-      case 'WARN':
-        return LogLevel.WARN;
-      case 'ERROR':
-        return LogLevel.ERROR;
-      case 'NONE':
-        return LogLevel.NONE;
-    }
+    return logLevel;
   }
 
   // Default levels based on environment
@@ -71,7 +57,7 @@ export const toPinoLevel = (level: LogLevel): pino.LevelWithSilent => {
 // Create the base Pino logger instance
 const basePinoLogger = pino({
   level: toPinoLevel(getLogLevel()),
-  ...(process.env.NODE_ENV !== 'production'
+  ...(appConfig.nodeEnv !== 'production'
     ? {
         // Development: Pretty formatted logs with the requested format
         transport: {

@@ -1,6 +1,7 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 import { McpAdapter } from '../../src/core/adapter';
 import { registerOrganization } from '../../src/command/organization';
+import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
 
 // Mock the logger module
 const mockLogger = {
@@ -71,8 +72,10 @@ const mockDeleteResult = {
 
 describe('Organization Command Module', () => {
   let toolCallbacks: Record<string, any> = {};
+  const originalEnv = process.env;
 
   beforeEach(() => {
+    setupTestEnvironment(jest, originalEnv);
     jest.clearAllMocks();
 
     // Reset logger mocks
@@ -97,6 +100,7 @@ describe('Organization Command Module', () => {
   });
 
   afterEach(() => {
+    teardownTestEnvironment(originalEnv);
     jest.restoreAllMocks();
   });
 

@@ -1,6 +1,7 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 import { McpAdapter } from '../../src/core/adapter';
 import { registerEnvironment } from '../../src/command/environment';
+import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
 
 // Mock the logger module
 const mockLogger = {
@@ -80,8 +81,10 @@ const mockUrls = ['https://main-abc123.upsun.app', 'https://www.example.com'];
 
 describe('Environment Command Module', () => {
   let toolCallbacks: Record<string, any> = {};
+  const originalEnv = process.env;
 
   beforeEach(() => {
+    setupTestEnvironment(jest, originalEnv);
     jest.clearAllMocks();
     toolCallbacks = {};
 
@@ -113,6 +116,7 @@ describe('Environment Command Module', () => {
   });
 
   afterEach(() => {
+    teardownTestEnvironment(originalEnv);
     jest.restoreAllMocks();
   });
 

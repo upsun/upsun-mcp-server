@@ -1,6 +1,7 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 import { McpAdapter } from '../../src/core/adapter';
 import { registerActivity } from '../../src/command/activity';
+import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
 
 // Mock the logger module
 const mockLogger = {
@@ -71,8 +72,10 @@ const mockCancelResult = {
 
 describe('Activity Command Module', () => {
   let toolCallbacks: Record<string, any> = {};
+  const originalEnv = process.env;
 
   beforeEach(() => {
+    setupTestEnvironment(jest, originalEnv);
     jest.clearAllMocks();
 
     // Reset logger mocks
@@ -98,6 +101,7 @@ describe('Activity Command Module', () => {
   });
 
   afterEach(() => {
+    teardownTestEnvironment(originalEnv);
     jest.restoreAllMocks();
   });
 

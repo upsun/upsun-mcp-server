@@ -16,6 +16,8 @@ describe('UpsunMcpServer', () => {
 });
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import { setupTestEnvironment, teardownTestEnvironment } from './helpers/test-env.js';
+import { WritableMode } from '../src/core/types.js';
 
 // Create mock implementations that we'll use for testing
 const mockProject = {
@@ -92,8 +94,11 @@ const { UpsunMcpServer } = await import('../src/mcpUpsun.js');
 describe('UpsunMcpServer', () => {
   let server: InstanceType<typeof UpsunMcpServer>;
   const toolCallbacks: Record<string, any> = {};
+  const originalEnv = process.env;
 
   beforeEach(() => {
+    setupTestEnvironment(jest, originalEnv);
+
     // Set up environment variables for testing
     process.env.UPSUN_API_KEY = 'test-api-key';
 
@@ -122,13 +127,13 @@ describe('UpsunMcpServer', () => {
     // Explicitly add isMode always true on the server instance
     // (will be used by UpsunMcpServer)
     // Create the server with our real mocked McpServer
-    server = new UpsunMcpServer('writable', realMcpServer as any);
+    server = new UpsunMcpServer(WritableMode.WRITABLE, realMcpServer as any);
     (server as any).isMode = () => true;
   });
 
   afterEach(() => {
+    teardownTestEnvironment(originalEnv);
     jest.restoreAllMocks();
-    delete process.env.UPSUN_API_KEY;
   });
 
   describe('constructor and basic methods', () => {

@@ -4,6 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { appConfig, getConfigSummary, otelConfig } from '../../src/core/config.js';
+import { WritableMode } from '../../src/core/types.js';
 
 describe('Configuration Module', () => {
   const originalEnv = process.env;
@@ -64,7 +65,7 @@ describe('Configuration Module', () => {
     it('should have default values', () => {
       expect(appConfig.typeEnv).toBeDefined();
       expect(appConfig.port).toBeGreaterThan(0);
-      expect(appConfig.mode).toMatch(/^(READONLY|WRITABLE)$/);
+      expect(Object.values(WritableMode)).toContain(appConfig.mode);
     });
 
     it('should have valid port number', () => {
@@ -129,7 +130,8 @@ describe('Configuration Module', () => {
     it('should include environment', () => {
       const summary = getConfigSummary();
       expect(summary).toContain('Environment');
-      expect(summary).toContain(otelConfig.environment);
+      expect(summary).toContain(appConfig.nodeEnv);
+      expect(summary).toMatch(/Environment:\s+\w+/);
     });
 
     it('should include service name', () => {
