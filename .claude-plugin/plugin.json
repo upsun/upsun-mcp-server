@@ -1,0 +1,19 @@
+{
+  "name": "upsun-mcp",
+  "version": "1.0.0",
+  "description": "Upsun Model Context Protocol server providing direct API access to Upsun platform operations including projects, environments, backups, and deployments.",
+  "author": {
+    "name": "Mickael Gaillard",
+    "email": "mickael.gaillard@upsun.com"
+  },
+  "repository": "https://github.com/upsun/upsun-mcp-server",
+  "mcpServers": {
+    "upsun": {
+      "url": "https://mcp.upsun.com/mcp",
+      "headers": {
+        "UPSUN-API-TOKEN": "${env:UPSUN_API_TOKEN}",
+        "ENABLE-WRITE": "true"
+      }
+    }
+  }
+}
