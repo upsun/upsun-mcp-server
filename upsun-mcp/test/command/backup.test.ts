@@ -58,12 +58,14 @@ const makeMockBackupTask = () =>
     bckApi: {},
   }) as any;
 
-const makeMockAdapter = () =>
-  ({
-    client: { backup: makeMockBackupTask() },
+const makeMockAdapter = () => {
+  const backupApi = makeMockBackupTask();
+  return {
+    client: { backups: backupApi },
     server: { tool: jest.fn() },
     isMode: () => true,
-  }) as unknown as McpAdapter;
+  } as unknown as McpAdapter;
+};
 
 describe('Backup Command Module', () => {
   let toolCallbacks: Record<string, any> = {};

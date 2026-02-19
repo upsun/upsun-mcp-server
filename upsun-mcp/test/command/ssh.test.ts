@@ -15,6 +15,8 @@ jest.mock('../../src/core/logger', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 
+const listSshKeysMessage = 'Not implemented in upsun-sdk-node@0.4.1 (no list SSH keys endpoint)';
+
 // Mock the Upsun client (add methods here if needed)
 const mockClient: any = {};
 
@@ -284,14 +286,7 @@ describe('SSH Key Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(
-              [
-                { id: 'sshkey-1', type: 'rsa' },
-                { id: 'sshkey-2', type: 'ed25519' },
-              ],
-              null,
-              2
-            ),
+            text: JSON.stringify(listSshKeysMessage, null, 2),
           },
         ],
       });
@@ -312,14 +307,7 @@ describe('SSH Key Command Module', () => {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(
-                [
-                  { id: 'sshkey-1', type: 'rsa' },
-                  { id: 'sshkey-2', type: 'ed25519' },
-                ],
-                null,
-                2
-              ),
+              text: JSON.stringify(listSshKeysMessage, null, 2),
             },
           ],
         });
@@ -338,14 +326,7 @@ describe('SSH Key Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(
-              [
-                { id: 'sshkey-1', type: 'rsa' },
-                { id: 'sshkey-2', type: 'ed25519' },
-              ],
-              null,
-              2
-            ),
+            text: JSON.stringify(listSshKeysMessage, null, 2),
           },
         ],
       });
@@ -363,14 +344,7 @@ describe('SSH Key Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(
-              [
-                { id: 'sshkey-1', type: 'rsa' },
-                { id: 'sshkey-2', type: 'ed25519' },
-              ],
-              null,
-              2
-            ),
+            text: JSON.stringify(listSshKeysMessage, null, 2),
           },
         ],
       });
@@ -416,10 +390,7 @@ describe('SSH Key Command Module', () => {
         } else if (name === 'delete-sshkey') {
           expected = 'sshkey-deleted';
         } else if (name === 'list-sshkey') {
-          expected = [
-            { id: 'sshkey-1', type: 'rsa' },
-            { id: 'sshkey-2', type: 'ed25519' },
-          ];
+          expected = listSshKeysMessage;
         }
         expect(result).toEqual({
           content: [{ type: 'text', text: JSON.stringify(expected, null, 2) }],
@@ -455,14 +426,7 @@ describe('SSH Key Command Module', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(
-              [
-                { id: 'sshkey-1', type: 'rsa' },
-                { id: 'sshkey-2', type: 'ed25519' },
-              ],
-              null,
-              2
-            ),
+            text: JSON.stringify(listSshKeysMessage, null, 2),
           },
         ],
       });

@@ -16,13 +16,15 @@ jest.mock('../../src/core/logger', () => ({
 }));
 
 // Mock the Upsun client
-const mockClient: { activity: any } = {
-  activity: {
-    list: jest.fn(),
-    get: jest.fn(),
-    cancel: jest.fn(),
-    log: jest.fn(),
-  },
+const mockActivitiesApi = {
+  list: jest.fn(),
+  get: jest.fn(),
+  cancel: jest.fn(),
+  log: jest.fn(),
+};
+
+const mockClient: { activities: any } = {
+  activities: mockActivitiesApi,
 };
 
 // Explicit mock added for isMode on mockAdapter, and client: mockClient
@@ -94,10 +96,10 @@ describe('Activity Command Module', () => {
     });
 
     // Setup default mock responses
-    mockClient.activity.list.mockResolvedValue(mockActivityList);
-    mockClient.activity.get.mockResolvedValue(mockActivity);
-    mockClient.activity.cancel.mockResolvedValue(mockCancelResult);
-    mockClient.activity.log.mockResolvedValue(mockActivityLog);
+    mockClient.activities.list.mockResolvedValue(mockActivityList);
+    mockClient.activities.get.mockResolvedValue(mockActivity);
+    mockClient.activities.cancel.mockResolvedValue(mockCancelResult);
+    mockClient.activities.log.mockResolvedValue(mockActivityLog);
   });
 
   afterEach(() => {
@@ -167,7 +169,7 @@ describe('Activity Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.activity.cancel).toHaveBeenCalledWith(
+      expect(mockClient.activities.cancel).toHaveBeenCalledWith(
         'test-project-13',
         'test-activity-123'
       );
@@ -184,7 +186,7 @@ describe('Activity Command Module', () => {
     it('should handle cancel activity errors', async () => {
       const callback = toolCallbacks['cancel-activity'];
       const errorMessage = 'Activity cannot be cancelled';
-      mockClient.activity.cancel.mockRejectedValue(new Error(errorMessage));
+      mockClient.activities.cancel.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         project_id: 'test-project-13',
@@ -192,7 +194,7 @@ describe('Activity Command Module', () => {
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
-      expect(mockClient.activity.cancel).toHaveBeenCalledWith(
+      expect(mockClient.activities.cancel).toHaveBeenCalledWith(
         'test-project-13',
         'test-activity-123'
       );
@@ -213,7 +215,7 @@ describe('Activity Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.activity.get).toHaveBeenCalledWith('test-project-13', 'test-activity-123');
+      expect(mockClient.activities.get).toHaveBeenCalledWith('test-project-13', 'test-activity-123');
       expect(result).toEqual({
         content: [
           {
@@ -227,7 +229,7 @@ describe('Activity Command Module', () => {
     it('should handle get activity errors', async () => {
       const callback = toolCallbacks['get-activity'];
       const errorMessage = 'Activity not found';
-      mockClient.activity.get.mockRejectedValue(new Error(errorMessage));
+      mockClient.activities.get.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         project_id: 'test-project-13',
@@ -235,7 +237,7 @@ describe('Activity Command Module', () => {
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
-      expect(mockClient.activity.get).toHaveBeenCalledWith('test-project-13', 'invalid-activity');
+      expect(mockClient.activities.get).toHaveBeenCalledWith('test-project-13', 'invalid-activity');
     });
   });
 
@@ -252,7 +254,7 @@ describe('Activity Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.activity.list).toHaveBeenCalledWith('test-project-13');
+      expect(mockClient.activities.list).toHaveBeenCalledWith('test-project-13');
       expect(result).toEqual({
         content: [
           {
@@ -265,7 +267,7 @@ describe('Activity Command Module', () => {
 
     it('should handle empty activity list', async () => {
       const callback = toolCallbacks['list-activity'];
-      mockClient.activity.list.mockResolvedValue([]);
+      mockClient.activities.list.mockResolvedValue([]);
 
       const params = {
         project_id: 'test-project-13',
@@ -273,7 +275,7 @@ describe('Activity Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.activity.list).toHaveBeenCalledWith('test-project-13');
+      expect(mockClient.activities.list).toHaveBeenCalledWith('test-project-13');
       expect(result).toEqual({
         content: [
           {
@@ -287,14 +289,14 @@ describe('Activity Command Module', () => {
     it('should handle list activities errors', async () => {
       const callback = toolCallbacks['list-activity'];
       const errorMessage = 'Project not found';
-      mockClient.activity.list.mockRejectedValue(new Error(errorMessage));
+      mockClient.activities.list.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         project_id: 'invalid-project',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
-      expect(mockClient.activity.list).toHaveBeenCalledWith('invalid-project');
+      expect(mockClient.activities.list).toHaveBeenCalledWith('invalid-project');
     });
   });
 
@@ -312,7 +314,7 @@ describe('Activity Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.activity.log).toHaveBeenCalledWith('test-project-13', 'test-activity-123');
+      expect(mockClient.activities.log).toHaveBeenCalledWith('test-project-13', 'test-activity-123');
       expect(result).toEqual({
         content: [
           {
@@ -325,7 +327,7 @@ describe('Activity Command Module', () => {
 
     it('should handle empty logs', async () => {
       const callback = toolCallbacks['log-activity'];
-      mockClient.activity.log.mockResolvedValue('');
+      mockClient.activities.log.mockResolvedValue('');
 
       const params = {
         project_id: 'test-project-13',
@@ -334,7 +336,7 @@ describe('Activity Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.activity.log).toHaveBeenCalledWith('test-project-13', 'test-activity-123');
+      expect(mockClient.activities.log).toHaveBeenCalledWith('test-project-13', 'test-activity-123');
       expect(result).toEqual({
         content: [
           {
@@ -348,7 +350,7 @@ describe('Activity Command Module', () => {
     it('should handle log activity errors', async () => {
       const callback = toolCallbacks['log-activity'];
       const errorMessage = 'Activity logs not available';
-      mockClient.activity.log.mockRejectedValue(new Error(errorMessage));
+      mockClient.activities.log.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         project_id: 'test-project-13',
@@ -356,7 +358,7 @@ describe('Activity Command Module', () => {
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
-      expect(mockClient.activity.log).toHaveBeenCalledWith('test-project-13', 'test-activity-123');
+      expect(mockClient.activities.log).toHaveBeenCalledWith('test-project-13', 'test-activity-123');
     });
   });
 
@@ -367,7 +369,7 @@ describe('Activity Command Module', () => {
 
     it('should handle null/undefined responses from client', async () => {
       const callback = toolCallbacks['get-activity'];
-      mockClient.activity.get.mockResolvedValue(null);
+      mockClient.activities.get.mockResolvedValue(null);
 
       const params = {
         project_id: 'test-project-13',
@@ -400,7 +402,7 @@ describe('Activity Command Module', () => {
           REDIS_URL: 'redis://...',
         },
       };
-      mockClient.activity.get.mockResolvedValue(complexActivity);
+      mockClient.activities.get.mockResolvedValue(complexActivity);
 
       const params = {
         project_id: 'test-project-13',

@@ -31,6 +31,8 @@
     "build"
   ],
   "dependencies": {
+    "@mcp-ui/server": "^6.1.0",
+    "@modelcontextprotocol/ext-apps": "^1.0.1",
     "@modelcontextprotocol/sdk": "^1.26",
     "@opentelemetry/api": "^1.9",
     "@opentelemetry/auto-instrumentations-node": "^0.70",
@@ -46,19 +48,19 @@
     "upsun-sdk-node": "^0.4"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
+    "@eslint/js": "9.0",
     "@types/express": "^5.0",
     "@types/jest": "^30.0",
-    "@types/node": "^25.2",
+    "@types/node": "^25.3",
     "@types/pino": "^7.0",
     "coveralls": "^3.1",
-    "eslint": "^9.0.0",
+    "eslint": "9.0",
     "jest": "^30.2",
     "jest-html-reporters": "^3.1",
     "prettier": "^3.8",
     "ts-jest": "^29.4",
     "ts-node": "^10.9",
     "typescript": "^5.9",
-    "typescript-eslint": "8.50.0"
+    "typescript-eslint": "8.50"
   }
 }

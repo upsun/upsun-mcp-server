@@ -16,13 +16,15 @@ jest.mock('../../src/core/logger', () => ({
 }));
 
 // Mock the Upsun client
+const mockCertificatesApi = {
+  add: jest.fn(),
+  delete: jest.fn(),
+  get: jest.fn(),
+  list: jest.fn(),
+};
+
 const mockClient: any = {
-  certificate: {
-    add: jest.fn(),
-    delete: jest.fn(),
-    get: jest.fn(),
-    list: jest.fn(),
-  },
+  certificates: mockCertificatesApi,
 };
 
 const mockAdapter: McpAdapter = {
@@ -50,10 +52,10 @@ describe('Certificate Command Module', () => {
       toolCallbacks[name] = callback;
       return mockAdapter.server;
     });
-    mockClient.certificate.add.mockResolvedValue('certificate-added');
-    mockClient.certificate.delete.mockResolvedValue('certificate-deleted');
-    mockClient.certificate.get.mockResolvedValue({ id: 'cert-1', status: 'active' });
-    mockClient.certificate.list.mockResolvedValue([
+    mockClient.certificates.add.mockResolvedValue('certificate-added');
+    mockClient.certificates.delete.mockResolvedValue('certificate-deleted');
+    mockClient.certificates.get.mockResolvedValue({ id: 'cert-1', status: 'active' });
+    mockClient.certificates.list.mockResolvedValue([
       { id: 'cert-1', status: 'active' },
       { id: 'cert-2', status: 'expired' },
     ]);

@@ -24,7 +24,6 @@ const mockRoutesApi = {
 // Mock the adapter
 const mockAdapter: McpAdapter = {
   client: {
-    route: mockRoutesApi,
     routes: mockRoutesApi,
   },
   server: {
@@ -113,7 +112,7 @@ describe('Route Command Module', () => {
       };
 
       // @ts-ignore
-      mockAdapter.client.route.get = jest.fn().mockResolvedValue(mockRouteData) as any;
+      mockAdapter.client.routes.get = jest.fn().mockResolvedValue(mockRouteData) as any;
 
       const callback = toolCallbacks['get-route'];
       const params = {
@@ -124,7 +123,7 @@ describe('Route Command Module', () => {
 
       const result = (await callback(params)) as any;
 
-      expect(mockAdapter.client.route.get).toHaveBeenCalledWith(
+      expect(mockAdapter.client.routes.get).toHaveBeenCalledWith(
         'test-project-13',
         'main',
         'route-123'
@@ -147,7 +146,7 @@ describe('Route Command Module', () => {
       };
 
       // @ts-ignore
-      mockAdapter.client.route.get = jest.fn().mockResolvedValue(mockRouteData) as any;
+      mockAdapter.client.routes.get = jest.fn().mockResolvedValue(mockRouteData) as any;
 
       const callback = toolCallbacks['get-route'];
       const params = {
@@ -157,7 +156,7 @@ describe('Route Command Module', () => {
 
       const result = (await callback(params)) as any;
 
-      expect(mockAdapter.client.route.get).toHaveBeenCalledWith(
+      expect(mockAdapter.client.routes.get).toHaveBeenCalledWith(
         'test-project-13',
         'main',
         ''
@@ -180,7 +179,7 @@ describe('Route Command Module', () => {
       };
 
       // @ts-ignore
-      mockAdapter.client.route.get = jest.fn().mockResolvedValue(mockRouteData) as any;
+      mockAdapter.client.routes.get = jest.fn().mockResolvedValue(mockRouteData) as any;
 
       const callback = toolCallbacks['get-route'];
       const params = {
@@ -191,7 +190,7 @@ describe('Route Command Module', () => {
 
       const result = (await callback(params)) as any;
 
-      expect(mockAdapter.client.route.get).toHaveBeenCalledWith(
+      expect(mockAdapter.client.routes.get).toHaveBeenCalledWith(
         'test-project-13',
         'staging',
         'staging-route'
@@ -219,7 +218,7 @@ describe('Route Command Module', () => {
       };
 
       // @ts-ignore
-      mockAdapter.client.route.get = jest.fn().mockResolvedValue(mockRouteData) as any;
+      mockAdapter.client.routes.get = jest.fn().mockResolvedValue(mockRouteData) as any;
 
       const callback = toolCallbacks['get-route'];
       const params = {
@@ -257,7 +256,7 @@ describe('Route Command Module', () => {
       ];
 
       // @ts-ignore
-      mockAdapter.client.route.list = jest.fn().mockResolvedValue(mockRoutesData) as any;
+      mockAdapter.client.routes.list = jest.fn().mockResolvedValue(mockRoutesData) as any;
 
       const callback = toolCallbacks['list-route'];
       const params = {
@@ -267,7 +266,7 @@ describe('Route Command Module', () => {
 
       const result = (await callback(params)) as any;
 
-      expect(mockAdapter.client.route.list).toHaveBeenCalledWith('test-project-13', 'main') as any;
+      expect(mockAdapter.client.routes.list).toHaveBeenCalledWith('test-project-13', 'main') as any;
       expect(result).toEqual({
         content: [
           {
@@ -280,7 +279,7 @@ describe('Route Command Module', () => {
 
     it('should handle empty routes list', async () => {
       // @ts-ignore
-      mockAdapter.client.route.list = jest.fn().mockResolvedValue([]) as any;
+      mockAdapter.client.routes.list = jest.fn().mockResolvedValue([]) as any;
 
       const callback = toolCallbacks['list-route'];
       const params = {
@@ -290,7 +289,7 @@ describe('Route Command Module', () => {
 
       const result = (await callback(params)) as any;
 
-      expect(mockAdapter.client.route.list).toHaveBeenCalledWith(
+      expect(mockAdapter.client.routes.list).toHaveBeenCalledWith(
         'test-project-13',
         'empty-env'
       ) as any;
@@ -321,7 +320,7 @@ describe('Route Command Module', () => {
       ];
 
       // @ts-ignore
-      mockAdapter.client.route.list = jest.fn().mockResolvedValue(mockRoutesData) as any;
+      mockAdapter.client.routes.list = jest.fn().mockResolvedValue(mockRoutesData) as any;
 
       const callback = toolCallbacks['list-route'];
       const params = {
@@ -349,7 +348,7 @@ describe('Route Command Module', () => {
       };
 
       // @ts-ignore
-      mockAdapter.client.route.web = jest.fn().mockResolvedValue(mockWebData) as any;
+      mockAdapter.client.routes.web = jest.fn().mockResolvedValue(mockWebData) as any;
 
       const callback = toolCallbacks['get-console'];
       const params = {
@@ -375,7 +374,7 @@ describe('Route Command Module', () => {
       };
 
       // @ts-ignore
-      mockAdapter.client.route.web = jest.fn().mockResolvedValue(mockWebData) as any;
+      mockAdapter.client.routes.web = jest.fn().mockResolvedValue(mockWebData) as any;
 
       const callback = toolCallbacks['get-console'];
       const params = {
@@ -403,7 +402,7 @@ describe('Route Command Module', () => {
       };
 
       // @ts-ignore
-      mockAdapter.client.route.web = jest.fn().mockResolvedValue(mockWebData) as any;
+      mockAdapter.client.routes.web = jest.fn().mockResolvedValue(mockWebData) as any;
 
       const callback = toolCallbacks['get-console'];
       const params = {
@@ -427,7 +426,7 @@ describe('Route Command Module', () => {
     it('should handle API errors for get-route', async () => {
       const error = new Error('Route not found') as any;
       // @ts-ignore
-      mockAdapter.client.route.get = jest.fn().mockRejectedValue(error) as any;
+      mockAdapter.client.routes.get = jest.fn().mockRejectedValue(error) as any;
 
       const callback = toolCallbacks['get-route'];
       const params = {
@@ -442,7 +441,7 @@ describe('Route Command Module', () => {
     it('should handle API errors for list-route', async () => {
       const error = new Error('Environment not found') as any;
       // @ts-ignore
-      mockAdapter.client.route.list = jest.fn().mockRejectedValue(error) as any;
+      mockAdapter.client.routes.list = jest.fn().mockRejectedValue(error) as any;
 
       const callback = toolCallbacks['list-route'];
       const params = {
@@ -474,7 +473,7 @@ describe('Route Command Module', () => {
 
     it('should handle null/undefined responses', async () => {
       // @ts-ignore
-      mockAdapter.client.route.get = jest.fn().mockResolvedValue(null) as any;
+      mockAdapter.client.routes.get = jest.fn().mockResolvedValue(null) as any;
 
       const callback = toolCallbacks['get-route'];
       const params = {
@@ -521,7 +520,7 @@ describe('Route Command Module', () => {
       };
 
       // @ts-ignore
-      mockAdapter.client.route.get = jest.fn().mockResolvedValue(complexRoute) as any;
+      mockAdapter.client.routes.get = jest.fn().mockResolvedValue(complexRoute) as any;
 
       const callback = toolCallbacks['get-route'];
       const params = {

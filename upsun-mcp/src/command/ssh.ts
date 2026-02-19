@@ -58,7 +58,7 @@ export function registerSshKey(adapter: McpAdapter): void {
         'add-sshkey',
         async ({ user_id, ssh_key, key_id }) => {
           log.debug(`Add SSH Key for User: ${user_id}, Key ID: ${key_id}`);
-          const result = await adapter.client.ssh.add(user_id, ssh_key, key_id);
+          const result = await adapter.client.ssh.add(ssh_key, user_id, key_id);
 
           return Response.json(result);
         },
@@ -88,7 +88,8 @@ export function registerSshKey(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('delete-sshkey', async ({ user_id, key_id }) => {
         log.debug(`Delete SSH Key for User: ${user_id}, Key ID: ${key_id}`);
-        const result = await adapter.client.ssh.delete(user_id, key_id);
+        const numericKeyId = Number(key_id);
+        const result = await adapter.client.ssh.delete(numericKeyId);
 
         return Response.json(result);
       })
@@ -112,7 +113,7 @@ export function registerSshKey(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('list-sshkey', async ({ user_id }) => {
       log.debug(`List SSH Keys for User: ${user_id}`);
-      const result = await adapter.client.ssh.list(user_id);
+      const result = 'Not implemented in upsun-sdk-node@0.4.1 (no list SSH keys endpoint)';
 
       return Response.json(result);
     })

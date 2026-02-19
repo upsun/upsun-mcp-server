@@ -15,16 +15,18 @@ jest.mock('../../src/core/logger', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 
+const mockDomainsApi = {
+  add: jest.fn() as jest.Mock,
+  delete: jest.fn() as jest.Mock,
+  get: jest.fn() as jest.Mock,
+  list: jest.fn() as jest.Mock,
+  update: jest.fn() as jest.Mock,
+};
+
 // Mock the adapter (single global declaration)
 const mockAdapter: McpAdapter = {
   client: {
-    domain: {
-      add: jest.fn() as jest.Mock,
-      delete: jest.fn() as jest.Mock,
-      get: jest.fn() as jest.Mock,
-      list: jest.fn() as jest.Mock,
-      update: jest.fn() as jest.Mock,
-    },
+    domains: mockDomainsApi,
   } as any,
   server: {
     tool: jest.fn(),
@@ -56,17 +58,17 @@ describe('Domain Command Module', () => {
       return mockAdapter.server;
     });
     // Setup default mock responses (cast to jest.Mock<any> to avoid TS 'never' error)
-    (mockAdapter.client.domain.add as jest.Mock<any>).mockResolvedValue('domain-added');
-    (mockAdapter.client.domain.delete as jest.Mock<any>).mockResolvedValue('domain-deleted');
-    (mockAdapter.client.domain.get as jest.Mock<any>).mockResolvedValue({
+    (mockAdapter.client.domains.add as jest.Mock<any>).mockResolvedValue('domain-added');
+    (mockAdapter.client.domains.delete as jest.Mock<any>).mockResolvedValue('domain-deleted');
+    (mockAdapter.client.domains.get as jest.Mock<any>).mockResolvedValue({
       domain: 'example.com',
       status: 'active',
     });
-    (mockAdapter.client.domain.list as jest.Mock<any>).mockResolvedValue([
+    (mockAdapter.client.domains.list as jest.Mock<any>).mockResolvedValue([
       { domain: 'example.com', status: 'active' },
       { domain: 'api.example.com', status: 'pending' },
     ]);
-    (mockAdapter.client.domain.update as jest.Mock<any>).mockResolvedValue('domain-updated');
+    (mockAdapter.client.domains.update as jest.Mock<any>).mockResolvedValue('domain-updated');
   });
 
   afterEach(() => {
@@ -144,7 +146,7 @@ describe('Domain Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockAdapter.client.domain.add).toHaveBeenCalledWith('test-project-13', 'example.com');
+      expect(mockAdapter.client.domains.add).toHaveBeenCalledWith('test-project-13', 'example.com');
       expect(result).toEqual({
         content: [
           {
@@ -227,7 +229,7 @@ describe('Domain Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockAdapter.client.domain.delete).toHaveBeenCalledWith(
+      expect(mockAdapter.client.domains.delete).toHaveBeenCalledWith(
         'test-project-13',
         'example.com'
       );
@@ -294,7 +296,7 @@ describe('Domain Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockAdapter.client.domain.get).toHaveBeenCalledWith('test-project-13', 'example.com');
+      expect(mockAdapter.client.domains.get).toHaveBeenCalledWith('test-project-13', 'example.com');
       expect(result).toEqual({
         content: [
           {
@@ -357,7 +359,7 @@ describe('Domain Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockAdapter.client.domain.list).toHaveBeenCalledWith('test-project-13');
+      expect(mockAdapter.client.domains.list).toHaveBeenCalledWith('test-project-13');
       expect(result).toEqual({
         content: [
           {

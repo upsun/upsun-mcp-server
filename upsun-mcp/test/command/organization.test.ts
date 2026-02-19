@@ -23,8 +23,7 @@ const mockOrganizationsApi = {
   list: jest.fn(),
 };
 
-const mockClient: { organization: any; organizations: any } = {
-  organization: mockOrganizationsApi,
+const mockClient: { organizations: any } = {
   organizations: mockOrganizationsApi,
 };
 const mockAdapter: McpAdapter = {
@@ -96,10 +95,10 @@ describe('Organization Command Module', () => {
     });
 
     // Setup default mock responses
-    mockClient.organization.create.mockResolvedValue(mockCreateResult);
-    mockClient.organization.delete.mockResolvedValue(mockDeleteResult);
-    mockClient.organization.info.mockResolvedValue(mockOrganization);
-    mockClient.organization.list.mockResolvedValue(mockOrganizationList);
+    mockClient.organizations.create.mockResolvedValue(mockCreateResult);
+    mockClient.organizations.delete.mockResolvedValue(mockDeleteResult);
+    mockClient.organizations.info.mockResolvedValue(mockOrganization);
+    mockClient.organizations.list.mockResolvedValue(mockOrganizationList);
   });
 
   afterEach(() => {
@@ -168,7 +167,7 @@ describe('Organization Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.organization.create).toHaveBeenCalledWith('New Test Organization');
+      expect(mockClient.organizations.create).toHaveBeenCalledWith('New Test Organization');
       expect(result).toEqual({
         content: [
           {
@@ -182,14 +181,14 @@ describe('Organization Command Module', () => {
     it('should handle create organization errors', async () => {
       const callback = toolCallbacks['create-organization'];
       const errorMessage = 'Organization name already exists';
-      mockClient.organization.create.mockRejectedValue(new Error(errorMessage));
+      mockClient.organizations.create.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         organization_name: 'Existing Organization',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
-      expect(mockClient.organization.create).toHaveBeenCalledWith('Existing Organization');
+      expect(mockClient.organizations.create).toHaveBeenCalledWith('Existing Organization');
     });
 
     it('should handle special characters in organization name', async () => {
@@ -200,7 +199,7 @@ describe('Organization Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.organization.create).toHaveBeenCalledWith('Test Org & Co. (2025)');
+      expect(mockClient.organizations.create).toHaveBeenCalledWith('Test Org & Co. (2025)');
       expect(result).toEqual({
         content: [
           {
@@ -225,7 +224,7 @@ describe('Organization Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.organization.delete).toHaveBeenCalledWith('123456789012345678901234567');
+      expect(mockClient.organizations.delete).toHaveBeenCalledWith('123456789012345678901234567');
       expect(result).toEqual({
         content: [
           {
@@ -239,19 +238,19 @@ describe('Organization Command Module', () => {
     it('should handle delete organization errors', async () => {
       const callback = toolCallbacks['delete-organization'];
       const errorMessage = 'Organization not found';
-      mockClient.organization.delete.mockRejectedValue(new Error(errorMessage));
+      mockClient.organizations.delete.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         organization_id: 'invalid-org-id',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
-      expect(mockClient.organization.delete).toHaveBeenCalledWith('invalid-org-id');
+      expect(mockClient.organizations.delete).toHaveBeenCalledWith('invalid-org-id');
     });
 
     it('should handle deletion of organization with projects', async () => {
       const callback = toolCallbacks['delete-organization'];
-      mockClient.organization.delete.mockResolvedValue({
+      mockClient.organizations.delete.mockResolvedValue({
         success: false,
         error: 'Cannot delete organization with active projects',
       });
@@ -262,7 +261,7 @@ describe('Organization Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.organization.delete).toHaveBeenCalledWith('123456789012345678901234567');
+      expect(mockClient.organizations.delete).toHaveBeenCalledWith('123456789012345678901234567');
       expect(result).toEqual({
         content: [
           {
@@ -291,7 +290,7 @@ describe('Organization Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.organization.info).toHaveBeenCalledWith('123456789012345678901234567');
+      expect(mockClient.organizations.info).toHaveBeenCalledWith('123456789012345678901234567');
       expect(result).toEqual({
         content: [
           {
@@ -305,14 +304,14 @@ describe('Organization Command Module', () => {
     it('should handle organization info errors', async () => {
       const callback = toolCallbacks['info-organization'];
       const errorMessage = 'Access denied to organization';
-      mockClient.organization.info.mockRejectedValue(new Error(errorMessage));
+      mockClient.organizations.info.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         organization_id: 'restricted-org-id',
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
-      expect(mockClient.organization.info).toHaveBeenCalledWith('restricted-org-id');
+      expect(mockClient.organizations.info).toHaveBeenCalledWith('restricted-org-id');
     });
 
     it('should handle detailed organization information', async () => {
@@ -332,7 +331,7 @@ describe('Organization Command Module', () => {
           status: 'active',
         },
       };
-      mockClient.organization.info.mockResolvedValue(detailedOrganization);
+      mockClient.organizations.info.mockResolvedValue(detailedOrganization);
 
       const params = {
         organization_id: '123456789012345678901234567',
@@ -362,7 +361,7 @@ describe('Organization Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.organization.list).toHaveBeenCalledWith();
+      expect(mockClient.organizations.list).toHaveBeenCalledWith();
       expect(result).toEqual({
         content: [
           {
@@ -375,13 +374,13 @@ describe('Organization Command Module', () => {
 
     it('should handle empty organization list', async () => {
       const callback = toolCallbacks['list-organization'];
-      mockClient.organization.list.mockResolvedValue([]);
+      mockClient.organizations.list.mockResolvedValue([]);
 
       const params = {};
 
       const result = await callback(params);
 
-      expect(mockClient.organization.list).toHaveBeenCalledWith();
+      expect(mockClient.organizations.list).toHaveBeenCalledWith();
       expect(result).toEqual({
         content: [
           {
@@ -395,12 +394,12 @@ describe('Organization Command Module', () => {
     it('should handle list organizations errors', async () => {
       const callback = toolCallbacks['list-organization'];
       const errorMessage = 'Authentication failed';
-      mockClient.organization.list.mockRejectedValue(new Error(errorMessage));
+      mockClient.organizations.list.mockRejectedValue(new Error(errorMessage));
 
       const params = {};
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
-      expect(mockClient.organization.list).toHaveBeenCalledWith();
+      expect(mockClient.organizations.list).toHaveBeenCalledWith();
     });
 
     it('should handle large organization lists', async () => {
@@ -414,7 +413,7 @@ describe('Organization Command Module', () => {
         projects_count: i % 10,
         members_count: (i % 5) + 1,
       }));
-      mockClient.organization.list.mockResolvedValue(largeOrganizationList);
+      mockClient.organizations.list.mockResolvedValue(largeOrganizationList);
 
       const params = {};
 
@@ -438,7 +437,7 @@ describe('Organization Command Module', () => {
 
     it('should handle null responses from client', async () => {
       const callback = toolCallbacks['info-organization'];
-      mockClient.organization.info.mockResolvedValue(null);
+      mockClient.organizations.info.mockResolvedValue(null);
 
       const params = {
         organization_id: '123456789012345678901234567',
@@ -458,7 +457,7 @@ describe('Organization Command Module', () => {
 
     it('should handle network timeouts', async () => {
       const callback = toolCallbacks['create-organization'];
-      mockClient.organization.create.mockRejectedValue(new Error('Network timeout'));
+      mockClient.organizations.create.mockRejectedValue(new Error('Network timeout'));
 
       const params = {
         organization_name: 'Test Organization',
@@ -469,7 +468,7 @@ describe('Organization Command Module', () => {
 
     it('should handle API rate limiting', async () => {
       const callback = toolCallbacks['list-organization'];
-      mockClient.organization.list.mockRejectedValue(new Error('Rate limit exceeded'));
+      mockClient.organizations.list.mockRejectedValue(new Error('Rate limit exceeded'));
 
       const params = {};
 
