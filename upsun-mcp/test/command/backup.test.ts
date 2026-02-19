@@ -58,12 +58,14 @@ const makeMockBackupTask = () =>
     bckApi: {},
   }) as any;
 
-const makeMockAdapter = () =>
-  ({
-    client: { backup: makeMockBackupTask() },
+const makeMockAdapter = () => {
+  const backupApi = makeMockBackupTask();
+  return {
+    client: { backups: backupApi },
     server: { tool: jest.fn() },
     isMode: () => true,
-  }) as unknown as McpAdapter;
+  } as unknown as McpAdapter;
+};
 
 describe('Backup Command Module', () => {
   let toolCallbacks: Record<string, any> = {};
@@ -76,12 +78,14 @@ describe('Backup Command Module', () => {
     Object.values(mockLogger).forEach(fn => fn.mockClear());
     toolCallbacks = {};
     mockAdapter = makeMockAdapter();
-    // Setup mock server.tool to capture callbacks
-    (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: any, ...args: any[]) => {
-      const callback = args[args.length - 1];
-      toolCallbacks[name] = callback;
-      return mockAdapter.server;
-    });
+    // Setup mock server.registerTool to capture callbacks
+    (mockAdapter.server.registerTool as any) = jest
+      .fn()
+      .mockImplementation((name: any, ...args: any[]) => {
+        const callback = args[args.length - 1];
+        toolCallbacks[name] = callback;
+        return mockAdapter.server;
+      });
   });
 
   afterEach(() => {
@@ -93,7 +97,7 @@ describe('Backup Command Module', () => {
     it('should register all backup tools', () => {
       registerBackup(mockAdapter);
 
-      expect(mockAdapter.server.tool).toHaveBeenCalledTimes(5);
+      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(5);
 
       // Verify all tools are registered
       expect(toolCallbacks['create-backup']).toBeDefined();
@@ -106,40 +110,50 @@ describe('Backup Command Module', () => {
     it('should register tools with correct names and descriptions', () => {
       registerBackup(mockAdapter);
 
-      const calls = (mockAdapter.server.tool as unknown as jest.Mock).mock.calls;
+      const calls = (mockAdapter.server.registerTool as unknown as jest.Mock).mock.calls;
 
       expect(calls[0]).toEqual([
         'create-backup',
-        'Create a backup on upsun project',
-        expect.any(Object),
+        {
+          description: 'Create a backup on upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
 
       expect(calls[1]).toEqual([
         'delete-backup',
-        'Delete a backup of upsun project',
-        expect.any(Object),
+        {
+          description: 'Delete a backup of upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
 
       expect(calls[2]).toEqual([
         'get-backup',
-        'Get a backup of upsun project',
-        expect.any(Object),
+        {
+          description: 'Get a backup of upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
 
       expect(calls[3]).toEqual([
         'list-backup',
-        'List all backups of upsun project',
-        expect.any(Object),
+        {
+          description: 'List all backups of upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
 
       expect(calls[4]).toEqual([
         'restore-backup',
-        'Restore a backups of upsun project',
-        expect.any(Object),
+        {
+          description: 'Restore a backups of upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
     });

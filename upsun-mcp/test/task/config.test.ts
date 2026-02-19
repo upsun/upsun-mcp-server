@@ -19,7 +19,7 @@ const mockPromptCallbacks: Record<string, (args: any) => any> = {};
 
 // Mock the adapter with proper typing
 const mockServer = {
-  prompt: jest.fn(),
+  registerPrompt: jest.fn(),
 };
 
 const mockAdapter: McpAdapter = {
@@ -39,9 +39,9 @@ describe('Config Task Module', () => {
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
 
-    // Set up the mock to capture callbacks correctly
-    (mockAdapter.server.prompt as jest.Mock).mockImplementation((...args: any[]) => {
-      const [name, , , callback] = args;
+    // Set up the mock to capture callbacks correctly (3 params: name, config, callback)
+    (mockAdapter.server.registerPrompt as jest.Mock).mockImplementation((...args: any[]) => {
+      const [name, , callback] = args;
       mockPromptCallbacks[name] = callback;
       return mockAdapter.server;
     });
@@ -55,7 +55,7 @@ describe('Config Task Module', () => {
     it('should register all config prompts', () => {
       registerConfig(mockAdapter);
 
-      expect(mockAdapter.server.prompt).toHaveBeenCalledTimes(4);
+      expect(mockAdapter.server.registerPrompt).toHaveBeenCalledTimes(4);
 
       // Verify all prompts are registered
       expect(mockPromptCallbacks['generate-config']).toBeDefined();
@@ -67,33 +67,41 @@ describe('Config Task Module', () => {
     it('should register prompts with correct names and descriptions', () => {
       registerConfig(mockAdapter);
 
-      const promptCalls = (mockAdapter.server.prompt as jest.Mock).mock.calls;
+      const promptCalls = (mockAdapter.server.registerPrompt as jest.Mock).mock.calls;
 
       expect(promptCalls[0]).toEqual([
         'generate-config',
-        'Create a configuration for upsun project (requires upsun CLI installed)',
-        expect.any(Object),
+        {
+          description: 'Create a configuration for upsun project (requires upsun CLI installed)',
+          argsSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
 
       expect(promptCalls[1]).toEqual([
         'init-config',
-        'Initialize a upsun project',
-        expect.any(Object),
+        {
+          description: 'Initialize a upsun project',
+          argsSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
 
       expect(promptCalls[2]).toEqual([
         'add-domain',
-        'Add a new domain to upsun project',
-        expect.any(Object),
+        {
+          description: 'Add a new domain to upsun project',
+          argsSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
 
       expect(promptCalls[3]).toEqual([
         'add-variable',
-        'Add a new domain to upsun project',
-        expect.any(Object),
+        {
+          description: 'Add a new domain to upsun project',
+          argsSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
     });

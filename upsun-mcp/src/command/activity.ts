@@ -46,16 +46,18 @@ export function registerActivity(adapter: McpAdapter): void {
    * @param activity_id - The unique identifier of the activity to cancel
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'cancel-activity',
-      'Cancel a activity of upsun project',
       {
-        project_id: Schema.projectId(),
-        activity_id: Schema.activityId(),
+        description: 'Cancel a activity of upsun project',
+        inputSchema: {
+          project_id: Schema.projectId(),
+          activity_id: Schema.activityId(),
+        },
       },
       ToolWrapper.trace('cancel-activity', async ({ project_id, activity_id }) => {
         log.debug(`Cancel Activity ${activity_id} in Project ${project_id}`);
-        const result = await adapter.client.activity.cancel(project_id, activity_id);
+        const result = await adapter.client.activities.cancel(project_id, activity_id);
         return Response.json(result);
       })
     );
@@ -71,16 +73,18 @@ export function registerActivity(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the activity
    * @param activity_id - The unique identifier of the activity
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'get-activity',
-    'Get detail of activity on upsun project',
     {
-      project_id: Schema.projectId(),
-      activity_id: Schema.activityId(),
+      description: 'Get detail of activity on upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+        activity_id: Schema.activityId(),
+      },
     },
     ToolWrapper.trace('get-activity', async ({ project_id, activity_id }) => {
       log.debug(`Get Activity ${activity_id} in Project ${project_id}`);
-      const result = await adapter.client.activity.get(project_id, activity_id);
+      const result = await adapter.client.activities.get(project_id, activity_id);
       return Response.json(result);
     })
   );
@@ -95,15 +99,17 @@ export function registerActivity(adapter: McpAdapter): void {
    *
    * @param project_id - The project ID to list activities from
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'list-activity',
-    'List all activities of upsun project',
     {
-      project_id: Schema.projectId(),
+      description: 'List all activities of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+      },
     },
     ToolWrapper.trace('list-activity', async ({ project_id }) => {
       log.debug(`List Activities in Project ${project_id}`);
-      const result = await adapter.client.activity.list(project_id);
+      const result = await adapter.client.activities.list(project_id);
       return Response.json(result);
     })
   );
@@ -119,16 +125,18 @@ export function registerActivity(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the activity
    * @param activity_id - The unique identifier of the activity
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'log-activity',
-    'Get log activity of upsun project',
     {
-      project_id: Schema.projectId(),
-      activity_id: Schema.activityId(),
+      description: 'Get log activity of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+        activity_id: Schema.activityId(),
+      },
     },
     ToolWrapper.trace('log-activity', async ({ project_id, activity_id }) => {
       log.debug(`Get Logs for Activity ${activity_id} in Project ${project_id}`);
-      const result = await adapter.client.activity.log(project_id, activity_id);
+      const result = await adapter.client.activities.log(project_id, activity_id);
       return Response.json(result);
     })
   );

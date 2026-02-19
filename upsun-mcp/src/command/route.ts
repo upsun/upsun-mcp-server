@@ -44,19 +44,21 @@ export function registerRoute(adapter: McpAdapter): void {
    * @param environment_name - The name of the environment
    * @param route_id - Optional identifier for a specific route (if omitted, returns the primary route)
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'get-route',
-    'Get route URL of upsun project',
     {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
-      route_id: z.string().optional(),
+      description: 'Get route URL of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+        route_id: z.string().optional(),
+      },
     },
     ToolWrapper.trace('get-route', async ({ project_id, environment_name, route_id }) => {
       log.debug(
         `Get Route: ${route_id || 'primary'} in Environment: ${environment_name} of Project: ${project_id}`
       );
-      const result = await adapter.client.route.get(project_id, environment_name, route_id || '');
+      const result = await adapter.client.routes.get(project_id, environment_name, route_id || '');
 
       return Response.json(result);
     })
@@ -72,16 +74,18 @@ export function registerRoute(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment to list routes from
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'list-route',
-    'List routes URL of upsun project',
     {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
+      description: 'List routes URL of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+      },
     },
     ToolWrapper.trace('list-route', async ({ project_id, environment_name }) => {
       log.debug(`List Routes in Environment: ${environment_name} of Project: ${project_id}`);
-      const result = await adapter.client.route.list(project_id, environment_name);
+      const result = await adapter.client.routes.list(project_id, environment_name);
 
       return Response.json(result);
     })
@@ -97,15 +101,17 @@ export function registerRoute(adapter: McpAdapter): void {
    *
    * @param project_id - The project ID to get the console URL for
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'get-console',
-    'Get console URL of upsun project',
     {
-      project_id: Schema.projectId(),
+      description: 'Get console URL of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+      },
     },
     ToolWrapper.trace('get-console', async ({ project_id }) => {
       log.debug(`Get Console URL of Project: ${project_id}`);
-      //const result = (await adapter.client.route.web(project_id)).ui;
+      //const result = (await adapter.client.routes.web(project_id)).ui;
       const result = 'Not implemented';
 
       return Response.json(result);

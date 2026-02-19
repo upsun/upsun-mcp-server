@@ -15,14 +15,16 @@ jest.mock('../../src/core/logger', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 // Mock adapter and client
+const mockProjectsApi = {
+  create: jest.fn(),
+  delete: jest.fn(),
+  info: jest.fn(),
+  list: jest.fn(),
+  getSubscription: jest.fn(),
+};
+
 const mockClient: any = {
-  project: {
-    create: jest.fn(),
-    delete: jest.fn(),
-    info: jest.fn(),
-    list: jest.fn(),
-    getSubscription: jest.fn(),
-  },
+  projects: mockProjectsApi,
 };
 const mockAdapter: McpAdapter = {
   client: mockClient,
@@ -55,19 +57,19 @@ describe('Project Command Module', () => {
     setupTestEnvironment(jest, originalEnv);
     jest.clearAllMocks();
     toolCallbacks = {};
-    // Setup mock server.tool to capture callbacks
-    (mockAdapter.server.tool as any) = jest.fn(
-      (name: string, _desc: any, _schema: any, callback: any) => {
+    // Setup mock server.registerTool to capture callbacks (3 params: name, config, callback)
+    (mockAdapter.server.registerTool as any) = jest.fn(
+      (name: string, _config: any, callback: any) => {
         toolCallbacks[name] = callback;
         return mockAdapter.server;
       }
     );
     // Setup default mock responses
-    mockClient.project.create.mockResolvedValue(mockCreateResult);
-    mockClient.project.delete.mockResolvedValue(mockDeleteResult);
-    mockClient.project.info.mockResolvedValue(mockProject);
-    mockClient.project.list.mockResolvedValue(mockProjectList);
-    mockClient.project.getSubscription.mockResolvedValue({ ...mockProject, status: 'active' });
+    mockClient.projects.create.mockResolvedValue(mockCreateResult);
+    mockClient.projects.delete.mockResolvedValue(mockDeleteResult);
+    mockClient.projects.info.mockResolvedValue(mockProject);
+    mockClient.projects.list.mockResolvedValue(mockProjectList);
+    mockClient.projects.getSubscription.mockResolvedValue({ ...mockProject, status: 'active' });
   });
   afterEach(() => {
     teardownTestEnvironment(originalEnv);
@@ -76,7 +78,7 @@ describe('Project Command Module', () => {
 
   it('registerProject registers all tools', () => {
     registerProject(mockAdapter);
-    expect(mockAdapter.server.tool).toHaveBeenCalledTimes(4);
+    expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(4);
     expect(toolCallbacks['create-project']).toBeDefined();
     expect(toolCallbacks['delete-project']).toBeDefined();
     expect(toolCallbacks['info-project']).toBeDefined();
@@ -89,8 +91,8 @@ describe('Project Command Module', () => {
     });
     it('creates a project and waits for active', async () => {
       // Simulate project not active at first
-      mockClient.project.create.mockResolvedValue({ id: 'sub-123' });
-      mockClient.project.getSubscription
+      mockClient.projects.create.mockResolvedValue({ id: 'sub-123' });
+      mockClient.projects.getSubscription
         .mockResolvedValueOnce({ ...mockProject, status: 'pending' })
         .mockResolvedValueOnce({ ...mockProject, status: 'active' });
       // Patch setTimeout to run instantly
@@ -104,13 +106,11 @@ describe('Project Command Module', () => {
         name: 'Test Project',
         region_host: 'eu-5.platform.sh',
       });
-      expect(mockClient.project.create).toHaveBeenCalledWith(
-        'org-123',
-        'eu-5.platform.sh',
-        'Test Project',
-        undefined
-      );
-      expect(mockClient.project.getSubscription).toHaveBeenCalledTimes(2);
+      expect(mockClient.projects.create).toHaveBeenCalledWith('org-123', 'eu-5.platform.sh', {
+        projectTitle: 'Test Project',
+        defaultBranch: undefined,
+      });
+      expect(mockClient.projects.getSubscription).toHaveBeenCalledTimes(2);
       expect(result).toHaveProperty('content');
       globalThis.setTimeout = origSetTimeout;
     });
@@ -121,16 +121,14 @@ describe('Project Command Module', () => {
         region_host: 'eu-5.platform.sh',
         default_branch: 'develop',
       });
-      expect(mockClient.project.create).toHaveBeenCalledWith(
-        'org-123',
-        'eu-5.platform.sh',
-        'Test Project',
-        'develop'
-      );
+      expect(mockClient.projects.create).toHaveBeenCalledWith('org-123', 'eu-5.platform.sh', {
+        projectTitle: 'Test Project',
+        defaultBranch: 'develop',
+      });
       expect(result).toHaveProperty('content');
     });
     it('throws on project creation error', async () => {
-      mockClient.project.create.mockRejectedValueOnce(new Error('fail'));
+      mockClient.projects.create.mockRejectedValueOnce(new Error('fail'));
       await expect(
         toolCallbacks['create-project']({
           organization_id: 'org-123',
@@ -148,12 +146,12 @@ describe('Project Command Module', () => {
 
     it('deletes a project successfully', async () => {
       const result = await toolCallbacks['delete-project']({ project_id: 'test-project-13' });
-      expect(mockClient.project.delete).toHaveBeenCalledWith('test-project-13');
+      expect(mockClient.projects.delete).toHaveBeenCalledWith('test-project-13');
       expect(result).toHaveProperty('content');
     });
 
     it('handles delete errors', async () => {
-      mockClient.project.delete.mockRejectedValueOnce(new Error('Delete failed'));
+      mockClient.projects.delete.mockRejectedValueOnce(new Error('Delete failed'));
       await expect(
         toolCallbacks['delete-project']({ project_id: 'test-project-13' })
       ).rejects.toThrow('Delete failed');
@@ -167,12 +165,12 @@ describe('Project Command Module', () => {
 
     it('gets project info successfully', async () => {
       const result = await toolCallbacks['info-project']({ project_id: 'test-project-13' });
-      expect(mockClient.project.info).toHaveBeenCalledWith('test-project-13');
+      expect(mockClient.projects.info).toHaveBeenCalledWith('test-project-13');
       expect(result).toHaveProperty('content');
     });
 
     it('handles info errors', async () => {
-      mockClient.project.info.mockRejectedValueOnce(new Error('Info failed'));
+      mockClient.projects.info.mockRejectedValueOnce(new Error('Info failed'));
       await expect(
         toolCallbacks['info-project']({ project_id: 'test-project-13' })
       ).rejects.toThrow('Info failed');
@@ -186,19 +184,19 @@ describe('Project Command Module', () => {
 
     it('lists projects successfully', async () => {
       const result = await toolCallbacks['list-project']({ organization_id: 'org-123' });
-      expect(mockClient.project.list).toHaveBeenCalledWith('org-123');
+      expect(mockClient.projects.list).toHaveBeenCalledWith('org-123');
       expect(result).toHaveProperty('content');
     });
 
     it('handles list errors', async () => {
-      mockClient.project.list.mockRejectedValueOnce(new Error('List failed'));
+      mockClient.projects.list.mockRejectedValueOnce(new Error('List failed'));
       await expect(toolCallbacks['list-project']({ organization_id: 'org-123' })).rejects.toThrow(
         'List failed'
       );
     });
 
     it('handles empty project list', async () => {
-      mockClient.project.list.mockResolvedValueOnce([]);
+      mockClient.projects.list.mockResolvedValueOnce([]);
       const result = await toolCallbacks['list-project']({ organization_id: 'org-123' });
       expect(result).toHaveProperty('content');
     });
@@ -212,7 +210,7 @@ describe('Project Command Module', () => {
       } as any;
 
       const toolCalls: string[] = [];
-      (readonlyAdapter.server.tool as jest.Mock) = jest.fn((...args: any[]) => {
+      (readonlyAdapter.server.registerTool as jest.Mock) = jest.fn((...args: any[]) => {
         toolCalls.push(args[0] as string);
         return readonlyAdapter.server;
       });

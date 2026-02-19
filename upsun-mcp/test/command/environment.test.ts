@@ -16,19 +16,24 @@ jest.mock('../../src/core/logger', () => ({
 }));
 
 // Explicit mock added for isMode on mockAdapter (single global declaration)
-const mockClient: { environment: any } = {
-  environment: {
-    activate: jest.fn(),
-    delete: jest.fn(),
-    info: jest.fn(),
+const mockEnvironmentsApi = {
+  activate: jest.fn(),
+  delete: jest.fn(),
+  info: jest.fn(),
+  list: jest.fn(),
+  merge: jest.fn(),
+  pause: jest.fn(),
+  redeploy: jest.fn(),
+  resume: jest.fn(),
+  url: jest.fn(),
+  urls: jest.fn(),
+  logs: jest.fn(),
+};
+
+const mockClient: { environments: any; routes: any } = {
+  environments: mockEnvironmentsApi,
+  routes: {
     list: jest.fn(),
-    merge: jest.fn(),
-    pause: jest.fn(),
-    redeploy: jest.fn(),
-    resume: jest.fn(),
-    url: jest.fn(),
-    urls: jest.fn(),
-    logs: jest.fn(),
   },
 };
 const mockAdapter: McpAdapter = {
@@ -94,25 +99,28 @@ describe('Environment Command Module', () => {
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
 
-    // Setup mock server.tool to capture callbacks
-    (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: any, ...args: any[]) => {
-      const callback = args[args.length - 1];
-      toolCallbacks[name] = callback;
-      return mockAdapter.server;
-    });
+    // Setup mock server.registerTool to capture callbacks
+    (mockAdapter.server.registerTool as any) = jest
+      .fn()
+      .mockImplementation((name: any, ...args: any[]) => {
+        const callback = args[args.length - 1];
+        toolCallbacks[name] = callback;
+        return mockAdapter.server;
+      });
 
     // Setup default mock responses
-    mockClient.environment.activate.mockResolvedValue(mockOperationResult);
-    mockClient.environment.delete.mockResolvedValue(mockOperationResult);
-    mockClient.environment.info.mockResolvedValue(mockEnvironment);
-    mockClient.environment.list.mockResolvedValue(mockEnvironmentList);
-    mockClient.environment.merge.mockResolvedValue(mockOperationResult);
-    mockClient.environment.pause.mockResolvedValue(mockOperationResult);
-    mockClient.environment.redeploy.mockResolvedValue(mockOperationResult);
-    mockClient.environment.resume.mockResolvedValue(mockOperationResult);
-    mockClient.environment.url.mockResolvedValue(mockUrls);
-    mockClient.environment.urls.mockResolvedValue(mockUrls);
-    mockClient.environment.logs.mockResolvedValue(['log1', 'log2']);
+    mockClient.environments.activate.mockResolvedValue(mockOperationResult);
+    mockClient.environments.delete.mockResolvedValue(mockOperationResult);
+    mockClient.environments.info.mockResolvedValue(mockEnvironment);
+    mockClient.environments.list.mockResolvedValue(mockEnvironmentList);
+    mockClient.environments.merge.mockResolvedValue(mockOperationResult);
+    mockClient.environments.pause.mockResolvedValue(mockOperationResult);
+    mockClient.environments.redeploy.mockResolvedValue(mockOperationResult);
+    mockClient.environments.resume.mockResolvedValue(mockOperationResult);
+    mockClient.environments.url.mockResolvedValue(mockUrls);
+    mockClient.environments.urls.mockResolvedValue(mockUrls);
+    mockClient.routes.list.mockResolvedValue(mockUrls);
+    mockClient.environments.logs.mockResolvedValue(['log1', 'log2']);
   });
 
   afterEach(() => {
@@ -124,7 +132,7 @@ describe('Environment Command Module', () => {
     it('should register all environment tools', () => {
       registerEnvironment(mockAdapter);
 
-      expect(mockAdapter.server.tool).toHaveBeenCalledTimes(10);
+      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(10);
 
       // Verify all tools are registered
       expect(toolCallbacks['activate-environment']).toBeDefined();
@@ -142,7 +150,7 @@ describe('Environment Command Module', () => {
     it('should register tools with correct names and descriptions', () => {
       registerEnvironment(mockAdapter);
 
-      const calls = (mockAdapter.server.tool as unknown as jest.Mock).mock.calls;
+      const calls = (mockAdapter.server.registerTool as unknown as jest.Mock).mock.calls;
 
       expect(calls[0][0]).toBe('activate-environment');
       expect(calls[1][0]).toBe('delete-environment');
@@ -171,7 +179,7 @@ describe('Environment Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.environment.activate).toHaveBeenCalledWith('test-project-13', 'staging');
+      expect(mockClient.environments.activate).toHaveBeenCalledWith('test-project-13', 'staging');
       expect(result).toEqual({
         content: [
           {
@@ -185,7 +193,7 @@ describe('Environment Command Module', () => {
     it('should handle activate environment errors', async () => {
       const callback = toolCallbacks['activate-environment'];
       const errorMessage = 'Environment cannot be activated';
-      mockClient.environment.activate.mockRejectedValue(new Error(errorMessage));
+      mockClient.environments.activate.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         project_id: 'test-project-13',
@@ -210,7 +218,7 @@ describe('Environment Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.environment.delete).toHaveBeenCalledWith('test-project-13', 'staging');
+      expect(mockClient.environments.delete).toHaveBeenCalledWith('test-project-13', 'staging');
       expect(result).toEqual({
         content: [
           {
@@ -224,7 +232,7 @@ describe('Environment Command Module', () => {
     it('should handle delete environment errors', async () => {
       const callback = toolCallbacks['delete-environment'];
       const errorMessage = 'Cannot delete production environment';
-      mockClient.environment.delete.mockRejectedValue(new Error(errorMessage));
+      mockClient.environments.delete.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         project_id: 'test-project-13',
@@ -249,7 +257,7 @@ describe('Environment Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.environment.info).toHaveBeenCalledWith('test-project-13', 'main');
+      expect(mockClient.environments.info).toHaveBeenCalledWith('test-project-13', 'main');
       expect(result).toEqual({
         content: [
           {
@@ -263,7 +271,7 @@ describe('Environment Command Module', () => {
     it('should handle environment info errors', async () => {
       const callback = toolCallbacks['info-environment'];
       const errorMessage = 'Environment not found';
-      mockClient.environment.info.mockRejectedValue(new Error(errorMessage));
+      mockClient.environments.info.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         project_id: 'test-project-13',
@@ -287,7 +295,7 @@ describe('Environment Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.environment.list).toHaveBeenCalledWith('test-project-13');
+      expect(mockClient.environments.list).toHaveBeenCalledWith('test-project-13');
       expect(result).toEqual({
         content: [
           {
@@ -300,7 +308,7 @@ describe('Environment Command Module', () => {
 
     it('should handle empty environment list', async () => {
       const callback = toolCallbacks['list-environment'];
-      mockClient.environment.list.mockResolvedValue([]);
+      mockClient.environments.list.mockResolvedValue([]);
 
       const params = {
         project_id: 'test-project-13',
@@ -334,7 +342,7 @@ describe('Environment Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.environment.logs).toHaveBeenCalledWith('test-project-13', 'main', 'web');
+      expect(mockClient.environments.logs).toHaveBeenCalledWith('test-project-13', 'main', 'web');
       expect(result).toEqual({
         content: [
           {
@@ -360,7 +368,7 @@ describe('Environment Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.environment.merge).toHaveBeenCalledWith(
+      expect(mockClient.environments.merge).toHaveBeenCalledWith(
         'test-project-13',
         'feature-branch'
       );
@@ -377,7 +385,7 @@ describe('Environment Command Module', () => {
     it('should handle merge environment errors', async () => {
       const callback = toolCallbacks['merge-environment'];
       const errorMessage = 'Cannot merge to production environment';
-      mockClient.environment.merge.mockRejectedValue(new Error(errorMessage));
+      mockClient.environments.merge.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         project_id: 'test-project-13',
@@ -402,7 +410,7 @@ describe('Environment Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.environment.pause).toHaveBeenCalledWith('test-project-13', 'staging');
+      expect(mockClient.environments.pause).toHaveBeenCalledWith('test-project-13', 'staging');
       expect(result).toEqual({
         content: [
           {
@@ -416,7 +424,7 @@ describe('Environment Command Module', () => {
     it('should handle pause environment errors', async () => {
       const callback = toolCallbacks['pause-environment'];
       const errorMessage = 'Cannot pause production environment';
-      mockClient.environment.pause.mockRejectedValue(new Error(errorMessage));
+      mockClient.environments.pause.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         project_id: 'test-project-13',
@@ -442,7 +450,7 @@ describe('Environment Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.environment.redeploy).toHaveBeenCalledWith('test-project-13', 'main');
+      expect(mockClient.environments.redeploy).toHaveBeenCalledWith('test-project-13', 'main');
       expect(result).toEqual({
         content: [
           {
@@ -456,7 +464,7 @@ describe('Environment Command Module', () => {
     it('should handle redeploy environment errors', async () => {
       const callback = toolCallbacks['redeploy-environment'];
       const errorMessage = 'Deployment already in progress';
-      mockClient.environment.redeploy.mockRejectedValue(new Error(errorMessage));
+      mockClient.environments.redeploy.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         project_id: 'test-project-13',
@@ -482,7 +490,7 @@ describe('Environment Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.environment.resume).toHaveBeenCalledWith('test-project-13', 'staging');
+      expect(mockClient.environments.resume).toHaveBeenCalledWith('test-project-13', 'staging');
       expect(result).toEqual({
         content: [
           {
@@ -496,7 +504,7 @@ describe('Environment Command Module', () => {
     it('should handle resume environment errors', async () => {
       const callback = toolCallbacks['resume-environment'];
       const errorMessage = 'Environment is already active';
-      mockClient.environment.resume.mockRejectedValue(new Error(errorMessage));
+      mockClient.environments.resume.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         project_id: 'test-project-13',
@@ -521,7 +529,7 @@ describe('Environment Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.environment.urls).toHaveBeenCalledWith('test-project-13', 'main');
+      expect(mockClient.routes.list).toHaveBeenCalledWith('test-project-13', 'main');
       expect(result).toEqual({
         content: [
           {
@@ -535,7 +543,7 @@ describe('Environment Command Module', () => {
     it('should handle get URLs errors', async () => {
       const callback = toolCallbacks['urls-environment'];
       const errorMessage = 'Environment URLs not available';
-      mockClient.environment.urls.mockRejectedValue(new Error(errorMessage));
+      mockClient.routes.list.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         project_id: 'test-project-13',
@@ -547,7 +555,7 @@ describe('Environment Command Module', () => {
 
     it('should handle empty URLs list', async () => {
       const callback = toolCallbacks['urls-environment'];
-      mockClient.environment.urls.mockResolvedValue([]);
+      mockClient.routes.list.mockResolvedValue([]);
 
       const params = {
         project_id: 'test-project-13',
@@ -574,7 +582,7 @@ describe('Environment Command Module', () => {
 
     it('should handle null responses from client', async () => {
       const callback = toolCallbacks['info-environment'];
-      mockClient.environment.info.mockResolvedValue(null);
+      mockClient.environments.info.mockResolvedValue(null);
 
       const params = {
         project_id: 'test-project-13',
@@ -595,7 +603,7 @@ describe('Environment Command Module', () => {
 
     it('should handle network timeouts', async () => {
       const callback = toolCallbacks['activate-environment'];
-      mockClient.environment.activate.mockRejectedValue(new Error('Network timeout'));
+      mockClient.environments.activate.mockRejectedValue(new Error('Network timeout'));
 
       const params = {
         project_id: 'test-project-13',
