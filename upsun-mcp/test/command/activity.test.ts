@@ -215,7 +215,10 @@ describe('Activity Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.activities.get).toHaveBeenCalledWith('test-project-13', 'test-activity-123');
+      expect(mockClient.activities.get).toHaveBeenCalledWith(
+        'test-project-13',
+        'test-activity-123'
+      );
       expect(result).toEqual({
         content: [
           {
@@ -314,7 +317,10 @@ describe('Activity Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.activities.log).toHaveBeenCalledWith('test-project-13', 'test-activity-123');
+      expect(mockClient.activities.log).toHaveBeenCalledWith(
+        'test-project-13',
+        'test-activity-123'
+      );
       expect(result).toEqual({
         content: [
           {
@@ -336,7 +342,10 @@ describe('Activity Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.activities.log).toHaveBeenCalledWith('test-project-13', 'test-activity-123');
+      expect(mockClient.activities.log).toHaveBeenCalledWith(
+        'test-project-13',
+        'test-activity-123'
+      );
       expect(result).toEqual({
         content: [
           {
@@ -358,7 +367,10 @@ describe('Activity Command Module', () => {
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
-      expect(mockClient.activities.log).toHaveBeenCalledWith('test-project-13', 'test-activity-123');
+      expect(mockClient.activities.log).toHaveBeenCalledWith(
+        'test-project-13',
+        'test-activity-123'
+      );
     });
   });
 

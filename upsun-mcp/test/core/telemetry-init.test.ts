@@ -133,9 +133,8 @@ describe('Telemetry Initialization Paths', () => {
     it('should reset state after shutdown', async () => {
       process.env.OTEL_ENABLED = 'true';
 
-      const { initTelemetry, shutdownTelemetry, isTelemetryEnabled } = await import(
-        '../../src/core/telemetry.js'
-      );
+      const { initTelemetry, shutdownTelemetry, isTelemetryEnabled } =
+        await import('../../src/core/telemetry.js');
 
       await initTelemetry();
       expect(isTelemetryEnabled()).toBe(true);
@@ -149,9 +148,8 @@ describe('Telemetry Initialization Paths', () => {
     it('should create tracer when enabled', async () => {
       process.env.OTEL_ENABLED = 'true';
 
-      const { initTelemetry, getTracer, shutdownTelemetry } = await import(
-        '../../src/core/telemetry.js'
-      );
+      const { initTelemetry, getTracer, shutdownTelemetry } =
+        await import('../../src/core/telemetry.js');
 
       await initTelemetry();
       const tracer = getTracer('test-component');
@@ -280,9 +278,8 @@ describe('Telemetry Initialization Paths', () => {
     it('should work within withSpan context', async () => {
       process.env.OTEL_ENABLED = 'true';
 
-      const { initTelemetry, withSpan, getCurrentSpan, shutdownTelemetry } = await import(
-        '../../src/core/telemetry.js'
-      );
+      const { initTelemetry, withSpan, getCurrentSpan, shutdownTelemetry } =
+        await import('../../src/core/telemetry.js');
 
       await initTelemetry();
 
@@ -345,9 +342,8 @@ describe('Telemetry Initialization Paths', () => {
     it('should handle nested spans correctly', async () => {
       process.env.OTEL_ENABLED = 'true';
 
-      const { initTelemetry, withSpan, shutdownTelemetry } = await import(
-        '../../src/core/telemetry.js'
-      );
+      const { initTelemetry, withSpan, shutdownTelemetry } =
+        await import('../../src/core/telemetry.js');
 
       await initTelemetry();
 
@@ -364,9 +360,8 @@ describe('Telemetry Initialization Paths', () => {
     it('should handle nested async spans correctly', async () => {
       process.env.OTEL_ENABLED = 'true';
 
-      const { initTelemetry, withSpanAsync, shutdownTelemetry } = await import(
-        '../../src/core/telemetry.js'
-      );
+      const { initTelemetry, withSpanAsync, shutdownTelemetry } =
+        await import('../../src/core/telemetry.js');
 
       await initTelemetry();
 
@@ -383,9 +378,8 @@ describe('Telemetry Initialization Paths', () => {
     it('should handle errors in nested spans', async () => {
       process.env.OTEL_ENABLED = 'true';
 
-      const { initTelemetry, withSpan, shutdownTelemetry } = await import(
-        '../../src/core/telemetry.js'
-      );
+      const { initTelemetry, withSpan, shutdownTelemetry } =
+        await import('../../src/core/telemetry.js');
 
       await initTelemetry();
 
@@ -403,9 +397,8 @@ describe('Telemetry Initialization Paths', () => {
     it('should handle async errors in nested spans', async () => {
       process.env.OTEL_ENABLED = 'true';
 
-      const { initTelemetry, withSpanAsync, shutdownTelemetry } = await import(
-        '../../src/core/telemetry.js'
-      );
+      const { initTelemetry, withSpanAsync, shutdownTelemetry } =
+        await import('../../src/core/telemetry.js');
 
       await initTelemetry();
 
@@ -425,9 +418,8 @@ describe('Telemetry Initialization Paths', () => {
     it('should return true when enabled and initialized', async () => {
       process.env.OTEL_ENABLED = 'true';
 
-      const { initTelemetry, isTelemetryEnabled, shutdownTelemetry } = await import(
-        '../../src/core/telemetry.js'
-      );
+      const { initTelemetry, isTelemetryEnabled, shutdownTelemetry } =
+        await import('../../src/core/telemetry.js');
 
       await initTelemetry();
       expect(isTelemetryEnabled()).toBe(true);
@@ -445,9 +437,8 @@ describe('Telemetry Initialization Paths', () => {
     it('should return false after shutdown', async () => {
       process.env.OTEL_ENABLED = 'true';
 
-      const { initTelemetry, isTelemetryEnabled, shutdownTelemetry } = await import(
-        '../../src/core/telemetry.js'
-      );
+      const { initTelemetry, isTelemetryEnabled, shutdownTelemetry } =
+        await import('../../src/core/telemetry.js');
 
       await initTelemetry();
       await shutdownTelemetry();

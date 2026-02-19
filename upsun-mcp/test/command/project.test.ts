@@ -106,9 +106,7 @@ describe('Project Command Module', () => {
         name: 'Test Project',
         region_host: 'eu-5.platform.sh',
       });
-      expect(mockClient.projects.create).toHaveBeenCalledWith(
-        'org-123',
-        'eu-5.platform.sh', {
+      expect(mockClient.projects.create).toHaveBeenCalledWith('org-123', 'eu-5.platform.sh', {
         projectTitle: 'Test Project',
         defaultBranch: undefined,
       });
