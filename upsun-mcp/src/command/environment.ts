@@ -22,7 +22,7 @@ const log = createLogger('MCP:Tool:environment-commands');
  * - delete-environment: Permanently deletes an environment
  * - info-environment: Retrieves environment details and status
  * - list-environment: Lists all environments in a project
- * - logs-environment: Displays application logs (not implemented)
+ * - logs-environment: Displays application logs
  * - merge-environment: Merges environment changes to parent
  * - pause-environment: Pauses an active environment
  * - redeploy-environment: Triggers a new deployment
