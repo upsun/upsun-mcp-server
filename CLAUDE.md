@@ -194,12 +194,14 @@ const log = createLogger('MCP:Tool:newfeature-commands');
 export function registerNewFeature(adapter: McpAdapter): void {
   log.info('Register NewFeature Handlers');
 
-  adapter.server.tool(
+  adapter.server.registerTool(
     'action-newfeature',
-    'Description of the action',
     {
-      param1: z.string(),
-      param2: Schema.projectId().optional(),
+      description: 'Description of the action',
+      inputSchema: {
+        param1: z.string(),
+        param2: Schema.projectId().optional(),
+      },
     },
     async ({ param1, param2 }) => {
       log.debug(`Action: ${param1}`);

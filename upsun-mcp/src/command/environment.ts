@@ -48,12 +48,14 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param environment_name - The name of the environment to activate
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'activate-environment',
-      'Activate a environment of upsun project',
       {
-        project_id: Schema.projectId(),
-        environment_name: Schema.environmentName(),
+        description: 'Activate a environment of upsun project',
+        inputSchema: {
+          project_id: Schema.projectId(),
+          environment_name: Schema.environmentName(),
+        },
       },
       ToolWrapper.trace('activate-environment', async ({ project_id, environment_name }) => {
         log.debug(`Activate Environment ${environment_name} in Project ${project_id}`);
@@ -75,12 +77,14 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param environment_name - The name of the environment to delete
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'delete-environment',
-      'Delete a environment of upsun project',
       {
-        project_id: Schema.projectId(),
-        environment_name: Schema.environmentName(),
+        description: 'Delete a environment of upsun project',
+        inputSchema: {
+          project_id: Schema.projectId(),
+          environment_name: Schema.environmentName(),
+        },
       },
       ToolWrapper.trace('delete-environment', async ({ project_id, environment_name }) => {
         log.debug(`Delete Environment ${environment_name} from Project ${project_id}`);
@@ -101,12 +105,14 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment to query
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'info-environment',
-    'Get information of environment on upsun project',
     {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
+      description: 'Get information of environment on upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+      },
     },
     ToolWrapper.trace('info-environment', async ({ project_id, environment_name }) => {
       log.debug(`Get Info of Environment ${environment_name} in Project ${project_id}`);
@@ -125,11 +131,13 @@ export function registerEnvironment(adapter: McpAdapter): void {
    *
    * @param project_id - The project ID to list environments from
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'list-environment',
-    'List all environments of upsun project',
     {
-      project_id: Schema.projectId(),
+      description: 'List all environments of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+      },
     },
     ToolWrapper.trace('list-environment', async ({ project_id }) => {
       log.debug(`List Environments in Project ${project_id}`);
@@ -147,13 +155,15 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param environment_name - The name of the environment
    * @param application_name - The name of the application to get logs from
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'logs-environment',
-    'Display logs of app of upsun project',
     {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
-      application_name: Schema.applicationName(),
+      description: 'Display logs of app of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+        application_name: Schema.applicationName(),
+      },
     },
     ToolWrapper.trace(
       'logs-environment',
@@ -183,12 +193,14 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param environment_name - The name of the environment to merge
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'merge-environment',
-      'Merge a environment to parent environment of upsun project',
       {
-        project_id: Schema.projectId(),
-        environment_name: Schema.environmentName(),
+        description: 'Merge a environment to parent environment of upsun project',
+        inputSchema: {
+          project_id: Schema.projectId(),
+          environment_name: Schema.environmentName(),
+        },
       },
       ToolWrapper.trace('merge-environment', async ({ project_id, environment_name }) => {
         log.debug(`Merge Environment ${environment_name} in Project ${project_id}`);
@@ -210,12 +222,14 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param environment_name - The name of the environment to pause
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'pause-environment',
-      'Pause a environment of upsun project',
       {
-        project_id: Schema.projectId(),
-        environment_name: Schema.environmentName(),
+        description: 'Pause a environment of upsun project',
+        inputSchema: {
+          project_id: Schema.projectId(),
+          environment_name: Schema.environmentName(),
+        },
       },
       ToolWrapper.trace('pause-environment', async ({ project_id, environment_name }) => {
         log.debug(`Pause Environment ${environment_name} in Project ${project_id}`);
@@ -238,13 +252,15 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param application_name - The specific application to redeploy (optional)
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'redeploy-environment',
-      'Redeploy a environment of upsun project',
       {
-        project_id: Schema.projectId(),
-        environment_name: Schema.environmentName(),
-        application_name: Schema.applicationName().optional(),
+        description: 'Redeploy a environment of upsun project',
+        inputSchema: {
+          project_id: Schema.projectId(),
+          environment_name: Schema.environmentName(),
+          application_name: Schema.applicationName().optional(),
+        },
       },
       ToolWrapper.trace('redeploy-environment', async ({ project_id, environment_name }) => {
         log.debug(`Redeploy Environment ${environment_name} in Project ${project_id}`);
@@ -265,12 +281,14 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param environment_name - The name of the environment to resume
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'resume-environment',
-      'Resume a environment of upsun project',
       {
-        project_id: Schema.projectId(),
-        environment_name: Schema.environmentName(),
+        description: 'Resume a environment of upsun project',
+        inputSchema: {
+          project_id: Schema.projectId(),
+          environment_name: Schema.environmentName(),
+        },
       },
       ToolWrapper.trace('resume-environment', async ({ project_id, environment_name }) => {
         log.debug(`Resume Environment ${environment_name} in Project ${project_id}`);
@@ -291,12 +309,14 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment to get URLs for
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'urls-environment',
-    'Get URLs of environment on upsun project',
     {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
+      description: 'Get URLs of environment on upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+      },
     },
     ToolWrapper.trace('urls-environment', async ({ project_id, environment_name }) => {
       log.debug(`Get URLs of Environment ${environment_name} in Project ${project_id}`);

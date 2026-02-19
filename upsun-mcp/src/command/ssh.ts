@@ -46,13 +46,15 @@ export function registerSshKey(adapter: McpAdapter): void {
    * @param key_id - A unique identifier or label for the SSH key
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'add-sshkey',
-      'Add a SSH key on upsun account',
       {
-        user_id: z.string(),
-        ssh_key: z.string(),
-        key_id: z.string(),
+        description: 'Add a SSH key on upsun account',
+        inputSchema: {
+          user_id: z.string(),
+          ssh_key: z.string(),
+          key_id: z.string(),
+        },
       },
       ToolWrapper.trace(
         'add-sshkey',
@@ -79,12 +81,14 @@ export function registerSshKey(adapter: McpAdapter): void {
    * @param key_id - The unique identifier of the SSH key to delete
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'delete-sshkey',
-      'Delete a SSH key of upsun account',
       {
-        user_id: z.string(),
-        key_id: z.string(),
+        description: 'Delete a SSH key of upsun account',
+        inputSchema: {
+          user_id: z.string(),
+          key_id: z.string(),
+        },
       },
       ToolWrapper.trace('delete-sshkey', async ({ user_id, key_id }) => {
         log.debug(`Delete SSH Key for User: ${user_id}, Key ID: ${key_id}`);
@@ -105,11 +109,13 @@ export function registerSshKey(adapter: McpAdapter): void {
    *
    * @param user_id - The ID of the user to list SSH keys for
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'list-sshkey',
-    'List all SSH keys of upsun account',
     {
-      user_id: z.string(),
+      description: 'List all SSH keys of upsun account',
+      inputSchema: {
+        user_id: z.string(),
+      },
     },
     ToolWrapper.trace('list-sshkey', async ({ user_id }) => {
       log.debug(`List SSH Keys for User: ${user_id}`);

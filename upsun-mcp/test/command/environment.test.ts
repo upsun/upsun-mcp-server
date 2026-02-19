@@ -99,12 +99,14 @@ describe('Environment Command Module', () => {
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
 
-    // Setup mock server.tool to capture callbacks
-    (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: any, ...args: any[]) => {
-      const callback = args[args.length - 1];
-      toolCallbacks[name] = callback;
-      return mockAdapter.server;
-    });
+    // Setup mock server.registerTool to capture callbacks
+    (mockAdapter.server.registerTool as any) = jest
+      .fn()
+      .mockImplementation((name: any, ...args: any[]) => {
+        const callback = args[args.length - 1];
+        toolCallbacks[name] = callback;
+        return mockAdapter.server;
+      });
 
     // Setup default mock responses
     mockClient.environments.activate.mockResolvedValue(mockOperationResult);
@@ -130,7 +132,7 @@ describe('Environment Command Module', () => {
     it('should register all environment tools', () => {
       registerEnvironment(mockAdapter);
 
-      expect(mockAdapter.server.tool).toHaveBeenCalledTimes(10);
+      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(10);
 
       // Verify all tools are registered
       expect(toolCallbacks['activate-environment']).toBeDefined();
@@ -148,7 +150,7 @@ describe('Environment Command Module', () => {
     it('should register tools with correct names and descriptions', () => {
       registerEnvironment(mockAdapter);
 
-      const calls = (mockAdapter.server.tool as unknown as jest.Mock).mock.calls;
+      const calls = (mockAdapter.server.registerTool as unknown as jest.Mock).mock.calls;
 
       expect(calls[0][0]).toBe('activate-environment');
       expect(calls[1][0]).toBe('delete-environment');

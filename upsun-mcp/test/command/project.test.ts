@@ -57,9 +57,9 @@ describe('Project Command Module', () => {
     setupTestEnvironment(jest, originalEnv);
     jest.clearAllMocks();
     toolCallbacks = {};
-    // Setup mock server.tool to capture callbacks
-    (mockAdapter.server.tool as any) = jest.fn(
-      (name: string, _desc: any, _schema: any, callback: any) => {
+    // Setup mock server.registerTool to capture callbacks (3 params: name, config, callback)
+    (mockAdapter.server.registerTool as any) = jest.fn(
+      (name: string, _config: any, callback: any) => {
         toolCallbacks[name] = callback;
         return mockAdapter.server;
       }
@@ -78,7 +78,7 @@ describe('Project Command Module', () => {
 
   it('registerProject registers all tools', () => {
     registerProject(mockAdapter);
-    expect(mockAdapter.server.tool).toHaveBeenCalledTimes(4);
+    expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(4);
     expect(toolCallbacks['create-project']).toBeDefined();
     expect(toolCallbacks['delete-project']).toBeDefined();
     expect(toolCallbacks['info-project']).toBeDefined();
@@ -210,7 +210,7 @@ describe('Project Command Module', () => {
       } as any;
 
       const toolCalls: string[] = [];
-      (readonlyAdapter.server.tool as jest.Mock) = jest.fn((...args: any[]) => {
+      (readonlyAdapter.server.registerTool as jest.Mock) = jest.fn((...args: any[]) => {
         toolCalls.push(args[0] as string);
         return readonlyAdapter.server;
       });

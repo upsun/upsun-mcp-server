@@ -48,14 +48,16 @@ export function registerCertificate(adapter: McpAdapter): void {
    * @param chain - The certificate chain in PEM format
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'add-certificate',
-      'Add an SSL/TLS certificate of upsun project',
       {
-        project_id: Schema.projectId(),
-        certificate: z.string(),
-        key: z.string(),
-        chain: z.any(),
+        description: 'Add an SSL/TLS certificate of upsun project',
+        inputSchema: {
+          project_id: Schema.projectId(),
+          certificate: z.string(),
+          key: z.string(),
+          chain: z.any(),
+        },
       },
       ToolWrapper.trace(
         'add-certificate',
@@ -80,12 +82,14 @@ export function registerCertificate(adapter: McpAdapter): void {
    * @param certificate_id - The unique identifier of the certificate to delete
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'delete-certificate',
-      'Delete an SSL/TLS certificate of upsun project',
       {
-        project_id: Schema.projectId(),
-        certificate_id: Schema.certificateId(),
+        description: 'Delete an SSL/TLS certificate of upsun project',
+        inputSchema: {
+          project_id: Schema.projectId(),
+          certificate_id: Schema.certificateId(),
+        },
       },
       ToolWrapper.trace('delete-certificate', async ({ project_id, certificate_id }) => {
         log.debug(`Delete Certificate ${certificate_id} in Project ${project_id}`);
@@ -105,12 +109,14 @@ export function registerCertificate(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the certificate
    * @param certificate_id - The unique identifier of the certificate
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'get-certificate',
-    'Get an SSL/TLS certificate of upsun project',
     {
-      project_id: Schema.projectId(),
-      certificate_id: Schema.certificateId(),
+      description: 'Get an SSL/TLS certificate of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+        certificate_id: Schema.certificateId(),
+      },
     },
     ToolWrapper.trace('get-certificate', async ({ project_id, certificate_id }) => {
       log.debug(`Get Certificate ${certificate_id} in Project ${project_id}`);
@@ -128,11 +134,13 @@ export function registerCertificate(adapter: McpAdapter): void {
    *
    * @param project_id - The project ID to list certificates from
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'list-certificate',
-    'List all SSL/TLS certificates of upsun project',
     {
-      project_id: Schema.projectId(),
+      description: 'List all SSL/TLS certificates of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+      },
     },
     ToolWrapper.trace('list-certificate', async ({ project_id }) => {
       log.debug(`List Certificates in Project ${project_id}`);

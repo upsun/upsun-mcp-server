@@ -44,12 +44,14 @@ describe('SSH Key Command Module', () => {
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
 
-    // Setup mock server.tool to capture callbacks
-    (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: any, ...args: any[]) => {
-      const callback = args[args.length - 1];
-      toolCallbacks[name] = callback;
-      return mockAdapter.server;
-    });
+    // Setup mock server.registerTool to capture callbacks
+    (mockAdapter.server.registerTool as any) = jest
+      .fn()
+      .mockImplementation((name: any, ...args: any[]) => {
+        const callback = args[args.length - 1];
+        toolCallbacks[name] = callback;
+        return mockAdapter.server;
+      });
 
     // Add the complete mock for ssh with explicit typing to avoid TS warning
     // Use jest.Mock<any, any> to avoid 'never' type error
@@ -80,7 +82,7 @@ describe('SSH Key Command Module', () => {
     it('should register all SSH key tools', () => {
       registerSshKey(mockAdapter);
 
-      expect(mockAdapter.server.tool).toHaveBeenCalledTimes(3);
+      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(3);
 
       // Verify all tools are registered
       expect(toolCallbacks['add-sshkey']).toBeDefined();
@@ -91,26 +93,32 @@ describe('SSH Key Command Module', () => {
     it('should register tools with correct names and descriptions', () => {
       registerSshKey(mockAdapter);
 
-      const calls = (mockAdapter.server.tool as unknown as jest.Mock).mock.calls;
+      const calls = (mockAdapter.server.registerTool as unknown as jest.Mock).mock.calls;
 
       expect(calls[0]).toEqual([
         'add-sshkey',
-        'Add a SSH key on upsun account',
-        expect.any(Object),
+        {
+          description: 'Add a SSH key on upsun account',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
 
       expect(calls[1]).toEqual([
         'delete-sshkey',
-        'Delete a SSH key of upsun account',
-        expect.any(Object),
+        {
+          description: 'Delete a SSH key of upsun account',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
 
       expect(calls[2]).toEqual([
         'list-sshkey',
-        'List all SSH keys of upsun account',
-        expect.any(Object),
+        {
+          description: 'List all SSH keys of upsun account',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
     });

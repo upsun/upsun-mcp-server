@@ -47,9 +47,9 @@ describe('Route Command Module', () => {
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
 
-    // Setup mock server.tool to capture callbacks
+    // Setup mock server.registerTool to capture callbacks
     // @ts-ignore
-    mockAdapter.server.tool = jest.fn().mockImplementation((name: any, ...args: any[]) => {
+    mockAdapter.server.registerTool = jest.fn().mockImplementation((name: any, ...args: any[]) => {
       const callback = args[args.length - 1];
       toolCallbacks[name] = callback;
       return mockAdapter.server;
@@ -67,7 +67,7 @@ describe('Route Command Module', () => {
   describe('registerRoute function', () => {
     it('should register all route tools', () => {
       // Don't call registerRoute again since it's already called in beforeEach
-      expect(mockAdapter.server.tool).toHaveBeenCalledTimes(3) as any;
+      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(3) as any;
 
       // Verify all tools are registered
       expect(toolCallbacks['get-route']).toBeDefined() as any;
@@ -77,26 +77,32 @@ describe('Route Command Module', () => {
 
     it('should register tools with correct names and descriptions', () => {
       // Don't call registerRoute again since it's already called in beforeEach
-      const calls = (mockAdapter.server.tool as unknown as jest.Mock).mock.calls;
+      const calls = (mockAdapter.server.registerTool as unknown as jest.Mock).mock.calls;
 
       expect(calls[0]).toEqual([
         'get-route',
-        'Get route URL of upsun project',
-        expect.any(Object),
+        {
+          description: 'Get route URL of upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]) as any;
 
       expect(calls[1]).toEqual([
         'list-route',
-        'List routes URL of upsun project',
-        expect.any(Object),
+        {
+          description: 'List routes URL of upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]) as any;
 
       expect(calls[2]).toEqual([
         'get-console',
-        'Get console URL of upsun project',
-        expect.any(Object),
+        {
+          description: 'Get console URL of upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]) as any;
     });

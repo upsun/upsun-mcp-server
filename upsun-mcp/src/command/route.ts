@@ -44,13 +44,15 @@ export function registerRoute(adapter: McpAdapter): void {
    * @param environment_name - The name of the environment
    * @param route_id - Optional identifier for a specific route (if omitted, returns the primary route)
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'get-route',
-    'Get route URL of upsun project',
     {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
-      route_id: z.string().optional(),
+      description: 'Get route URL of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+        route_id: z.string().optional(),
+      },
     },
     ToolWrapper.trace('get-route', async ({ project_id, environment_name, route_id }) => {
       log.debug(
@@ -72,12 +74,14 @@ export function registerRoute(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment to list routes from
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'list-route',
-    'List routes URL of upsun project',
     {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
+      description: 'List routes URL of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+      },
     },
     ToolWrapper.trace('list-route', async ({ project_id, environment_name }) => {
       log.debug(`List Routes in Environment: ${environment_name} of Project: ${project_id}`);
@@ -97,11 +101,13 @@ export function registerRoute(adapter: McpAdapter): void {
    *
    * @param project_id - The project ID to get the console URL for
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'get-console',
-    'Get console URL of upsun project',
     {
-      project_id: Schema.projectId(),
+      description: 'Get console URL of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+      },
     },
     ToolWrapper.trace('get-console', async ({ project_id }) => {
       log.debug(`Get Console URL of Project: ${project_id}`);

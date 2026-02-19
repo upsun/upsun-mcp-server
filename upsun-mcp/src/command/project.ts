@@ -45,14 +45,16 @@ export function registerProject(adapter: McpAdapter): void {
    * @param default_branch - The default Git branch (optional, defaults to "main")
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'create-project',
-      'Create a new upsun project',
       {
-        organization_id: Schema.organizationId(),
-        region_host: z.string().default('eu-5.platform.sh'),
-        name: z.string(),
-        default_branch: z.string().default('main').optional(),
+        description: 'Create a new upsun project',
+        inputSchema: {
+          organization_id: Schema.organizationId(),
+          region_host: z.string().default('eu-5.platform.sh'),
+          name: z.string(),
+          default_branch: z.string().default('main').optional(),
+        },
       },
       ToolWrapper.trace(
         'create-project',
@@ -92,11 +94,13 @@ export function registerProject(adapter: McpAdapter): void {
    * @param project_id - The unique identifier of the project to delete
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'delete-project',
-      'Delete a upsun project',
       {
-        project_id: Schema.projectId(),
+        description: 'Delete a upsun project',
+        inputSchema: {
+          project_id: Schema.projectId(),
+        },
       },
       ToolWrapper.trace('delete-project', async ({ project_id }) => {
         log.debug(`Delete Project: ${project_id}`);
@@ -116,11 +120,13 @@ export function registerProject(adapter: McpAdapter): void {
    *
    * @param project_id - The unique identifier of the project
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'info-project',
-    'Get information of upsun project',
     {
-      project_id: Schema.projectId(),
+      description: 'Get information of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+      },
     },
     ToolWrapper.trace('info-project', async ({ project_id }) => {
       log.debug(`Get Information of Project: ${project_id}`);
@@ -139,11 +145,13 @@ export function registerProject(adapter: McpAdapter): void {
    *
    * @param organization_id - The organization ID to list projects from
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'list-project',
-    'List all upsun projects',
     {
-      organization_id: Schema.organizationId(),
+      description: 'List all upsun projects',
+      inputSchema: {
+        organization_id: Schema.organizationId(),
+      },
     },
     ToolWrapper.traceWithMetrics(
       'list-project',

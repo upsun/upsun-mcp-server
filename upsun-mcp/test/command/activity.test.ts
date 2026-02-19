@@ -87,13 +87,15 @@ describe('Activity Command Module', () => {
     mockLogger.error.mockClear();
     toolCallbacks = {};
 
-    // Setup mock server.tool to capture callbacks
-    (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: any, ...args: any[]) => {
-      // callback is always the last argument
-      const callback = args[args.length - 1];
-      toolCallbacks[name] = callback;
-      return mockAdapter.server;
-    });
+    // Setup mock server.registerTool to capture callbacks
+    (mockAdapter.server.registerTool as any) = jest
+      .fn()
+      .mockImplementation((name: any, ...args: any[]) => {
+        // callback is always the last argument
+        const callback = args[args.length - 1];
+        toolCallbacks[name] = callback;
+        return mockAdapter.server;
+      });
 
     // Setup default mock responses
     mockClient.activities.list.mockResolvedValue(mockActivityList);
@@ -111,7 +113,7 @@ describe('Activity Command Module', () => {
     it('should register all activity tools', () => {
       registerActivity(mockAdapter);
 
-      expect(mockAdapter.server.tool).toHaveBeenCalledTimes(4);
+      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(4);
 
       // Verify all tools are registered
       expect(toolCallbacks['cancel-activity']).toBeDefined();
@@ -123,33 +125,41 @@ describe('Activity Command Module', () => {
     it('should register tools with correct names and descriptions', () => {
       registerActivity(mockAdapter);
 
-      const calls = (mockAdapter.server.tool as unknown as jest.Mock).mock.calls;
+      const calls = (mockAdapter.server.registerTool as unknown as jest.Mock).mock.calls;
 
       expect(calls[0]).toEqual([
         'cancel-activity',
-        'Cancel a activity of upsun project',
-        expect.any(Object),
+        {
+          description: 'Cancel a activity of upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
 
       expect(calls[1]).toEqual([
         'get-activity',
-        'Get detail of activity on upsun project',
-        expect.any(Object),
+        {
+          description: 'Get detail of activity on upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
 
       expect(calls[2]).toEqual([
         'list-activity',
-        'List all activities of upsun project',
-        expect.any(Object),
+        {
+          description: 'List all activities of upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
 
       expect(calls[3]).toEqual([
         'log-activity',
-        'Get log activity of upsun project',
-        expect.any(Object),
+        {
+          description: 'Get log activity of upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
     });

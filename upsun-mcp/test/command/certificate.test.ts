@@ -47,11 +47,13 @@ describe('Certificate Command Module', () => {
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
     toolCallbacks = {};
-    (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: any, ...args: any[]) => {
-      const callback = args[args.length - 1];
-      toolCallbacks[name] = callback;
-      return mockAdapter.server;
-    });
+    (mockAdapter.server.registerTool as any) = jest
+      .fn()
+      .mockImplementation((name: any, ...args: any[]) => {
+        const callback = args[args.length - 1];
+        toolCallbacks[name] = callback;
+        return mockAdapter.server;
+      });
     mockClient.certificates.add.mockResolvedValue('certificate-added');
     mockClient.certificates.delete.mockResolvedValue('certificate-deleted');
     mockClient.certificates.get.mockResolvedValue({ id: 'cert-1', status: 'active' });
@@ -69,7 +71,7 @@ describe('Certificate Command Module', () => {
   describe('registerCertificate function', () => {
     it('should register all certificate tools', () => {
       registerCertificate(mockAdapter);
-      expect(mockAdapter.server.tool).toHaveBeenCalledTimes(4);
+      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(4);
       expect(toolCallbacks['add-certificate']).toBeDefined();
       expect(toolCallbacks['delete-certificate']).toBeDefined();
       expect(toolCallbacks['get-certificate']).toBeDefined();

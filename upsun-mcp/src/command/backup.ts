@@ -50,13 +50,15 @@ export function registerBackup(adapter: McpAdapter): void {
    * @param is_live - Whether to create a backup of the live environment (default: true)
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'create-backup',
-      'Create a backup on upsun project',
       {
-        project_id: Schema.projectId(),
-        environment_name: Schema.environmentName(),
-        is_live: z.boolean().default(true).optional(),
+        description: 'Create a backup on upsun project',
+        inputSchema: {
+          project_id: Schema.projectId(),
+          environment_name: Schema.environmentName(),
+          is_live: z.boolean().default(true).optional(),
+        },
       },
       ToolWrapper.trace('create-backup', async ({ project_id, environment_name, is_live }) => {
         log.debug(
@@ -80,13 +82,15 @@ export function registerBackup(adapter: McpAdapter): void {
    * @param backup_id - The unique identifier of the backup to delete
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'delete-backup',
-      'Delete a backup of upsun project',
       {
-        project_id: Schema.projectId(),
-        environment_name: Schema.environmentName(),
-        backup_id: Schema.backupId(),
+        description: 'Delete a backup of upsun project',
+        inputSchema: {
+          project_id: Schema.projectId(),
+          environment_name: Schema.environmentName(),
+          backup_id: Schema.backupId(),
+        },
       },
       ToolWrapper.trace('delete-backup', async ({ project_id, environment_name, backup_id }) => {
         log.debug(
@@ -109,13 +113,15 @@ export function registerBackup(adapter: McpAdapter): void {
    * @param environment_name - The name of the environment
    * @param backup_id - The unique identifier of the backup
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'get-backup',
-    'Get a backup of upsun project',
     {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
-      backup_id: Schema.backupId(),
+      description: 'Get a backup of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+        backup_id: Schema.backupId(),
+      },
     },
     ToolWrapper.trace('get-backup', async ({ project_id, environment_name, backup_id }) => {
       log.debug(
@@ -136,12 +142,14 @@ export function registerBackup(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'list-backup',
-    'List all backups of upsun project',
     {
-      project_id: Schema.projectId(),
-      environment_name: Schema.environmentName(),
+      description: 'List all backups of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+      },
     },
     ToolWrapper.trace('list-backup', async ({ project_id, environment_name }) => {
       log.debug(`List Backups in Project ${project_id}, Environment ${environment_name}`);
@@ -168,16 +176,18 @@ export function registerBackup(adapter: McpAdapter): void {
    * @param resources_init - Source for initializing resources (default: "backup")
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'restore-backup',
-      'Restore a backups of upsun project',
       {
-        project_id: Schema.projectId(),
-        environment_name: Schema.environmentName(),
-        target_environment_name: Schema.environmentName(),
-        no_code: z.boolean().default(false).optional(),
-        no_resources: z.boolean().default(false).optional(),
-        resources_init: z.string().default('backup').optional(),
+        description: 'Restore a backups of upsun project',
+        inputSchema: {
+          project_id: Schema.projectId(),
+          environment_name: Schema.environmentName(),
+          target_environment_name: Schema.environmentName(),
+          no_code: z.boolean().default(false).optional(),
+          no_resources: z.boolean().default(false).optional(),
+          resources_init: z.string().default('backup').optional(),
+        },
       },
       ToolWrapper.trace(
         'restore-backup',

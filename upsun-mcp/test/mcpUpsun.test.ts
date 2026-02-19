@@ -114,9 +114,9 @@ describe('UpsunMcpServer', () => {
       version: '0.1.0',
       description: 'Upsun server MCP',
     });
-    // Mock the tool method to capture tools in toolCallbacks
-    (realMcpServer as any).tool = jest.fn((...args: any[]) => {
-      const [name, , , callback] = args;
+    // Mock the registerTool method to capture tools in toolCallbacks
+    (realMcpServer as any).registerTool = jest.fn((...args: any[]) => {
+      const [name, , callback] = args;
       toolCallbacks[name] = callback;
       return realMcpServer;
     });

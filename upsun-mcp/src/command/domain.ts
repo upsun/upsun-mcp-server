@@ -47,12 +47,14 @@ export function registerDomain(adapter: McpAdapter): void {
    * @param domain_name - The domain name to add (e.g., example.com)
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'add-domain',
-      'Add Domain on upsun project',
       {
-        project_id: Schema.projectId(),
-        domain_name: Schema.domainName(),
+        description: 'Add Domain on upsun project',
+        inputSchema: {
+          project_id: Schema.projectId(),
+          domain_name: Schema.domainName(),
+        },
       },
       ToolWrapper.trace('add-domain', async ({ project_id, domain_name }) => {
         log.debug(`Add Domain ${domain_name} to Project ${project_id}`);
@@ -74,12 +76,14 @@ export function registerDomain(adapter: McpAdapter): void {
    * @param domain_name - The domain name to remove
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'delete-domain',
-      'Delete a Domain on upsun project',
       {
-        project_id: Schema.projectId(),
-        domain_name: Schema.domainName(),
+        description: 'Delete a Domain on upsun project',
+        inputSchema: {
+          project_id: Schema.projectId(),
+          domain_name: Schema.domainName(),
+        },
       },
       ToolWrapper.trace('delete-domain', async ({ project_id, domain_name }) => {
         log.debug(`Delete Domain ${domain_name} from Project ${project_id}`);
@@ -100,12 +104,14 @@ export function registerDomain(adapter: McpAdapter): void {
    * @param project_id - The project ID containing the domain
    * @param domain_name - The domain name to query
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'get-domain',
-    'Get a Domain of upsun project',
     {
-      project_id: Schema.projectId(),
-      domain_name: Schema.domainName(),
+      description: 'Get a Domain of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+        domain_name: Schema.domainName(),
+      },
     },
     ToolWrapper.trace('get-domain', async ({ project_id, domain_name }) => {
       log.debug(`Get Domain ${domain_name} in Project ${project_id}`);
@@ -124,11 +130,13 @@ export function registerDomain(adapter: McpAdapter): void {
    *
    * @param project_id - The project ID to list domains from
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'list-domain',
-    'List all Domains of upsun project',
     {
-      project_id: Schema.projectId(),
+      description: 'List all Domains of upsun project',
+      inputSchema: {
+        project_id: Schema.projectId(),
+      },
     },
     ToolWrapper.trace('list-domain', async ({ project_id }) => {
       log.debug(`List Domains in Project ${project_id}`);
@@ -149,12 +157,14 @@ export function registerDomain(adapter: McpAdapter): void {
    * @param domain_name - The domain name to update
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'update-domain',
-      'Update a Domain of upsun project',
       {
-        project_id: Schema.projectId(),
-        domain_name: Schema.domainName(),
+        description: 'Update a Domain of upsun project',
+        inputSchema: {
+          project_id: Schema.projectId(),
+          domain_name: Schema.domainName(),
+        },
       },
       ToolWrapper.trace('update-domain', async ({ project_id, domain_name }) => {
         log.debug(`Update Domain ${domain_name} in Project ${project_id}`);

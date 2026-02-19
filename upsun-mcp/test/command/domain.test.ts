@@ -51,12 +51,14 @@ describe('Domain Command Module', () => {
 
     // Explicit mock added for isMode (already set globally)
 
-    // Setup mock server.tool to capture callbacks
-    (mockAdapter.server.tool as any) = jest.fn().mockImplementation((name: any, ...args: any[]) => {
-      const callback = args[args.length - 1];
-      toolCallbacks[name] = callback;
-      return mockAdapter.server;
-    });
+    // Setup mock server.registerTool to capture callbacks
+    (mockAdapter.server.registerTool as any) = jest
+      .fn()
+      .mockImplementation((name: any, ...args: any[]) => {
+        const callback = args[args.length - 1];
+        toolCallbacks[name] = callback;
+        return mockAdapter.server;
+      });
     // Setup default mock responses (cast to jest.Mock<any> to avoid TS 'never' error)
     (mockAdapter.client.domains.add as jest.Mock<any>).mockResolvedValue('domain-added');
     (mockAdapter.client.domains.delete as jest.Mock<any>).mockResolvedValue('domain-deleted');
@@ -80,7 +82,7 @@ describe('Domain Command Module', () => {
     it('should register all domain tools', () => {
       registerDomain(mockAdapter);
 
-      expect(mockAdapter.server.tool).toHaveBeenCalledTimes(5);
+      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(5);
 
       // Verify all tools are registered
       expect(toolCallbacks['add-domain']).toBeDefined();
@@ -93,40 +95,50 @@ describe('Domain Command Module', () => {
     it('should register tools with correct names and descriptions', () => {
       registerDomain(mockAdapter);
 
-      const calls = (mockAdapter.server.tool as unknown as jest.Mock).mock.calls;
+      const calls = (mockAdapter.server.registerTool as unknown as jest.Mock).mock.calls;
 
       expect(calls[0]).toEqual([
         'add-domain',
-        'Add Domain on upsun project',
-        expect.any(Object),
+        {
+          description: 'Add Domain on upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
 
       expect(calls[1]).toEqual([
         'delete-domain',
-        'Delete a Domain on upsun project',
-        expect.any(Object),
+        {
+          description: 'Delete a Domain on upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
 
       expect(calls[2]).toEqual([
         'get-domain',
-        'Get a Domain of upsun project',
-        expect.any(Object),
+        {
+          description: 'Get a Domain of upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
 
       expect(calls[3]).toEqual([
         'list-domain',
-        'List all Domains of upsun project',
-        expect.any(Object),
+        {
+          description: 'List all Domains of upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
 
       expect(calls[4]).toEqual([
         'update-domain',
-        'Update a Domain of upsun project',
-        expect.any(Object),
+        {
+          description: 'Update a Domain of upsun project',
+          inputSchema: expect.any(Object),
+        },
         expect.any(Function),
       ]);
     });

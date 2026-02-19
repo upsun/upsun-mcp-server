@@ -47,11 +47,13 @@ export function registerOrganization(adapter: McpAdapter): void {
    * @param organization_name - The name for the new organization
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'create-organization',
-      'Create a Organization on upsun',
       {
-        organization_name: Schema.organizationName(),
+        description: 'Create a Organization on upsun',
+        inputSchema: {
+          organization_name: Schema.organizationName(),
+        },
       },
       ToolWrapper.trace('create-organization', async ({ organization_name }) => {
         log.debug(`Create Organization: ${organization_name}`);
@@ -73,11 +75,13 @@ export function registerOrganization(adapter: McpAdapter): void {
    * @param organization_id - The unique identifier of the organization to delete
    */
   if (adapter.isMode()) {
-    adapter.server.tool(
+    adapter.server.registerTool(
       'delete-organization',
-      'Delete a Organization on upsun',
       {
-        organization_id: Schema.organizationId(),
+        description: 'Delete a Organization on upsun',
+        inputSchema: {
+          organization_id: Schema.organizationId(),
+        },
       },
       ToolWrapper.trace('delete-organization', async ({ organization_id }) => {
         log.debug(`Delete Organization: ${organization_id}`);
@@ -97,11 +101,13 @@ export function registerOrganization(adapter: McpAdapter): void {
    *
    * @param organization_id - The unique identifier of the organization
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'info-organization',
-    'Get information of organization on upsun',
     {
-      organization_id: Schema.organizationId(),
+      description: 'Get information of organization on upsun',
+      inputSchema: {
+        organization_id: Schema.organizationId(),
+      },
     },
     ToolWrapper.trace('info-organization', async ({ organization_id }) => {
       log.debug(`Get Information of Organization: ${organization_id}`);
@@ -121,10 +127,12 @@ export function registerOrganization(adapter: McpAdapter): void {
    * This tool doesn't require any parameters as it uses the authenticated
    * user's context to determine which organizations to list.
    */
-  adapter.server.tool(
+  adapter.server.registerTool(
     'list-organization',
-    'List all my organizations on upsun',
-    {},
+    {
+      description: 'List all my organizations on upsun',
+      inputSchema: {},
+    },
     ToolWrapper.trace('list-organization', async () => {
       log.debug(`List all my organizations`);
       const result = await adapter.client.organizations.list();
