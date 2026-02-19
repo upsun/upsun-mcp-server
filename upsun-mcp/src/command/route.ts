@@ -56,7 +56,7 @@ export function registerRoute(adapter: McpAdapter): void {
       log.debug(
         `Get Route: ${route_id || 'primary'} in Environment: ${environment_name} of Project: ${project_id}`
       );
-      const result = await adapter.client.route.get(project_id, environment_name, route_id || '');
+      const result = await adapter.client.routes.get(project_id, environment_name, route_id || '');
 
       return Response.json(result);
     })
@@ -81,7 +81,7 @@ export function registerRoute(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('list-route', async ({ project_id, environment_name }) => {
       log.debug(`List Routes in Environment: ${environment_name} of Project: ${project_id}`);
-      const result = await adapter.client.route.list(project_id, environment_name);
+      const result = await adapter.client.routes.list(project_id, environment_name);
 
       return Response.json(result);
     })
@@ -105,7 +105,7 @@ export function registerRoute(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('get-console', async ({ project_id }) => {
       log.debug(`Get Console URL of Project: ${project_id}`);
-      //const result = (await adapter.client.route.web(project_id)).ui;
+      //const result = (await adapter.client.routes.web(project_id)).ui;
       const result = 'Not implemented';
 
       return Response.json(result);

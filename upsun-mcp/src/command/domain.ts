@@ -56,7 +56,7 @@ export function registerDomain(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('add-domain', async ({ project_id, domain_name }) => {
         log.debug(`Add Domain ${domain_name} to Project ${project_id}`);
-        const result = await adapter.client.domain.add(project_id, domain_name);
+        const result = await adapter.client.domains.add(project_id, domain_name);
 
         return Response.json(result);
       })
@@ -83,7 +83,7 @@ export function registerDomain(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('delete-domain', async ({ project_id, domain_name }) => {
         log.debug(`Delete Domain ${domain_name} from Project ${project_id}`);
-        const result = await adapter.client.domain.delete(project_id, domain_name);
+        const result = await adapter.client.domains.delete(project_id, domain_name);
 
         return Response.json(result);
       })
@@ -109,7 +109,7 @@ export function registerDomain(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('get-domain', async ({ project_id, domain_name }) => {
       log.debug(`Get Domain ${domain_name} in Project ${project_id}`);
-      const result = await adapter.client.domain.get(project_id, domain_name);
+      const result = await adapter.client.domains.get(project_id, domain_name);
 
       return Response.json(result);
     })
@@ -132,7 +132,7 @@ export function registerDomain(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('list-domain', async ({ project_id }) => {
       log.debug(`List Domains in Project ${project_id}`);
-      const result = await adapter.client.domain.list(project_id);
+      const result = await adapter.client.domains.list(project_id);
 
       return Response.json(result);
     })
@@ -158,7 +158,7 @@ export function registerDomain(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('update-domain', async ({ project_id, domain_name }) => {
         log.debug(`Update Domain ${domain_name} in Project ${project_id}`);
-        const result = await adapter.client.domain.update(project_id, domain_name);
+        const result = await adapter.client.domains.update(project_id, domain_name);
 
         return Response.json(result);
       })

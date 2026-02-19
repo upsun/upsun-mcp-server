@@ -6,7 +6,7 @@
  * top-level containers for applications and environments in the Upsun platform.
  */
 
-import { SubscriptionStatusEnum } from 'upsun-sdk-node/dist/apis-gen/models/Subscription.js';
+import { SubscriptionStatusEnum } from 'upsun-sdk-node/dist/model/index.js';
 import { McpAdapter } from '../core/adapter.js';
 import { createLogger } from '../core/logger.js';
 
@@ -58,21 +58,19 @@ export function registerProject(adapter: McpAdapter): void {
         'create-project',
         async ({ organization_id, name, default_branch, region_host }) => {
           log.debug(`Create Project: ${name} in Organization: ${organization_id}`);
-          const subCreated = await adapter.client.project.create(
-            organization_id,
-            region_host,
-            name,
-            default_branch
-          );
+          const subCreated = await adapter.client.projects.create(organization_id, region_host, {
+            projectTitle: name,
+            defaultBranch: default_branch,
+          });
 
-          let prjCreated = await adapter.client.project.getSubscription(
+          let prjCreated = await adapter.client.projects.getSubscription(
             organization_id,
             subCreated.id || ''
           );
-          while (prjCreated.status !== SubscriptionStatusEnum.Active) {
+          while (prjCreated.status !== SubscriptionStatusEnum.ACTIVE) {
             log.info('Waiting for project to be active...');
             await delay(10000);
-            prjCreated = await adapter.client.project.getSubscription(
+            prjCreated = await adapter.client.projects.getSubscription(
               organization_id,
               subCreated.id || ''
             );
@@ -102,7 +100,7 @@ export function registerProject(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('delete-project', async ({ project_id }) => {
         log.debug(`Delete Project: ${project_id}`);
-        const result = await adapter.client.project.delete(project_id);
+        const result = await adapter.client.projects.delete(project_id);
 
         return Response.json(result);
       })
@@ -126,7 +124,7 @@ export function registerProject(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('info-project', async ({ project_id }) => {
       log.debug(`Get Information of Project: ${project_id}`);
-      const result = await adapter.client.project.info(project_id);
+      const result = await adapter.client.projects.info(project_id);
 
       return Response.json(result);
     })
@@ -151,7 +149,7 @@ export function registerProject(adapter: McpAdapter): void {
       'list-project',
       async ({ organization_id }) => {
         log.debug(`List all my projects in Organization: ${organization_id}`);
-        const result = await adapter.client.project.list(organization_id);
+        const result = await adapter.client.projects.list(organization_id);
 
         return Response.json(result);
       },

@@ -15,14 +15,17 @@ jest.mock('../../src/core/logger', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 
+const mockRoutesApi = {
+  get: jest.fn(),
+  list: jest.fn(),
+  web: jest.fn(),
+};
+
 // Mock the adapter
 const mockAdapter: McpAdapter = {
   client: {
-    route: {
-      get: jest.fn(),
-      list: jest.fn(),
-      web: jest.fn(),
-    },
+    route: mockRoutesApi,
+    routes: mockRoutesApi,
   },
   server: {
     tool: jest.fn(),

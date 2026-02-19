@@ -2,7 +2,7 @@
  * @fileoverview Organization management command module for Upsun MCP server.
  * 
  * This module provides MCP too    async () => {
-      const result = await adapter.client.organization.list();
+      const result = await adapter.client.organizations.list();
 
       return Response.json(result);
     }r managing Upsun organizations, which are
@@ -55,7 +55,7 @@ export function registerOrganization(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('create-organization', async ({ organization_name }) => {
         log.debug(`Create Organization: ${organization_name}`);
-        const result = await adapter.client.organization.create(organization_name);
+        const result = await adapter.client.organizations.create(organization_name);
 
         return Response.json(result);
       })
@@ -81,7 +81,7 @@ export function registerOrganization(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('delete-organization', async ({ organization_id }) => {
         log.debug(`Delete Organization: ${organization_id}`);
-        const result = await adapter.client.organization.delete(organization_id);
+        const result = await adapter.client.organizations.delete(organization_id);
 
         return Response.json(result);
       })
@@ -105,7 +105,7 @@ export function registerOrganization(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('info-organization', async ({ organization_id }) => {
       log.debug(`Get Information of Organization: ${organization_id}`);
-      const result = await adapter.client.organization.info(organization_id);
+      const result = await adapter.client.organizations.info(organization_id);
 
       return Response.json(result);
     })
@@ -127,7 +127,7 @@ export function registerOrganization(adapter: McpAdapter): void {
     {},
     ToolWrapper.trace('list-organization', async () => {
       log.debug(`List all my organizations`);
-      const result = await adapter.client.organization.list();
+      const result = await adapter.client.organizations.list();
 
       return Response.json(result);
     })

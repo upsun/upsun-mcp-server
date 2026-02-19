@@ -61,7 +61,7 @@ export function registerCertificate(adapter: McpAdapter): void {
         'add-certificate',
         async ({ project_id, certificate, key, chain }) => {
           log.debug(`Add Certificate in Project ${project_id}`);
-          const result = await adapter.client.certificate.add(project_id, certificate, key, chain);
+          const result = await adapter.client.certificates.add(project_id, certificate, key, chain);
           return Response.json(result);
         },
         { logParams: false }
@@ -89,7 +89,7 @@ export function registerCertificate(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('delete-certificate', async ({ project_id, certificate_id }) => {
         log.debug(`Delete Certificate ${certificate_id} in Project ${project_id}`);
-        const result = await adapter.client.certificate.delete(project_id, certificate_id);
+        const result = await adapter.client.certificates.delete(project_id, certificate_id);
         return Response.json(result);
       })
     );
@@ -114,7 +114,7 @@ export function registerCertificate(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('get-certificate', async ({ project_id, certificate_id }) => {
       log.debug(`Get Certificate ${certificate_id} in Project ${project_id}`);
-      const result = await adapter.client.certificate.get(project_id, certificate_id);
+      const result = await adapter.client.certificates.get(project_id, certificate_id);
       return Response.json(result);
     })
   );
@@ -136,7 +136,7 @@ export function registerCertificate(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('list-certificate', async ({ project_id }) => {
       log.debug(`List Certificates in Project ${project_id}`);
-      const result = await adapter.client.certificate.list(project_id);
+      const result = await adapter.client.certificates.list(project_id);
       return Response.json(result);
     })
   );

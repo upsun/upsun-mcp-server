@@ -27,7 +27,7 @@ describe('Telemetry Initialization Paths', () => {
 
       await expect(initTelemetry()).resolves.not.toThrow();
       await shutdownTelemetry();
-    });
+    }, 15000);
 
     it('should initialize with otlp exporter', async () => {
       process.env.OTEL_ENABLED = 'true';

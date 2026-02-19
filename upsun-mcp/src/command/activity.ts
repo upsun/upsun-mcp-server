@@ -55,7 +55,7 @@ export function registerActivity(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('cancel-activity', async ({ project_id, activity_id }) => {
         log.debug(`Cancel Activity ${activity_id} in Project ${project_id}`);
-        const result = await adapter.client.activity.cancel(project_id, activity_id);
+        const result = await adapter.client.activities.cancel(project_id, activity_id);
         return Response.json(result);
       })
     );
@@ -80,7 +80,7 @@ export function registerActivity(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('get-activity', async ({ project_id, activity_id }) => {
       log.debug(`Get Activity ${activity_id} in Project ${project_id}`);
-      const result = await adapter.client.activity.get(project_id, activity_id);
+      const result = await adapter.client.activities.get(project_id, activity_id);
       return Response.json(result);
     })
   );
@@ -103,7 +103,7 @@ export function registerActivity(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('list-activity', async ({ project_id }) => {
       log.debug(`List Activities in Project ${project_id}`);
-      const result = await adapter.client.activity.list(project_id);
+      const result = await adapter.client.activities.list(project_id);
       return Response.json(result);
     })
   );
@@ -128,7 +128,7 @@ export function registerActivity(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('log-activity', async ({ project_id, activity_id }) => {
       log.debug(`Get Logs for Activity ${activity_id} in Project ${project_id}`);
-      const result = await adapter.client.activity.log(project_id, activity_id);
+      const result = await adapter.client.activities.log(project_id, activity_id);
       return Response.json(result);
     })
   );

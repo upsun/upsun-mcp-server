@@ -6,7 +6,7 @@
  */
 
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { Resource } from '@opentelemetry/resources';
+import { resourceFromAttributes, defaultResource } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
@@ -111,7 +111,7 @@ export async function initTelemetry(): Promise<void> {
     }
 
     // Create resource with service information
-    const resource = Resource.default().merge(new Resource(resourceAttributes));
+    const resource = defaultResource().merge(resourceFromAttributes(resourceAttributes));
 
     // Create sampler based on configured sampling rate
     const sampler = new TraceIdRatioBasedSampler(otelConfig.samplingRate);

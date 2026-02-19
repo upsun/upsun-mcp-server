@@ -57,7 +57,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('activate-environment', async ({ project_id, environment_name }) => {
         log.debug(`Activate Environment ${environment_name} in Project ${project_id}`);
-        const result = await adapter.client.environment.activate(project_id, environment_name);
+        const result = await adapter.client.environments.activate(project_id, environment_name);
 
         return Response.json(result);
       })
@@ -84,7 +84,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('delete-environment', async ({ project_id, environment_name }) => {
         log.debug(`Delete Environment ${environment_name} from Project ${project_id}`);
-        const result = await adapter.client.environment.delete(project_id, environment_name);
+        const result = await adapter.client.environments.delete(project_id, environment_name);
 
         return Response.json(result);
       })
@@ -110,7 +110,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('info-environment', async ({ project_id, environment_name }) => {
       log.debug(`Get Info of Environment ${environment_name} in Project ${project_id}`);
-      const result = await adapter.client.environment.info(project_id, environment_name);
+      const result = await adapter.client.environments.info(project_id, environment_name);
 
       return Response.json(result);
     })
@@ -133,7 +133,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('list-environment', async ({ project_id }) => {
       log.debug(`List Environments in Project ${project_id}`);
-      const result = await adapter.client.environment.list(project_id);
+      const result = await adapter.client.environments.list(project_id);
 
       return Response.json(result);
     })
@@ -161,7 +161,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
         log.debug(
           `Get Logs of Application ${application_name} in Environment ${environment_name}, Project ${project_id}`
         );
-        const result = await adapter.client.environment.logs(
+        const result = await adapter.client.environments.logs(
           project_id,
           environment_name,
           application_name
@@ -192,7 +192,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('merge-environment', async ({ project_id, environment_name }) => {
         log.debug(`Merge Environment ${environment_name} in Project ${project_id}`);
-        const result = await adapter.client.environment.merge(project_id, environment_name);
+        const result = await adapter.client.environments.merge(project_id, environment_name);
 
         return Response.json(result);
       })
@@ -219,7 +219,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('pause-environment', async ({ project_id, environment_name }) => {
         log.debug(`Pause Environment ${environment_name} in Project ${project_id}`);
-        const result = await adapter.client.environment.pause(project_id, environment_name);
+        const result = await adapter.client.environments.pause(project_id, environment_name);
 
         return Response.json(result);
       })
@@ -248,7 +248,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('redeploy-environment', async ({ project_id, environment_name }) => {
         log.debug(`Redeploy Environment ${environment_name} in Project ${project_id}`);
-        const result = await adapter.client.environment.redeploy(project_id, environment_name);
+        const result = await adapter.client.environments.redeploy(project_id, environment_name);
 
         return Response.json(result);
       })
@@ -274,7 +274,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('resume-environment', async ({ project_id, environment_name }) => {
         log.debug(`Resume Environment ${environment_name} in Project ${project_id}`);
-        const result = await adapter.client.environment.resume(project_id, environment_name);
+        const result = await adapter.client.environments.resume(project_id, environment_name);
 
         return Response.json(result);
       })
@@ -300,7 +300,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('urls-environment', async ({ project_id, environment_name }) => {
       log.debug(`Get URLs of Environment ${environment_name} in Project ${project_id}`);
-      const result = await adapter.client.environment.urls(project_id, environment_name);
+      const result = await adapter.client.routes.list(project_id, environment_name);
 
       return Response.json(result);
     })

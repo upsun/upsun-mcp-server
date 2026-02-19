@@ -16,13 +16,16 @@ jest.mock('../../src/core/logger', () => ({
 }));
 
 // Explicit mock added for isMode on mockAdapter (single global declaration)
-const mockClient: { organization: any } = {
-  organization: {
-    create: jest.fn(),
-    delete: jest.fn(),
-    info: jest.fn(),
-    list: jest.fn(),
-  },
+const mockOrganizationsApi = {
+  create: jest.fn(),
+  delete: jest.fn(),
+  info: jest.fn(),
+  list: jest.fn(),
+};
+
+const mockClient: { organization: any; organizations: any } = {
+  organization: mockOrganizationsApi,
+  organizations: mockOrganizationsApi,
 };
 const mockAdapter: McpAdapter = {
   client: mockClient,

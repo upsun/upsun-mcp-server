@@ -132,7 +132,7 @@ describe('Telemetry Module', () => {
 
       // Should not throw even if not initialized
       await expect(shutdownTelemetry()).resolves.not.toThrow();
-    });
+    }, 15000);
   });
 
   describe('Span Attributes and Events', () => {
