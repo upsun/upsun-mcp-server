@@ -8,10 +8,12 @@ const log = createLogger('MCP:tasks');
 export function registerConfig(adapter: McpAdapter): void {
   log.info('Register Config Handlers');
 
-  adapter.server.prompt(
+  adapter.server.registerPrompt(
     'generate-config',
-    'Create a configuration for upsun project (requires upsun CLI installed)',
-    { app_name: z.string() },
+    {
+      description: 'Create a configuration for upsun project (requires upsun CLI installed)',
+      argsSchema: { app_name: z.string() },
+    },
     async ({ app_name }) => {
       const result = `Make this task (add headers at all steps):
 1. Use the Upsun CLI to generate the configuration for the project ${app_name}. This is the command to use: \`upsun project:init --ai --no-interaction\` at the root of the projec you are working on.
@@ -34,12 +36,14 @@ export function registerConfig(adapter: McpAdapter): void {
     }
   );
 
-  adapter.server.prompt(
+  adapter.server.registerPrompt(
     'init-config',
-    'Initialize a upsun project',
     {
-      app_name: z.string(),
-      domain_host: z.string(),
+      description: 'Initialize a upsun project',
+      argsSchema: {
+        app_name: z.string(),
+        domain_host: z.string(),
+      },
     },
     async ({ app_name, domain_host }) => {
       const result = `Make this tasks (add headers at all steps):
@@ -79,10 +83,12 @@ routes:
     }
   );
 
-  adapter.server.prompt(
+  adapter.server.registerPrompt(
     'add-domain',
-    'Add a new domain to upsun project',
-    { domain_host: z.string() },
+    {
+      description: 'Add a new domain to upsun project',
+      argsSchema: { domain_host: z.string() },
+    },
     async ({ domain_host }) => {
       const result = `Make this tasks (add headers at all steps):
 1. Create domain "${domain_host}" to the upsun project.
@@ -102,13 +108,15 @@ routes:
     }
   );
 
-  adapter.server.prompt(
+  adapter.server.registerPrompt(
     'add-variable',
-    'Add a new domain to upsun project',
     {
-      variable_name: z.string(),
-      variable_value: z.string(),
-      variable_sensitive: z.string(),
+      description: 'Add a new domain to upsun project',
+      argsSchema: {
+        variable_name: z.string(),
+        variable_value: z.string(),
+        variable_sensitive: z.string(),
+      },
     },
     async ({ variable_name, variable_value, variable_sensitive }) => {
       const result = `Make this tasks (add headers at all steps):
