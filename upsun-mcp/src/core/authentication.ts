@@ -164,7 +164,8 @@ export function requireMcpAuth(
   const bearerAuth = requireBearerAuth({ verifier, resourceMetadataUrl });
 
   return (req, res, next) => {
-    const apiKey = req.headers[HeaderKey.API_KEY] as string | undefined;
+    const raw = req.headers[HeaderKey.API_KEY];
+    const apiKey = typeof raw === 'string' ? raw : undefined;
     if (apiKey) {
       req.auth = { token: apiKey, clientId: API_KEY_CLIENT_ID, scopes: [] };
       return next();
