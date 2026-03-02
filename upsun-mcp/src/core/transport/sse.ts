@@ -41,7 +41,9 @@ export class SseTransport {
 
     const auth = req.auth as AuthInfo | undefined;
     if (!auth) {
-      res.status(500).json({ error: 'server_error', message: 'Authentication middleware did not run' });
+      res
+        .status(500)
+        .json({ error: 'server_error', message: 'Authentication middleware did not run' });
       return;
     }
     const sessionId = req.query.sessionId as string;
@@ -68,7 +70,9 @@ export class SseTransport {
 
     const auth = req.auth as AuthInfo | undefined;
     if (!auth) {
-      res.status(500).json({ error: 'server_error', message: 'Authentication middleware did not run' });
+      res
+        .status(500)
+        .json({ error: 'server_error', message: 'Authentication middleware did not run' });
       return;
     }
     const mode = extractMode(req);

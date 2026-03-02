@@ -154,7 +154,6 @@ describe('Authentication Module', () => {
         );
       }
     });
-
   });
 
   describe('Constants', () => {
@@ -235,7 +234,7 @@ describe('Authentication Module', () => {
         setHeader: jest.fn() as any,
       } as unknown as express.Response;
 
-      await new Promise<void>((resolve) => {
+      await new Promise<void>(resolve => {
         middleware(req, res, () => {
           mockNext();
           resolve();
