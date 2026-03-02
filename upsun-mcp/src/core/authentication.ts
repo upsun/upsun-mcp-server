@@ -145,7 +145,7 @@ export class JwtTokenVerifier {
     return {
       token,
       clientId: (payload.sub as string) || 'unknown',
-      scopes: typeof payload.scope === 'string' ? payload.scope.split(' ') : [],
+      scopes: typeof payload.scope === 'string' ? payload.scope.split(/\s+/).filter(Boolean) : [],
       expiresAt: typeof payload.exp === 'number' ? payload.exp : undefined,
     };
   }
@@ -163,11 +163,14 @@ export function requireMcpAuth(
   const bearerAuth = requireBearerAuth({ verifier, resourceMetadataUrl });
 
   return (req, res, next) => {
-    const apiKey = extractApiKey(req);
-    if (apiKey) {
-      // API keys bypass bearer validation.
-      req.auth = { token: apiKey, clientId: API_KEY_CLIENT_ID, scopes: [] };
-      return next();
+    // Check for API key header before calling extractApiKey to avoid a
+    // spurious WARN log on every bearer-token request.
+    if (req.headers[HeaderKey.API_KEY]) {
+      const apiKey = extractApiKey(req);
+      if (apiKey) {
+        req.auth = { token: apiKey, clientId: API_KEY_CLIENT_ID, scopes: [] };
+        return next();
+      }
     }
     bearerAuth(req, res, next);
   };

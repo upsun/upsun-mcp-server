@@ -124,7 +124,7 @@ export class GatewayServer<A extends McpAdapter> {
     // tokens and a fallback for API keys.
     const verifier = new JwtTokenVerifier();
     const resourceMetadataUrl = new URL(
-      '.well-known/oauth-protected-resource',
+      '/.well-known/oauth-protected-resource',
       oauth2Config.resourceUrl
     ).href;
     const authMiddleware = requireMcpAuth(verifier, resourceMetadataUrl);

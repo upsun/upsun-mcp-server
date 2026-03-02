@@ -190,7 +190,7 @@ describe('SseTransport', () => {
       auth: { token: 'token', clientId: 'user-1', scopes: [] },
     } as any;
     await sseTransport.getSessionRequest(req, res);
-    expect(sseTransport.sse['keepid']).toBeUndefined();
+    expect(Object.keys(sseTransport.sse)).toHaveLength(0);
   });
 
   it('should clean up session on connection close', async () => {
