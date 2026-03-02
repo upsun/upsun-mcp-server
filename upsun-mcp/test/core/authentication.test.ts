@@ -166,12 +166,26 @@ describe('Authentication Module', () => {
   describe('JwtTokenVerifier', () => {
     const verifier = new JwtTokenVerifier();
 
-    it('should parse a valid JWT and return AuthInfo', async () => {
+    it('should parse a valid JWT and return AuthInfo with clock-skew buffer', async () => {
       const token = makeJwt({ sub: 'user-1', scope: 'read write', exp: 9999999999 });
       const info = await verifier.verifyAccessToken(token);
       expect(info.token).toBe(token);
       expect(info.clientId).toBe('user-1');
       expect(info.scopes).toEqual(['read', 'write']);
+      expect(info.expiresAt).toBe(9999999999 - 30);
+    });
+
+    it('should allow configuring the clock-skew buffer', async () => {
+      const v = new JwtTokenVerifier(60);
+      const token = makeJwt({ sub: 'user-1', exp: 9999999999 });
+      const info = await v.verifyAccessToken(token);
+      expect(info.expiresAt).toBe(9999999999 - 60);
+    });
+
+    it('should allow disabling the clock-skew buffer', async () => {
+      const v = new JwtTokenVerifier(0);
+      const token = makeJwt({ sub: 'user-1', exp: 9999999999 });
+      const info = await v.verifyAccessToken(token);
       expect(info.expiresAt).toBe(9999999999);
     });
 
@@ -246,7 +260,7 @@ describe('Authentication Module', () => {
         token,
         clientId: 'user-42',
         scopes: ['offline_access'],
-        expiresAt: 9999999999,
+        expiresAt: 9999999999 - 30,
       });
     });
 

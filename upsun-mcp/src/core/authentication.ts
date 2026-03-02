@@ -130,8 +130,14 @@ export function createProtectedResourceMetadata(
  * validation. The MCP server delegates actual validation to the Upsun API.
  * This extracts `exp` so the SDK middleware can reject expired tokens with
  * HTTP 401 before the transport writes 200 headers.
+ *
+ * A clock-skew buffer (default 30s) is subtracted from the `exp` claim so
+ * that tokens close to expiry are rejected early, before the response is
+ * committed to 200.
  */
 export class JwtTokenVerifier {
+  constructor(private readonly clockSkewSeconds: number = 30) {}
+
   async verifyAccessToken(token: string): Promise<AuthInfo> {
     const parts = token.split('.');
     if (parts.length !== 3) {
@@ -143,10 +149,13 @@ export class JwtTokenVerifier {
     } catch {
       throw new InvalidTokenError('Malformed JWT payload');
     }
-    const expiresAt = typeof payload.exp === 'number' ? payload.exp : undefined;
-    if (expiresAt === undefined) {
+    const rawExp = typeof payload.exp === 'number' ? payload.exp : undefined;
+    if (rawExp === undefined) {
       log.warn('JWT missing exp claim; token will be rejected');
     }
+    // Subtract the clock-skew buffer so the SDK middleware rejects tokens
+    // that are about to expire, before the transport writes 200 headers.
+    const expiresAt = rawExp !== undefined ? rawExp - this.clockSkewSeconds : undefined;
     return {
       token,
       clientId: (payload.sub as string) || 'unknown',
