@@ -9,7 +9,8 @@ import { WritableMode, HeaderKey, API_KEY_CLIENT_ID } from './types.js';
 export { WritableMode, HeaderKey, API_KEY_CLIENT_ID } from './types.js';
 
 // Re-export SDK types used by consumers.
-export type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
+import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
+export type { AuthInfo };
 
 // Create logger instance
 const log = createLogger('Auth');
@@ -129,9 +130,7 @@ export function createProtectedResourceMetadata(
  * HTTP 401 before the transport writes 200 headers.
  */
 export class JwtTokenVerifier {
-  async verifyAccessToken(
-    token: string
-  ): Promise<import('@modelcontextprotocol/sdk/server/auth/types.js').AuthInfo> {
+  async verifyAccessToken(token: string): Promise<AuthInfo> {
     const parts = token.split('.');
     if (parts.length !== 3) {
       throw new InvalidTokenError('Not a valid JWT');
@@ -146,6 +145,8 @@ export class JwtTokenVerifier {
       token,
       clientId: (payload.sub as string) || 'unknown',
       scopes: typeof payload.scope === 'string' ? payload.scope.split(/\s+/).filter(Boolean) : [],
+      // The SDK middleware rejects tokens where expiresAt is not a number,
+      // so omitting exp still results in a 401.
       expiresAt: typeof payload.exp === 'number' ? payload.exp : undefined,
     };
   }
@@ -163,14 +164,10 @@ export function requireMcpAuth(
   const bearerAuth = requireBearerAuth({ verifier, resourceMetadataUrl });
 
   return (req, res, next) => {
-    // Check for API key header before calling extractApiKey to avoid a
-    // spurious WARN log on every bearer-token request.
-    if (req.headers[HeaderKey.API_KEY]) {
-      const apiKey = extractApiKey(req);
-      if (apiKey) {
-        req.auth = { token: apiKey, clientId: API_KEY_CLIENT_ID, scopes: [] };
-        return next();
-      }
+    const apiKey = req.headers[HeaderKey.API_KEY] as string | undefined;
+    if (apiKey) {
+      req.auth = { token: apiKey, clientId: API_KEY_CLIENT_ID, scopes: [] };
+      return next();
     }
     bearerAuth(req, res, next);
   };

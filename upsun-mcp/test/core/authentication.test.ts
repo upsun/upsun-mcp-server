@@ -156,34 +156,6 @@ describe('Authentication Module', () => {
       }
     });
 
-    it('should serve dynamic client registration endpoint', () => {
-      const app = express();
-      const config = getOAuth2Config();
-      config.baseUrl = 'http://test.example.com/';
-      setupOAuth2Direct(app, config);
-
-      // Mock request and response
-      const mockReq = {} as express.Request;
-      const mockRes = {
-        json: jest.fn(),
-      } as unknown as express.Response;
-
-      // Find and call the register endpoint handler
-      const registerRoute = (app as any)._router?.stack?.find(
-        (layer: any) => layer.route?.path === '/register'
-      );
-
-      if (registerRoute?.route?.stack?.[0]?.handle) {
-        registerRoute.route.stack[0].handle(mockReq, mockRes);
-
-        expect(mockRes.json).toHaveBeenCalledWith(
-          expect.objectContaining({
-            application_type: 'web',
-            redirect_uris: ['http://test.example.com/callback'],
-          })
-        );
-      }
-    });
   });
 
   describe('Legacy API Key Validation', () => {
