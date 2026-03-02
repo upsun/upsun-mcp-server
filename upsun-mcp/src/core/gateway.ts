@@ -4,7 +4,13 @@ import express from 'express';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 import { McpAdapter } from './adapter.js';
-import { setupOAuth2Direct, WritableMode } from './authentication.js';
+import {
+  setupOAuth2Direct,
+  JwtTokenVerifier,
+  requireMcpAuth,
+  WritableMode,
+} from './authentication.js';
+import { oauth2Config } from './config.js';
 import { createLogger } from './logger.js';
 import { HttpTransport } from './transport/http.js';
 import { HTTP_MSG_PATH, SseTransport } from './transport/sse.js';
@@ -111,12 +117,18 @@ export class GatewayServer<A extends McpAdapter> {
     coreLog.info('Initializing gateway server instance...');
     this.app.use(express.json());
 
-    // Load OAuth2 authentication
-    setupOAuth2Direct(this.app);
+    // Load OAuth2 metadata (including path-suffixed well-known routes).
+    setupOAuth2Direct(this.app, undefined, HTTP_MCP_PATH);
 
-    // Load all transports
-    this.setupStreamableTransport();
-    this.setupSseTransport();
+    // Build auth middleware using the SDK's requireBearerAuth for bearer
+    // tokens and a fallback for API keys.
+    const verifier = new JwtTokenVerifier();
+    const resourceMetadataUrl = `${oauth2Config.resourceUrl}.well-known/oauth-protected-resource`;
+    const authMiddleware = requireMcpAuth(verifier, resourceMetadataUrl);
+
+    // Load all transports (passing auth middleware).
+    this.setupStreamableTransport(authMiddleware);
+    this.setupSseTransport(authMiddleware);
     coreLog.info('Gateway server instance initialized!');
   }
 
@@ -157,18 +169,27 @@ export class GatewayServer<A extends McpAdapter> {
    *
    * @private
    */
-  private setupStreamableTransport(): void {
+  private setupStreamableTransport(authMiddleware: express.RequestHandler): void {
     coreLog.debug('Setting up Streamable HTTP transport...');
 
     // Handle POST requests for client-to-server communication
-    this.app.post(HTTP_MCP_PATH, this.httpTransport.postSessionRequest.bind(this.httpTransport));
+    this.app.post(
+      HTTP_MCP_PATH,
+      authMiddleware,
+      this.httpTransport.postSessionRequest.bind(this.httpTransport)
+    );
 
     // Handle GET requests for server-to-client notifications via streaming
-    this.app.get(HTTP_MCP_PATH, this.httpTransport.handleSessionRequest.bind(this.httpTransport));
+    this.app.get(
+      HTTP_MCP_PATH,
+      authMiddleware,
+      this.httpTransport.handleSessionRequest.bind(this.httpTransport)
+    );
 
     // Handle DELETE requests for session termination
     this.app.delete(
       HTTP_MCP_PATH,
+      authMiddleware,
       this.httpTransport.handleSessionRequest.bind(this.httpTransport)
     );
   }
@@ -194,14 +215,22 @@ export class GatewayServer<A extends McpAdapter> {
    *
    * @private
    */
-  private setupSseTransport(): void {
+  private setupSseTransport(authMiddleware: express.RequestHandler): void {
     coreLog.debug('Setting up legacy SSE transport...');
 
     // Legacy SSE endpoint for older clients
-    this.app.get(HTTP_SSE_PATH, this.sseTransport.getSessionRequest.bind(this.sseTransport));
+    this.app.get(
+      HTTP_SSE_PATH,
+      authMiddleware,
+      this.sseTransport.getSessionRequest.bind(this.sseTransport)
+    );
 
     // Legacy message endpoint for older clients
-    this.app.post(HTTP_MSG_PATH, this.sseTransport.postSessionRequest.bind(this.sseTransport));
+    this.app.post(
+      HTTP_MSG_PATH,
+      authMiddleware,
+      this.sseTransport.postSessionRequest.bind(this.sseTransport)
+    );
 
     this.app.get('/health', this.sseTransport.healthSessionRequest.bind(this.sseTransport));
   }

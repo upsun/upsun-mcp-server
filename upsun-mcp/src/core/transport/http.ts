@@ -10,7 +10,8 @@ import express from 'express';
 
 import { McpAdapter } from '../adapter.js';
 import { createLogger } from '../logger.js';
-import { extractApiKey, extractBearerToken, extractMode, HeaderKey } from '../authentication.js';
+import { extractMode, HeaderKey } from '../authentication.js';
+import type { AuthInfo } from '../authentication.js';
 import { GatewayServer } from '../gateway.js';
 
 const httpLog = createLogger('Web:HTTP');
@@ -31,82 +32,59 @@ export class HttpTransport {
    * @param req - Express request object
    * @param res - Express response object
    */
+  /**
+   * Handler for POST requests on the MCP endpoint.
+   *
+   * Authentication is handled by the gateway middleware (requireMcpAuth) which
+   * populates req.auth before this handler runs.
+   */
   async postSessionRequest(req: express.Request, res: express.Response): Promise<void> {
     httpLog.info('Received POST request to /mcp (Streamable transport)');
 
-    // Check for existing session ID
+    const auth = req.auth as AuthInfo;
     const sessionId = req.headers[HeaderKey.MCP_SESSION_ID] as string | undefined;
-    const bearer = extractBearerToken(req);
-    const apiKey = extractApiKey(req);
     const mode = extractMode(req);
+    const isApiKey = auth.clientId === 'api-key';
 
     if (sessionId && this.streamable[sessionId]) {
-      // Reuse existing transport - inject fresh authentication token
+      // Reuse existing transport - inject fresh authentication token.
       const { transport, server } = this.streamable[sessionId];
 
-      // Extract authentication token (Bearer or API key - exclusive)
-      if (!bearer && !apiKey) {
-        httpLog.warn('Rejecting request: No bearer token or API key found in existing session');
-        res.status(401).json({
-          error: 'missing_token',
-          hint: 'Bearer token (Authorization header) or API key (upsun-api-token header) required',
-        });
-        return;
-      }
-
-      // Use appropriate authentication token and update server
-      if (bearer) {
+      if (!isApiKey) {
         httpLog.debug('Bearer token found for existing session, updating server');
-        server.setCurrentBearerToken(bearer);
+        server.setCurrentBearerToken(auth.token);
       }
 
       await transport.handleRequest(req, res, req.body);
     } else if (!sessionId && isInitializeRequest(req.body)) {
-      // New session initialization request - check for authentication token
       httpLog.info('New session initialization request');
 
-      if (!bearer && !apiKey) {
-        httpLog.warn('Rejecting initialization: No bearer token or API key found');
-        res.status(401).json({
-          error: 'missing_token',
-          hint: 'Bearer token (Authorization header) or API key (upsun-api-token header) required for initialization',
-        });
-        return;
-      }
-
-      // Create the server instance first
       const server = this.gateway.makeInstanceAdapterMcpServer(mode);
 
-      // New initialization request
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: (): string => randomUUID(),
         onsessioninitialized: (sessionId): void => {
-          // Store the transport and server by session ID
           this.streamable[sessionId] = { transport, server };
         },
       });
 
-      // Clean up transport when closed
       transport.onclose = (): void => {
         if (transport.sessionId) {
           delete this.streamable[transport.sessionId];
         }
       };
 
-      // Connect server using appropriate authentication method
-      if (bearer) {
-        httpLog.info('Bearer token found for initialization, creating new session');
-        await server.connectWithBearer(transport, bearer);
-      } else if (apiKey) {
+      // Connect server using appropriate authentication method.
+      if (isApiKey) {
         httpLog.info('API key found for initialization, creating new session');
-        await server.connectWithApiKey(transport, apiKey);
-        // API key is fixed for the lifecycle, no need to set current token
+        await server.connectWithApiKey(transport, auth.token);
+      } else {
+        httpLog.info('Bearer token found for initialization, creating new session');
+        await server.connectWithBearer(transport, auth.token);
       }
 
-      // Handle the initialization request
       await transport.handleRequest(req, res, req.body);
     } else {
-      // Invalid request
       res.status(400).json({
         jsonrpc: '2.0',
         error: {

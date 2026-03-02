@@ -10,7 +10,16 @@ import {
   requireBearerToken,
   extractApiKey,
   HeaderKey,
+  JwtTokenVerifier,
+  requireMcpAuth,
 } from '../../src/core/authentication';
+
+/** Builds a minimal unsigned JWT with the given payload. */
+function makeJwt(payload: Record<string, unknown>): string {
+  const header = Buffer.from(JSON.stringify({ alg: 'none' })).toString('base64url');
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  return `${header}.${body}.sig`;
+}
 
 describe('Authentication Module', () => {
   describe('OAuth2 Configuration', () => {
@@ -369,6 +378,131 @@ describe('Authentication Module', () => {
     it('should export correct HTTP header constants', () => {
       expect(HeaderKey.API_KEY).toBe('upsun-api-token');
       expect(HeaderKey.MCP_SESSION_ID).toBe('mcp-session-id');
+    });
+  });
+
+  describe('JwtTokenVerifier', () => {
+    const verifier = new JwtTokenVerifier();
+
+    it('should parse a valid JWT and return AuthInfo', async () => {
+      const token = makeJwt({ sub: 'user-1', scope: 'read write', exp: 9999999999 });
+      const info = await verifier.verifyAccessToken(token);
+      expect(info.token).toBe(token);
+      expect(info.clientId).toBe('user-1');
+      expect(info.scopes).toEqual(['read', 'write']);
+      expect(info.expiresAt).toBe(9999999999);
+    });
+
+    it('should default clientId to "unknown" when sub is missing', async () => {
+      const token = makeJwt({ exp: 9999999999 });
+      const info = await verifier.verifyAccessToken(token);
+      expect(info.clientId).toBe('unknown');
+    });
+
+    it('should handle missing scope', async () => {
+      const token = makeJwt({ sub: 'u' });
+      const info = await verifier.verifyAccessToken(token);
+      expect(info.scopes).toEqual([]);
+    });
+
+    it('should reject a non-JWT string', async () => {
+      await expect(verifier.verifyAccessToken('not-a-jwt')).rejects.toThrow('Not a valid JWT');
+    });
+
+    it('should reject a JWT with malformed payload', async () => {
+      const header = Buffer.from('{}').toString('base64url');
+      const token = `${header}.!!!.sig`;
+      await expect(verifier.verifyAccessToken(token)).rejects.toThrow('Malformed JWT payload');
+    });
+  });
+
+  describe('requireMcpAuth', () => {
+    let mockNext: jest.Mock;
+
+    beforeEach(() => {
+      mockNext = jest.fn();
+      jest.spyOn(console, 'log').mockImplementation(() => {});
+    });
+
+    it('should pass API key requests through without bearer validation', () => {
+      const verifier = new JwtTokenVerifier();
+      const middleware = requireMcpAuth(verifier);
+
+      const req = { headers: { 'upsun-api-token': 'my-key' } } as unknown as express.Request;
+      const res = {} as express.Response;
+
+      middleware(req, res, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
+      expect(req.auth).toEqual({ token: 'my-key', clientId: 'api-key', scopes: [] });
+    });
+
+    it('should delegate to bearer auth when no API key is present', () => {
+      const verifier = new JwtTokenVerifier();
+      const middleware = requireMcpAuth(verifier);
+
+      const req = { headers: {} } as unknown as express.Request;
+      const res = {
+        status: jest.fn().mockReturnThis() as any,
+        json: jest.fn() as any,
+        set: jest.fn() as any,
+        setHeader: jest.fn() as any,
+      } as unknown as express.Response;
+
+      middleware(req, res, mockNext);
+
+      // Without a bearer token, the SDK middleware returns 401.
+      expect(mockNext).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(401);
+    });
+  });
+
+  describe('Path-suffixed well-known routes', () => {
+    it('should register path-suffixed routes when mcpPath is provided', () => {
+      const app = express();
+      const getSpy = jest.spyOn(app, 'get');
+
+      setupOAuth2Direct(app, undefined, '/mcp');
+
+      expect(getSpy).toHaveBeenCalledWith(
+        '/.well-known/oauth-authorization-server/mcp',
+        expect.any(Function)
+      );
+      expect(getSpy).toHaveBeenCalledWith(
+        '/.well-known/oauth-protected-resource/mcp',
+        expect.any(Function)
+      );
+    });
+
+    it('should serve metadata on the path-suffixed protected resource route', () => {
+      const app = express();
+      const config = getOAuth2Config();
+      setupOAuth2Direct(app, config, '/mcp');
+
+      const mockReq = {} as express.Request;
+      const mockRes = { json: jest.fn() } as unknown as express.Response;
+
+      const route = (app as any)._router?.stack?.find(
+        (layer: any) => layer.route?.path === '/.well-known/oauth-protected-resource/mcp'
+      );
+
+      if (route?.route?.stack?.[0]?.handle) {
+        route.route.stack[0].handle(mockReq, mockRes);
+        expect(mockRes.json).toHaveBeenCalledWith(
+          expect.objectContaining({ resource: config.baseUrl })
+        );
+      }
+    });
+
+    it('should not register path-suffixed routes when mcpPath is omitted', () => {
+      const app = express();
+      const getSpy = jest.spyOn(app, 'get');
+
+      setupOAuth2Direct(app);
+
+      const calls = getSpy.mock.calls.map(c => c[0]);
+      expect(calls).not.toContain('/.well-known/oauth-authorization-server/mcp');
+      expect(calls).not.toContain('/.well-known/oauth-protected-resource/mcp');
     });
   });
 });

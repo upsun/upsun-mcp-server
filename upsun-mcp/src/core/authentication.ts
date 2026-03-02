@@ -1,10 +1,16 @@
-import express from 'express';
+import express, { RequestHandler } from 'express';
+import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
+import { InvalidTokenError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
 import { createLogger } from './logger.js';
 import { oauth2Config as appAuthConfig } from './config.js';
 import { WritableMode, HeaderKey } from './types.js';
 
 // Re-export for backward compatibility
 export { WritableMode, HeaderKey } from './types.js';
+
+// Re-export SDK types used by consumers.
+export type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
+export type { OAuthTokenVerifier } from '@modelcontextprotocol/sdk/server/auth/provider.js';
 
 // Create logger instance
 const log = createLogger('Auth');
@@ -118,12 +124,68 @@ export function createProtectedResourceMetadata(
 }
 
 /**
- * Sets up OAuth2 metadata endpoints on an Express application
+ * Verifies JWT access tokens by parsing the payload without cryptographic
+ * validation. The MCP server delegates actual validation to the Upsun API.
+ * This extracts `exp` so the SDK middleware can reject expired tokens with
+ * HTTP 401 before the transport writes 200 headers.
+ */
+export class JwtTokenVerifier {
+  async verifyAccessToken(
+    token: string
+  ): Promise<import('@modelcontextprotocol/sdk/server/auth/types.js').AuthInfo> {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      throw new InvalidTokenError('Not a valid JWT');
+    }
+    let payload: Record<string, unknown>;
+    try {
+      payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+    } catch {
+      throw new InvalidTokenError('Malformed JWT payload');
+    }
+    return {
+      token,
+      clientId: (payload.sub as string) || 'unknown',
+      scopes: typeof payload.scope === 'string' ? payload.scope.split(' ') : [],
+      expiresAt: typeof payload.exp === 'number' ? payload.exp : undefined,
+    };
+  }
+}
+
+/**
+ * Combined authentication middleware that supports both bearer tokens (via the
+ * SDK's requireBearerAuth) and legacy API keys. API key requests bypass bearer
+ * validation entirely.
+ */
+export function requireMcpAuth(
+  verifier: JwtTokenVerifier,
+  resourceMetadataUrl?: string
+): RequestHandler {
+  const bearerAuth = requireBearerAuth({ verifier, resourceMetadataUrl });
+
+  return (req, res, next) => {
+    const apiKey = extractApiKey(req);
+    if (apiKey) {
+      // API keys bypass bearer validation.
+      req.auth = { token: apiKey, clientId: 'api-key', scopes: [] };
+      return next();
+    }
+    bearerAuth(req, res, next);
+  };
+}
+
+/**
+ * Sets up OAuth2 metadata endpoints on an Express application.
  *
  * @param app - Express application instance
  * @param config - Optional OAuth2 configuration (uses default if not provided)
+ * @param mcpPath - Optional MCP endpoint path for RFC 9728 path-suffixed routes
  */
-export function setupOAuth2Direct(app: express.Application, config?: OAuth2Config): void {
+export function setupOAuth2Direct(
+  app: express.Application,
+  config?: OAuth2Config,
+  mcpPath?: string
+): void {
   // Check if OAuth2 is enabled
   if (!appAuthConfig.enabled) {
     log.info('OAuth2 authentication is disabled (OAUTH_ENABLED=false)');
@@ -146,6 +208,17 @@ export function setupOAuth2Direct(app: express.Application, config?: OAuth2Confi
   app.get('/.well-known/oauth-protected-resource', (_req, res) => {
     res.json(protectedResourceMetadata);
   });
+
+  // RFC 9728 Section 3.1: path-suffixed routes for clients that construct
+  // well-known URLs from the MCP endpoint path (e.g. Claude Desktop).
+  if (mcpPath) {
+    app.get(`/.well-known/oauth-authorization-server${mcpPath}`, (_req, res) => {
+      res.json(authServerMetadata);
+    });
+    app.get(`/.well-known/oauth-protected-resource${mcpPath}`, (_req, res) => {
+      res.json(protectedResourceMetadata);
+    });
+  }
 
   log.info('OAuth2 - Metadata configured automatically');
   log.info(`OAuth2 - Authorization Server: ${oauth2Config.issuerUrl}`);
