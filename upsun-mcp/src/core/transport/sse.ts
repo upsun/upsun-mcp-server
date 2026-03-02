@@ -39,7 +39,11 @@ export class SseTransport {
     const ip = req.headers['x-forwarded-for'] || req.ip;
     sseLog.info(`Received POST request to /message (deprecated SSE transport) from ${ip}`);
 
-    const auth = req.auth as AuthInfo;
+    const auth = req.auth as AuthInfo | undefined;
+    if (!auth) {
+      res.status(500).json({ error: 'server_error', message: 'Authentication middleware did not run' });
+      return;
+    }
     const sessionId = req.query.sessionId as string;
     const transportSession = this.sse[sessionId];
 
@@ -62,7 +66,11 @@ export class SseTransport {
     const ip = req.headers['x-forwarded-for'] || req.ip;
     sseLog.info(`Received GET request to /sse (deprecated SSE transport) from ${ip}`);
 
-    const auth = req.auth as AuthInfo;
+    const auth = req.auth as AuthInfo | undefined;
+    if (!auth) {
+      res.status(500).json({ error: 'server_error', message: 'Authentication middleware did not run' });
+      return;
+    }
     const mode = extractMode(req);
     const isApiKey = auth.clientId === API_KEY_CLIENT_ID;
 

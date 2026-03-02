@@ -141,14 +141,15 @@ export class JwtTokenVerifier {
     } catch {
       throw new InvalidTokenError('Malformed JWT payload');
     }
+    const expiresAt = typeof payload.exp === 'number' ? payload.exp : undefined;
+    if (expiresAt === undefined) {
+      log.warn('JWT missing exp claim; token will be rejected');
+    }
     return {
       token,
       clientId: (payload.sub as string) || 'unknown',
       scopes: typeof payload.scope === 'string' ? payload.scope.split(/\s+/).filter(Boolean) : [],
-      expiresAt: typeof payload.exp === 'number' ? payload.exp : (() : undefined => {
-        log.warn('JWT missing exp claim; SDK middleware will reject this token');
-        return undefined;
-      })(),
+      expiresAt,
     };
   }
 }

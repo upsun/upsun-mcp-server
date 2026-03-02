@@ -34,7 +34,11 @@ export class HttpTransport {
   async postSessionRequest(req: express.Request, res: express.Response): Promise<void> {
     httpLog.info('Received POST request to /mcp (Streamable transport)');
 
-    const auth = req.auth as AuthInfo;
+    const auth = req.auth as AuthInfo | undefined;
+    if (!auth) {
+      res.status(500).json({ error: 'server_error', message: 'Authentication middleware did not run' });
+      return;
+    }
     const sessionId = req.headers[HeaderKey.MCP_SESSION_ID] as string | undefined;
     const mode = extractMode(req);
     const isApiKey = auth.clientId === API_KEY_CLIENT_ID;
