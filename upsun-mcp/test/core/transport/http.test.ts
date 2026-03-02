@@ -1,4 +1,4 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { GatewayServer } from '../../../src/core/gateway';
 import { HttpTransport } from '../../../src/core/transport/http';
 import { API_KEY_CLIENT_ID } from '../../../src/core/authentication';

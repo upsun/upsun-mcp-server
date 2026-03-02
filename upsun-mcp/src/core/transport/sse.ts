@@ -39,7 +39,7 @@ export class SseTransport {
    */
   async postSessionRequest(req: express.Request, res: express.Response): Promise<void> {
     const ip = req.headers['x-forwarded-for'] || req.ip;
-    sseLog.info(`Received POST request to /message (deprecated SSE transport) from ${ip}`);
+    sseLog.info(`Received POST request to ${HTTP_MSG_PATH} (deprecated SSE transport) from ${ip}`);
 
     const auth = req.auth as AuthInfo | undefined;
     if (!auth) {
