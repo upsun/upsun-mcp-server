@@ -20,7 +20,7 @@ const mockOrganizationsApi = {
   create: jest.fn(),
   delete: jest.fn(),
   info: jest.fn(),
-  list: jest.fn(),
+  listCurrentUserOrgs: jest.fn(),
 };
 
 const mockClient: { organizations: any } = {
@@ -100,7 +100,7 @@ describe('Organization Command Module', () => {
     mockClient.organizations.create.mockResolvedValue(mockCreateResult);
     mockClient.organizations.delete.mockResolvedValue(mockDeleteResult);
     mockClient.organizations.info.mockResolvedValue(mockOrganization);
-    mockClient.organizations.list.mockResolvedValue(mockOrganizationList);
+    mockClient.organizations.listCurrentUserOrgs.mockResolvedValue(mockOrganizationList);
   });
 
   afterEach(() => {
@@ -371,7 +371,7 @@ describe('Organization Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.organizations.list).toHaveBeenCalledWith();
+      expect(mockClient.organizations.listCurrentUserOrgs).toHaveBeenCalledWith();
       expect(result).toEqual({
         content: [
           {
@@ -384,13 +384,13 @@ describe('Organization Command Module', () => {
 
     it('should handle empty organization list', async () => {
       const callback = toolCallbacks['list-organization'];
-      mockClient.organizations.list.mockResolvedValue([]);
+      mockClient.organizations.listCurrentUserOrgs.mockResolvedValue([]);
 
       const params = {};
 
       const result = await callback(params);
 
-      expect(mockClient.organizations.list).toHaveBeenCalledWith();
+      expect(mockClient.organizations.listCurrentUserOrgs).toHaveBeenCalledWith();
       expect(result).toEqual({
         content: [
           {
@@ -404,12 +404,12 @@ describe('Organization Command Module', () => {
     it('should handle list organizations errors', async () => {
       const callback = toolCallbacks['list-organization'];
       const errorMessage = 'Authentication failed';
-      mockClient.organizations.list.mockRejectedValue(new Error(errorMessage));
+      mockClient.organizations.listCurrentUserOrgs.mockRejectedValue(new Error(errorMessage));
 
       const params = {};
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
-      expect(mockClient.organizations.list).toHaveBeenCalledWith();
+      expect(mockClient.organizations.listCurrentUserOrgs).toHaveBeenCalledWith();
     });
 
     it('should handle large organization lists', async () => {
@@ -423,7 +423,7 @@ describe('Organization Command Module', () => {
         projects_count: i % 10,
         members_count: (i % 5) + 1,
       }));
-      mockClient.organizations.list.mockResolvedValue(largeOrganizationList);
+      mockClient.organizations.listCurrentUserOrgs.mockResolvedValue(largeOrganizationList);
 
       const params = {};
 
@@ -478,7 +478,9 @@ describe('Organization Command Module', () => {
 
     it('should handle API rate limiting', async () => {
       const callback = toolCallbacks['list-organization'];
-      mockClient.organizations.list.mockRejectedValue(new Error('Rate limit exceeded'));
+      mockClient.organizations.listCurrentUserOrgs.mockRejectedValue(
+        new Error('Rate limit exceeded')
+      );
 
       const params = {};
 

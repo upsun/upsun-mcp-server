@@ -1,11 +1,7 @@
 /**
  * @fileoverview Organization management command module for Upsun MCP server.
- * 
- * This module provides MCP too    async () => {
-      const result = await adapter.client.organizations.list();
-
-      return Response.json(result);
-    }r managing Upsun organizations, which are
+ *
+ * This module provides MCP tools for managing Upsun organizations, which are
  * top-level entities that contain projects and manage billing, user access,
  * and resource allocation.
  */
@@ -135,7 +131,7 @@ export function registerOrganization(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('list-organization', async () => {
       log.debug(`List all my organizations`);
-      const result = await adapter.client.organizations.list();
+      const result = await adapter.client.organizations.listCurrentUserOrgs();
 
       return Response.json(result);
     })
