@@ -1,6 +1,7 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { GatewayServer } from '../../../src/core/gateway';
 import { SseTransport } from '../../../src/core/transport/sse';
+import { API_KEY_CLIENT_ID } from '../../../src/core/authentication';
 
 describe('SseTransport', () => {
   let gateway: GatewayServer<any>;
@@ -58,7 +59,7 @@ describe('SseTransport', () => {
       query: { sessionId: 'sess3' },
       headers: {},
       ip: '127.0.0.1',
-      auth: { token: 'my-key', clientId: 'api-key', scopes: [] },
+      auth: { token: 'my-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
     } as any;
     const res = {} as any;
     await sseTransport.postSessionRequest(req, res);
@@ -125,7 +126,7 @@ describe('SseTransport', () => {
     const req = {
       headers: {},
       ip: '127.0.0.1',
-      auth: { token: 'my-api-key', clientId: 'api-key', scopes: [] },
+      auth: { token: 'my-api-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
     } as any;
     const res = {
       writableEnded: false,

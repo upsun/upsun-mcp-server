@@ -5,13 +5,11 @@ import {
   createAuthorizationServerMetadata,
   createProtectedResourceMetadata,
   setupOAuth2Direct,
-  extractBearerToken,
-  validateBearerToken,
-  requireBearerToken,
   extractApiKey,
   HeaderKey,
   JwtTokenVerifier,
   requireMcpAuth,
+  API_KEY_CLIENT_ID,
 } from '../../src/core/authentication';
 
 /** Builds a minimal unsigned JWT with the given payload. */
@@ -188,149 +186,6 @@ describe('Authentication Module', () => {
     });
   });
 
-  describe('Bearer Token Extraction', () => {
-    let mockReq: Partial<express.Request>;
-
-    beforeEach(() => {
-      mockReq = {
-        headers: {},
-      };
-      // Mock console.log to avoid output during tests
-      jest.spyOn(console, 'log').mockImplementation(() => {});
-    });
-
-    it('should extract bearer token from Authorization header', () => {
-      mockReq.headers = {
-        authorization: 'Bearer test-token-123',
-      };
-
-      const token = extractBearerToken(mockReq as express.Request);
-      expect(token).toBe('test-token-123');
-    });
-
-    it('should extract bearer token from Authorization header (capitalized)', () => {
-      mockReq.headers = {
-        Authorization: 'Bearer test-token-456',
-      };
-
-      const token = extractBearerToken(mockReq as express.Request);
-      expect(token).toBe('test-token-456');
-    });
-
-    it('should return undefined for missing Authorization header', () => {
-      const token = extractBearerToken(mockReq as express.Request);
-      expect(token).toBeUndefined();
-    });
-
-    it('should return undefined for non-Bearer authorization', () => {
-      mockReq.headers = {
-        authorization: 'Basic dXNlcjpwYXNz',
-      };
-
-      const token = extractBearerToken(mockReq as express.Request);
-      expect(token).toBeUndefined();
-    });
-
-    it('should return undefined for empty Bearer token', () => {
-      mockReq.headers = {
-        authorization: 'Bearer ',
-      };
-
-      const token = extractBearerToken(mockReq as express.Request);
-      expect(token).toBeUndefined();
-    });
-  });
-
-  describe('Bearer Token Validation', () => {
-    let mockReq: Partial<express.Request>;
-
-    beforeEach(() => {
-      mockReq = {
-        headers: {},
-      };
-      jest.spyOn(console, 'log').mockImplementation(() => {});
-    });
-
-    it('should validate valid bearer token', () => {
-      mockReq.headers = {
-        authorization: 'Bearer valid-token',
-      };
-
-      const result = validateBearerToken(mockReq as express.Request);
-
-      expect(result.isValid).toBe(true);
-      expect(result.token).toBe('valid-token');
-      expect(result.error).toBeUndefined();
-    });
-
-    it('should reject missing bearer token', () => {
-      const result = validateBearerToken(mockReq as express.Request);
-
-      expect(result.isValid).toBe(false);
-      expect(result.token).toBeUndefined();
-      expect(result.error).toEqual({
-        code: 'missing_token',
-        message: 'Bearer token required in Authorization header',
-      });
-    });
-
-    it('should reject empty bearer token', () => {
-      mockReq.headers = {
-        authorization: 'Bearer ',
-      };
-
-      const result = validateBearerToken(mockReq as express.Request);
-
-      expect(result.isValid).toBe(false);
-      expect(result.token).toBeUndefined();
-      expect(result.error).toEqual({
-        code: 'invalid_token',
-        message: 'Bearer token cannot be empty',
-      });
-    });
-  });
-
-  describe('Bearer Token Middleware', () => {
-    let mockReq: Partial<express.Request>;
-    let mockRes: Partial<express.Response>;
-    let mockNext: jest.Mock;
-
-    beforeEach(() => {
-      mockReq = {
-        headers: {},
-      };
-      mockRes = {
-        status: jest.fn().mockReturnThis() as any,
-        json: jest.fn() as any,
-      };
-      mockNext = jest.fn();
-      jest.spyOn(console, 'log').mockImplementation(() => {});
-    });
-
-    it('should call next() for valid bearer token', () => {
-      mockReq.headers = {
-        authorization: 'Bearer valid-token',
-      };
-
-      requireBearerToken(mockReq as express.Request, mockRes as express.Response, mockNext);
-
-      expect(mockNext).toHaveBeenCalled();
-      expect((mockReq as any).bearerToken).toBe('valid-token');
-      expect(mockRes.status).not.toHaveBeenCalled();
-    });
-
-    it('should return 401 for missing bearer token', () => {
-      requireBearerToken(mockReq as express.Request, mockRes as express.Response, mockNext);
-
-      expect(mockRes.status).toHaveBeenCalledWith(401);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'missing_token',
-        message: 'Bearer token required in Authorization header',
-      });
-      expect(mockNext).not.toHaveBeenCalled();
-    });
-  });
-
   describe('Legacy API Key Validation', () => {
     let mockReq: Partial<express.Request>;
     let mockRes: Partial<express.Response>;
@@ -434,7 +289,7 @@ describe('Authentication Module', () => {
       middleware(req, res, mockNext);
 
       expect(mockNext).toHaveBeenCalled();
-      expect(req.auth).toEqual({ token: 'my-key', clientId: 'api-key', scopes: [] });
+      expect(req.auth).toEqual({ token: 'my-key', clientId: API_KEY_CLIENT_ID, scopes: [] });
     });
 
     it('should delegate to bearer auth when no API key is present', () => {

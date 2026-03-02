@@ -3,7 +3,7 @@ import { McpAdapter } from '../adapter.js';
 import express from 'express';
 import { GatewayServer } from '../gateway.js';
 import { createLogger } from '../logger.js';
-import { extractMode } from '../authentication.js';
+import { extractMode, API_KEY_CLIENT_ID } from '../authentication.js';
 import type { AuthInfo } from '../authentication.js';
 
 const sseLog = createLogger('Web:SSE');
@@ -47,7 +47,7 @@ export class SseTransport {
       const { transport, server } = transportSession;
 
       // Update the server with fresh bearer token.
-      if (auth.clientId !== 'api-key') {
+      if (auth.clientId !== API_KEY_CLIENT_ID) {
         server.setCurrentBearerToken(auth.token);
       }
 
@@ -64,7 +64,7 @@ export class SseTransport {
 
     const auth = req.auth as AuthInfo;
     const mode = extractMode(req);
-    const isApiKey = auth.clientId === 'api-key';
+    const isApiKey = auth.clientId === API_KEY_CLIENT_ID;
 
     // Create SSE transport for legacy clients.
     const transport = new SSEServerTransport(HTTP_MSG_PATH, res);

@@ -1,6 +1,7 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { GatewayServer } from '../../../src/core/gateway';
 import { HttpTransport } from '../../../src/core/transport/http';
+import { API_KEY_CLIENT_ID } from '../../../src/core/authentication';
 
 describe('HttpTransport', () => {
   let gateway: GatewayServer<any>;
@@ -51,7 +52,7 @@ describe('HttpTransport', () => {
     const req = {
       headers: { 'mcp-session-id': 'sess3' },
       body: {},
-      auth: { token: 'my-key', clientId: 'api-key', scopes: [] },
+      auth: { token: 'my-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
     } as any;
     const res = {} as any;
     await httpTransport.postSessionRequest(req, res);
@@ -103,7 +104,7 @@ describe('HttpTransport', () => {
     const req = {
       headers: {},
       body: { jsonrpc: '2.0', method: 'initialize', id: 1, params: {} },
-      auth: { token: 'test-api-key', clientId: 'api-key', scopes: [] },
+      auth: { token: 'test-api-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
     } as any;
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
 

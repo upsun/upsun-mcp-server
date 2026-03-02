@@ -123,7 +123,10 @@ export class GatewayServer<A extends McpAdapter> {
     // Build auth middleware using the SDK's requireBearerAuth for bearer
     // tokens and a fallback for API keys.
     const verifier = new JwtTokenVerifier();
-    const resourceMetadataUrl = `${oauth2Config.resourceUrl}.well-known/oauth-protected-resource`;
+    const resourceMetadataUrl = new URL(
+      '.well-known/oauth-protected-resource',
+      oauth2Config.resourceUrl
+    ).href;
     const authMiddleware = requireMcpAuth(verifier, resourceMetadataUrl);
 
     // Load all transports (passing auth middleware).

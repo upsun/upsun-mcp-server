@@ -10,7 +10,7 @@ import express from 'express';
 
 import { McpAdapter } from '../adapter.js';
 import { createLogger } from '../logger.js';
-import { extractMode, HeaderKey } from '../authentication.js';
+import { extractMode, HeaderKey, API_KEY_CLIENT_ID } from '../authentication.js';
 import type { AuthInfo } from '../authentication.js';
 import { GatewayServer } from '../gateway.js';
 
@@ -29,12 +29,6 @@ export class HttpTransport {
   /**
    * Handler for POST requests on the MCP endpoint.
    *
-   * @param req - Express request object
-   * @param res - Express response object
-   */
-  /**
-   * Handler for POST requests on the MCP endpoint.
-   *
    * Authentication is handled by the gateway middleware (requireMcpAuth) which
    * populates req.auth before this handler runs.
    */
@@ -44,7 +38,7 @@ export class HttpTransport {
     const auth = req.auth as AuthInfo;
     const sessionId = req.headers[HeaderKey.MCP_SESSION_ID] as string | undefined;
     const mode = extractMode(req);
-    const isApiKey = auth.clientId === 'api-key';
+    const isApiKey = auth.clientId === API_KEY_CLIENT_ID;
 
     if (sessionId && this.streamable[sessionId]) {
       // Reuse existing transport - inject fresh authentication token.

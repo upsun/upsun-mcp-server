@@ -3,14 +3,13 @@ import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middlew
 import { InvalidTokenError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
 import { createLogger } from './logger.js';
 import { oauth2Config as appAuthConfig } from './config.js';
-import { WritableMode, HeaderKey } from './types.js';
+import { WritableMode, HeaderKey, API_KEY_CLIENT_ID } from './types.js';
 
 // Re-export for backward compatibility
-export { WritableMode, HeaderKey } from './types.js';
+export { WritableMode, HeaderKey, API_KEY_CLIENT_ID } from './types.js';
 
 // Re-export SDK types used by consumers.
 export type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
-export type { OAuthTokenVerifier } from '@modelcontextprotocol/sdk/server/auth/provider.js';
 
 // Create logger instance
 const log = createLogger('Auth');
@@ -167,7 +166,7 @@ export function requireMcpAuth(
     const apiKey = extractApiKey(req);
     if (apiKey) {
       // API keys bypass bearer validation.
-      req.auth = { token: apiKey, clientId: 'api-key', scopes: [] };
+      req.auth = { token: apiKey, clientId: API_KEY_CLIENT_ID, scopes: [] };
       return next();
     }
     bearerAuth(req, res, next);
@@ -232,105 +231,7 @@ export function setupOAuth2Direct(
 }
 
 /**
- * Extracts Bearer token from Authorization header
- *
- * @param req - Express request object
- * @returns Bearer token string if found, undefined otherwise
- */
-export function extractBearerToken(req: express.Request): string | undefined {
-  const authHeader = req.headers['authorization'] || req.headers['Authorization'];
-  log.debug('Authorization header:', authHeader);
-
-  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring('Bearer '.length).trim();
-    log.debug('Extracted token:', token ? `${token.substring(0, 10)}...` : 'empty');
-    if (token) return token;
-  }
-
-  log.warn('No valid Bearer token found');
-  return undefined;
-}
-
-/**
- * Bearer token validation result
- */
-export interface BearerTokenValidationResult {
-  isValid: boolean;
-  token?: string;
-  error?: {
-    code: string;
-    message: string;
-  };
-}
-
-/**
- * Validates Bearer token from request
- *
- * @param req - Express request object
- * @returns Validation result with token or error information
- */
-export function validateBearerToken(req: express.Request): BearerTokenValidationResult {
-  const authHeader = req.headers['authorization'] || req.headers['Authorization'];
-
-  if (!authHeader || typeof authHeader !== 'string' || !authHeader.startsWith('Bearer ')) {
-    return {
-      isValid: false,
-      error: {
-        code: 'missing_token',
-        message: 'Bearer token required in Authorization header',
-      },
-    };
-  }
-
-  const token = authHeader.substring('Bearer '.length).trim();
-
-  // Check if token is empty after extraction
-  if (token.length === 0) {
-    return {
-      isValid: false,
-      error: {
-        code: 'invalid_token',
-        message: 'Bearer token cannot be empty',
-      },
-    };
-  }
-
-  return {
-    isValid: true,
-    token,
-  };
-}
-
-/**
- * Express middleware for Bearer token authentication
- *
- * @param req - Express request object
- * @param res - Express response object
- * @param next - Express next function
- */
-export function requireBearerToken(
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction
-): void {
-  const validation = validateBearerToken(req);
-
-  if (!validation.isValid) {
-    res.status(401).json({
-      error: validation.error?.code || 'unauthorized',
-      message: validation.error?.message || 'Authentication required',
-    });
-    return;
-  }
-
-  // Attach token to request for later use
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (req as any).bearerToken = validation.token;
-  next();
-}
-
-/**
- * Extracts API key validation for backwards compatibility
+ * Extracts API key from request headers.
  *
  * @param req - Express request object
  * @param headerName - Name of the header containing the API key
