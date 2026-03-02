@@ -151,14 +151,14 @@ export class JwtTokenVerifier {
     }
     const rawExp = typeof payload.exp === 'number' ? payload.exp : undefined;
     if (rawExp === undefined) {
-      log.warn('JWT missing exp claim; token will be rejected');
+      throw new InvalidTokenError('JWT missing exp claim');
     }
     // Subtract the clock-skew buffer so the SDK middleware rejects tokens
     // that are about to expire, before the transport writes 200 headers.
-    const expiresAt = rawExp !== undefined ? rawExp - this.clockSkewSeconds : undefined;
+    const expiresAt = rawExp - this.clockSkewSeconds;
     return {
       token,
-      clientId: (payload.sub as string) || 'unknown',
+      clientId: typeof payload.sub === 'string' ? payload.sub : 'unknown',
       scopes: typeof payload.scope === 'string' ? payload.scope.split(/\s+/).filter(Boolean) : [],
       expiresAt,
     };

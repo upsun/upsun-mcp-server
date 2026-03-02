@@ -6,12 +6,18 @@ import { API_KEY_CLIENT_ID } from '../../../src/core/authentication';
 describe('HttpTransport', () => {
   let gateway: GatewayServer<any>;
   let httpTransport: HttpTransport;
+  let handleRequestSpy: jest.SpiedFunction<any> | undefined;
 
   beforeEach(() => {
     gateway = {
       /* minimal mock */
     } as any;
     httpTransport = new HttpTransport(gateway);
+  });
+
+  afterEach(() => {
+    handleRequestSpy?.mockRestore();
+    handleRequestSpy = undefined;
   });
 
   it('should initialize with an empty streamable object', () => {
@@ -75,7 +81,9 @@ describe('HttpTransport', () => {
     httpTransport.gateway.makeInstanceAdapterMcpServer = jest.fn(() => fakeAdapter);
 
     const mod = await import('@modelcontextprotocol/sdk/server/streamableHttp.js');
-    mod.StreamableHTTPServerTransport.prototype.handleRequest = handleRequest;
+    handleRequestSpy = jest
+      .spyOn(mod.StreamableHTTPServerTransport.prototype, 'handleRequest')
+      .mockImplementation(handleRequest);
 
     const req = {
       headers: {},
@@ -118,7 +126,9 @@ describe('HttpTransport', () => {
     } as any;
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
     const mod = await import('@modelcontextprotocol/sdk/server/streamableHttp.js');
-    mod.StreamableHTTPServerTransport.prototype.handleRequest = handleRequest;
+    handleRequestSpy = jest
+      .spyOn(mod.StreamableHTTPServerTransport.prototype, 'handleRequest')
+      .mockImplementation(handleRequest);
     await httpTransport.postSessionRequest(req, res);
     expect(makeInstanceAdapterMcpServer).toHaveBeenCalled();
     expect(connectWithBearer).toHaveBeenCalledWith(expect.anything(), 'bearer-token');
@@ -147,7 +157,9 @@ describe('HttpTransport', () => {
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
 
     const mod = await import('@modelcontextprotocol/sdk/server/streamableHttp.js');
-    mod.StreamableHTTPServerTransport.prototype.handleRequest = handleRequest;
+    handleRequestSpy = jest
+      .spyOn(mod.StreamableHTTPServerTransport.prototype, 'handleRequest')
+      .mockImplementation(handleRequest);
 
     await httpTransport.postSessionRequest(req, res);
 

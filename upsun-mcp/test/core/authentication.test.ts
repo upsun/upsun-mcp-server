@@ -196,9 +196,14 @@ describe('Authentication Module', () => {
     });
 
     it('should handle missing scope', async () => {
-      const token = makeJwt({ sub: 'u' });
+      const token = makeJwt({ sub: 'u', exp: 9999999999 });
       const info = await verifier.verifyAccessToken(token);
       expect(info.scopes).toEqual([]);
+    });
+
+    it('should reject a JWT missing the exp claim', async () => {
+      const token = makeJwt({ sub: 'u' });
+      await expect(verifier.verifyAccessToken(token)).rejects.toThrow('JWT missing exp claim');
     });
 
     it('should reject a non-JWT string', async () => {
