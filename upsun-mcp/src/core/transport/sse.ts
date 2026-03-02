@@ -14,6 +14,8 @@ const KEEP_ALIVE_INTERVAL_MS = 25000;
 /** HTTP path for legacy message endpoint */
 export const HTTP_MSG_PATH = '/messages';
 
+// Note: upstream 401 forwarding is not possible over SSE because the transport
+// commits HTTP 200 headers as soon as the connection is established.
 export class SseTransport {
   /** Active SSE server transports (protocol version 2024-11-05) */
   readonly sse = {} as Record<string, { transport: SSEServerTransport; server: McpAdapter }>;

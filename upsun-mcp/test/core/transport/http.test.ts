@@ -60,6 +60,44 @@ describe('HttpTransport', () => {
     expect(handleRequest).toHaveBeenCalled();
   });
 
+  it('should create transport with enableJsonResponse: true on init', async () => {
+    const connectWithApiKey = jest.fn().mockResolvedValue(undefined);
+    const handleRequest = jest.fn(async () => {});
+    const fakeAdapter = {
+      connectWithApiKey,
+      connectWithBearer: jest.fn(),
+      setCurrentBearerToken: jest.fn(),
+      server: {},
+      client: {},
+      isMode: jest.fn(),
+    } as any;
+
+    httpTransport.gateway.makeInstanceAdapterMcpServer = jest.fn(() => fakeAdapter);
+
+    const mod = await import('@modelcontextprotocol/sdk/server/streamableHttp.js');
+    mod.StreamableHTTPServerTransport.prototype.handleRequest = handleRequest;
+
+    const req = {
+      headers: {},
+      body: { jsonrpc: '2.0', method: 'initialize', id: 1, params: {} },
+      auth: { token: 'test-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
+    } as any;
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
+
+    await httpTransport.postSessionRequest(req, res);
+
+    // Verify the transport was created and connected.
+    expect(connectWithApiKey).toHaveBeenCalled();
+    expect(handleRequest).toHaveBeenCalled();
+
+    // Verify enableJsonResponse was passed through to the inner transport.
+    const sessions = Object.values(httpTransport.streamable);
+    if (sessions.length > 0) {
+      const inner = (sessions[0].transport as any)._webStandardTransport;
+      expect(inner._enableJsonResponse).toBe(true);
+    }
+  });
+
   it('should create a new session on init with bearer', async () => {
     const connectWithBearer = jest.fn();
     const fakeAdapter = {

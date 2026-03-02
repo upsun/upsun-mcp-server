@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 import {
   Schema,
   Assert,
@@ -6,8 +6,11 @@ import {
   ToolWrapper,
   isSensitiveParam,
   SENSITIVE_PARAM_KEYWORDS,
+  forwardUpstream401,
 } from '../../src/core/helper';
 import { z } from 'zod';
+import { ResponseError } from 'upsun-sdk-node/dist/core/runtime.js';
+import { requestContext } from '../../src/core/requestContext';
 
 describe('Helper Module', () => {
   describe('isSensitiveParam function', () => {
@@ -555,6 +558,69 @@ describe('Helper Module', () => {
 
         await expect(handler({})).rejects.toThrow('Handler error');
       });
+    });
+  });
+
+  describe('forwardUpstream401', () => {
+    function makeResponseError(status: number, body: string, headers?: Record<string, string>) {
+      const h = new Headers(headers);
+      const response = new globalThis.Response(body, { status, headers: h });
+      return new ResponseError(response);
+    }
+
+    it('should forward 401 when requestContext store has res', async () => {
+      const endFn = jest.fn();
+      const statusFn = jest.fn().mockReturnThis();
+      const setHeaderFn = jest.fn();
+      const fakeRes = {
+        headersSent: false,
+        status: statusFn,
+        setHeader: setHeaderFn,
+        end: endFn,
+      } as any;
+
+      const err = makeResponseError(401, '{"error":"unauthorized"}', {
+        'www-authenticate': 'Bearer realm="api"',
+        'content-type': 'application/json',
+      });
+
+      const result = await requestContext.run({ res: fakeRes }, () =>
+        forwardUpstream401<{ content: any[]; isError: boolean }>(err)
+      );
+
+      expect(result).toEqual({ content: [], isError: true });
+      expect(statusFn).toHaveBeenCalledWith(401);
+      expect(setHeaderFn).toHaveBeenCalledWith('WWW-Authenticate', 'Bearer realm="api"');
+      expect(setHeaderFn).toHaveBeenCalledWith('Content-Type', 'application/json');
+      expect(endFn).toHaveBeenCalledWith('{"error":"unauthorized"}');
+    });
+
+    it('should return null when no requestContext store (stdio mode)', async () => {
+      const err = makeResponseError(401, 'unauthorized');
+      const result = await forwardUpstream401(err);
+      expect(result).toBeNull();
+    });
+
+    it('should return null for non-401 ResponseError', async () => {
+      const err = makeResponseError(403, 'forbidden');
+      const result = await forwardUpstream401(err);
+      expect(result).toBeNull();
+    });
+
+    it('should return null for non-ResponseError', async () => {
+      const err = new Error('something else');
+      const result = await forwardUpstream401(err);
+      expect(result).toBeNull();
+    });
+
+    it('should return null when headers already sent', async () => {
+      const fakeRes = { headersSent: true, status: jest.fn(), end: jest.fn() } as any;
+      const err = makeResponseError(401, 'unauthorized');
+
+      const result = await requestContext.run({ res: fakeRes }, () => forwardUpstream401(err));
+
+      expect(result).toBeNull();
+      expect(fakeRes.status).not.toHaveBeenCalled();
     });
   });
 });

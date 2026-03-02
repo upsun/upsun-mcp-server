@@ -12,6 +12,7 @@ import { createLogger } from '../logger.js';
 import { extractMode, HeaderKey, API_KEY_CLIENT_ID } from '../authentication.js';
 import type { AuthInfo } from '../authentication.js';
 import { GatewayServer } from '../gateway.js';
+import { requestContext } from '../requestContext.js';
 
 const httpLog = createLogger('Web:HTTP');
 
@@ -54,14 +55,18 @@ export class HttpTransport {
         server.setCurrentBearerToken(auth.token);
       }
 
-      await transport.handleRequest(req, res, req.body);
+      await requestContext.run({ res }, () => transport.handleRequest(req, res, req.body));
     } else if (!sessionId && isInitializeRequest(req.body)) {
       httpLog.info('New session initialization request');
 
       const server = this.gateway.makeInstanceAdapterMcpServer(mode);
 
+      // enableJsonResponse defers writing HTTP headers until the handler completes,
+      // allowing upstream 401 errors to be forwarded to the client. No current tools
+      // use streaming; future streaming tools would need the SSE transport path.
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: (): string => randomUUID(),
+        enableJsonResponse: true,
         onsessioninitialized: (sessionId): void => {
           this.streamable[sessionId] = { transport, server };
         },
@@ -82,7 +87,7 @@ export class HttpTransport {
         await server.connectWithBearer(transport, auth.token);
       }
 
-      await transport.handleRequest(req, res, req.body);
+      await requestContext.run({ res }, () => transport.handleRequest(req, res, req.body));
     } else {
       res.status(400).json({
         jsonrpc: '2.0',
