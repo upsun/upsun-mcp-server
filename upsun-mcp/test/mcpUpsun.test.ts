@@ -176,11 +176,17 @@ describe('UpsunMcpServer', () => {
   });
 
   describe('client management', () => {
-    it('should set current bearer token', () => {
+    it('should set current bearer token on both adapter and client', async () => {
+      // Initialize the client first.
+      const mockTransport = { start: jest.fn() } as any;
+      await server.connectWithBearer(mockTransport, 'initial-token');
+
+      const spy = jest.spyOn(server.client, 'setBearerToken');
       const token = 'test-bearer-token-456';
       server.setCurrentBearerToken(token);
 
       expect(server.currentBearerToken).toBe(token);
+      expect(spy).toHaveBeenCalledWith(token);
     });
   });
 
