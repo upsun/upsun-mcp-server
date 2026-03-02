@@ -112,10 +112,12 @@ export function createAuthorizationServerMetadata(
  * Creates OAuth2 Protected Resource metadata from configuration
  */
 export function createProtectedResourceMetadata(
-  config: OAuth2Config
+  config: OAuth2Config,
+  mcpPath?: string
 ): OAuth2ProtectedResourceMetadata {
+  const resource = mcpPath ? new URL(mcpPath, config.baseUrl).href : config.baseUrl;
   return {
-    resource: config.baseUrl,
+    resource,
     authorization_servers: [config.issuerUrl],
     scopes_supported: config.scope.split(' '),
     resource_name: 'Upsun MCP Server',
@@ -198,7 +200,7 @@ export function setupOAuth2Direct(
   const oauth2Config = config || getOAuth2Config();
 
   const authServerMetadata = createAuthorizationServerMetadata(oauth2Config);
-  const protectedResourceMetadata = createProtectedResourceMetadata(oauth2Config);
+  const protectedResourceMetadata = createProtectedResourceMetadata(oauth2Config, mcpPath);
 
   // OAuth2 Authorization Server metadata endpoint
   app.get('/.well-known/oauth-authorization-server', (_req, res) => {
@@ -223,7 +225,7 @@ export function setupOAuth2Direct(
 
   log.info('OAuth2 - Metadata configured automatically');
   log.info(`OAuth2 - Authorization Server: ${oauth2Config.issuerUrl}`);
-  log.info(`OAuth2 - Resource Server: ${oauth2Config.baseUrl}`);
+  log.info(`OAuth2 - Resource: ${protectedResourceMetadata.resource}`);
 
   if (oauth2Config.registrationUrl) {
     log.info(`OAuth2 - Dynamic Client Registration: ${oauth2Config.registrationUrl}`);
