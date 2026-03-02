@@ -1,6 +1,5 @@
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-// import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
-// Local fallback version if the dependency is missing (for tests)
+// The SDK does not export isInitializeRequest, so we define it locally.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isInitializeRequest = (body: any): boolean => {
   return body && body.jsonrpc === '2.0' && body.method === 'initialize';

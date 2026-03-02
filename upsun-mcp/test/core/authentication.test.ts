@@ -5,7 +5,6 @@ import {
   createAuthorizationServerMetadata,
   createProtectedResourceMetadata,
   setupOAuth2Direct,
-  extractApiKey,
   HeaderKey,
   JwtTokenVerifier,
   requireMcpAuth,
@@ -158,49 +157,6 @@ describe('Authentication Module', () => {
 
   });
 
-  describe('Legacy API Key Validation', () => {
-    let mockReq: Partial<express.Request>;
-    let mockRes: Partial<express.Response>;
-
-    beforeEach(() => {
-      mockReq = {
-        headers: {},
-        ip: '127.0.0.1',
-      };
-      mockRes = {
-        status: jest.fn().mockReturnThis() as any,
-        send: jest.fn() as any,
-      };
-      jest.spyOn(console, 'log').mockImplementation(() => {});
-    });
-
-    it('should validate legacy API key', () => {
-      mockReq.headers = {
-        'upsun-api-token': 'test-api-key-123',
-      };
-
-      const apiKey = extractApiKey(mockReq as express.Request);
-
-      expect(apiKey).toBe('test-api-key-123');
-    });
-
-    it('should reject missing API key', () => {
-      const apiKey = extractApiKey(mockReq as express.Request);
-
-      expect(apiKey).toBeUndefined();
-    });
-
-    it('should use custom header name', () => {
-      mockReq.headers = {
-        'custom-api-key': 'custom-key-456',
-      };
-
-      const apiKey = extractApiKey(mockReq as express.Request, 'custom-api-key');
-
-      expect(apiKey).toBe('custom-key-456');
-    });
-  });
-
   describe('Constants', () => {
     it('should export correct HTTP header constants', () => {
       expect(HeaderKey.API_KEY).toBe('upsun-api-token');
@@ -262,6 +218,37 @@ describe('Authentication Module', () => {
 
       expect(mockNext).toHaveBeenCalled();
       expect(req.auth).toEqual({ token: 'my-key', clientId: API_KEY_CLIENT_ID, scopes: [] });
+    });
+
+    it('should authenticate valid JWT bearer token and populate req.auth', async () => {
+      const verifier = new JwtTokenVerifier();
+      const middleware = requireMcpAuth(verifier);
+
+      const token = makeJwt({ sub: 'user-42', scope: 'offline_access', exp: 9999999999 });
+      const req = {
+        headers: { authorization: `Bearer ${token}` },
+      } as unknown as express.Request;
+      const res = {
+        status: jest.fn().mockReturnThis() as any,
+        json: jest.fn() as any,
+        set: jest.fn() as any,
+        setHeader: jest.fn() as any,
+      } as unknown as express.Response;
+
+      await new Promise<void>((resolve) => {
+        middleware(req, res, () => {
+          mockNext();
+          resolve();
+        });
+      });
+
+      expect(mockNext).toHaveBeenCalled();
+      expect(req.auth).toEqual({
+        token,
+        clientId: 'user-42',
+        scopes: ['offline_access'],
+        expiresAt: 9999999999,
+      });
     });
 
     it('should delegate to bearer auth when no API key is present', () => {

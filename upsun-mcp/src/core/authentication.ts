@@ -145,9 +145,10 @@ export class JwtTokenVerifier {
       token,
       clientId: (payload.sub as string) || 'unknown',
       scopes: typeof payload.scope === 'string' ? payload.scope.split(/\s+/).filter(Boolean) : [],
-      // The SDK middleware rejects tokens where expiresAt is not a number,
-      // so omitting exp still results in a 401.
-      expiresAt: typeof payload.exp === 'number' ? payload.exp : undefined,
+      expiresAt: typeof payload.exp === 'number' ? payload.exp : (() : undefined => {
+        log.warn('JWT missing exp claim; SDK middleware will reject this token');
+        return undefined;
+      })(),
     };
   }
 }
@@ -190,9 +191,8 @@ export function setupOAuth2Direct(
   if (!appAuthConfig.enabled) {
     log.info('OAuth2 authentication is disabled (OAUTH_ENABLED=false)');
     return;
-  } else {
-    log.debug('OAuth2 metadata setup initiated...');
   }
+  log.debug('OAuth2 metadata setup initiated...');
 
   const oauth2Config = config || getOAuth2Config();
 
@@ -229,31 +229,6 @@ export function setupOAuth2Direct(
   } else {
     log.warn('OAuth2 - Dynamic Client Registration: Not configured (set OAUTH_REGISTRATION_URL)');
   }
-}
-
-/**
- * Extracts API key from request headers.
- *
- * @param req - Express request object
- * @param headerName - Name of the header containing the API key
- * @returns API key string if present, undefined otherwise
- */
-export function extractApiKey(
-  req: express.Request,
-  headerName: string = HeaderKey.API_KEY
-): string | undefined {
-  const authHeader = req.headers[headerName];
-  const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
-  log.debug('Authorization header:', authHeader);
-
-  if (!authHeader) {
-    log.warn('No valid API key found');
-    return undefined;
-  }
-
-  const apiKey = authHeader as string;
-  log.debug(`Authenticate from ${ip} with API key: ${apiKey.substring(0, 5)}xxxxxxx`);
-  return apiKey;
 }
 
 /**
