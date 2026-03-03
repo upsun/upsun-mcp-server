@@ -1,5 +1,6 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import express from 'express';
+import request from 'supertest';
 import {
   getOAuth2Config,
   createAuthorizationServerMetadata,
@@ -97,62 +98,32 @@ describe('Authentication Module', () => {
       );
     });
 
-    it('should serve authorization server metadata endpoint', () => {
+    it('should serve authorization server metadata endpoint', async () => {
       const app = express();
       const config = getOAuth2Config();
       config.baseUrl = 'http://test.example.com/';
       setupOAuth2Direct(app, config);
 
-      // Mock request and response
-      const mockReq = {} as express.Request;
-      const mockRes = {
-        json: jest.fn(),
-      } as unknown as express.Response;
-
-      // Find and call the authorization server metadata handler
-      const authServerRoute = (app as any)._router?.stack?.find(
-        (layer: any) => layer.route?.path === '/.well-known/oauth-authorization-server'
-      );
-
-      if (authServerRoute?.route?.stack?.[0]?.handle) {
-        authServerRoute.route.stack[0].handle(mockReq, mockRes);
-
-        expect(mockRes.json).toHaveBeenCalledWith(
-          expect.objectContaining({
-            issuer: 'https://auth.upsun.com',
-            authorization_endpoint: 'https://auth.upsun.com/oauth2/authorize',
-          })
-        );
-      }
+      const res = await request(app).get('/.well-known/oauth-authorization-server');
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        issuer: 'https://auth.upsun.com',
+        authorization_endpoint: 'https://auth.upsun.com/oauth2/authorize',
+      });
     });
 
-    it('should serve protected resource metadata endpoint', () => {
+    it('should serve protected resource metadata endpoint', async () => {
       const app = express();
       const config = getOAuth2Config();
       config.baseUrl = 'http://test.example.com/';
       setupOAuth2Direct(app, config);
 
-      // Mock request and response
-      const mockReq = {} as express.Request;
-      const mockRes = {
-        json: jest.fn(),
-      } as unknown as express.Response;
-
-      // Find and call the protected resource metadata handler
-      const protectedResourceRoute = (app as any)._router?.stack?.find(
-        (layer: any) => layer.route?.path === '/.well-known/oauth-protected-resource'
-      );
-
-      if (protectedResourceRoute?.route?.stack?.[0]?.handle) {
-        protectedResourceRoute.route.stack[0].handle(mockReq, mockRes);
-
-        expect(mockRes.json).toHaveBeenCalledWith(
-          expect.objectContaining({
-            resource: 'http://test.example.com/',
-            authorization_servers: ['https://auth.upsun.com'],
-          })
-        );
-      }
+      const res = await request(app).get('/.well-known/oauth-protected-resource');
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        resource: 'http://test.example.com/',
+        authorization_servers: ['https://auth.upsun.com'],
+      });
     });
   });
 
@@ -306,24 +277,14 @@ describe('Authentication Module', () => {
       );
     });
 
-    it('should serve metadata on the path-suffixed protected resource route', () => {
+    it('should serve metadata on the path-suffixed protected resource route', async () => {
       const app = express();
       const config = getOAuth2Config();
       setupOAuth2Direct(app, config, '/mcp');
 
-      const mockReq = {} as express.Request;
-      const mockRes = { json: jest.fn() } as unknown as express.Response;
-
-      const route = (app as any)._router?.stack?.find(
-        (layer: any) => layer.route?.path === '/.well-known/oauth-protected-resource/mcp'
-      );
-
-      if (route?.route?.stack?.[0]?.handle) {
-        route.route.stack[0].handle(mockReq, mockRes);
-        expect(mockRes.json).toHaveBeenCalledWith(
-          expect.objectContaining({ resource: config.baseUrl })
-        );
-      }
+      const res = await request(app).get('/.well-known/oauth-protected-resource/mcp');
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ resource: expect.stringContaining('mcp') });
     });
 
     it('should not register path-suffixed routes when mcpPath is omitted', () => {
