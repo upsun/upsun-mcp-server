@@ -104,6 +104,7 @@ export class UpsunMcpServer implements McpAdapter {
    */
   setCurrentBearerToken(token: string): void {
     this.currentBearerToken = token;
+    this.client.setBearerToken(token);
   }
 
   /**

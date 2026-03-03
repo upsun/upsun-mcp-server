@@ -77,6 +77,7 @@ upsun-mcp/
 │   │   ├── gateway.ts  # HTTP/SSE server
 │   │   ├── authentication.ts # Bearer token & authentication handling
 │   │   ├── logger.ts   # Structured logging
+│   │   ├── requestContext.ts # AsyncLocalStorage for Express res
 │   │   └── helper.ts   # Common utilities
 │   ├── command/        # MCP tool implementations
 │   │   ├── index.ts    # Command exports
@@ -128,6 +129,11 @@ upsun-mcp/
 1. **API Key**: Direct authentication via `upsun-api-token` header
 2. **Bearer Token**: Alternative authentication via `Authorization: Bearer` header
 3. **Write Control**: Write operations controlled via `enable-write` header
+4. **Upstream 401 forwarding**: When the Upsun API returns 401 (expired/revoked token),
+   the HTTP transport forwards the 401 status and `WWW-Authenticate` header directly to
+   the MCP client so it can trigger OAuth2 token refresh. This only works on the
+   Streamable HTTP transport (`enableJsonResponse: true`); SSE commits 200 headers
+   immediately so 401 forwarding is not possible there.
 
 ## Development Workflow
 

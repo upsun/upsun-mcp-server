@@ -1,16 +1,23 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import express from 'express';
+import request from 'supertest';
 import {
   getOAuth2Config,
   createAuthorizationServerMetadata,
   createProtectedResourceMetadata,
   setupOAuth2Direct,
-  extractBearerToken,
-  validateBearerToken,
-  requireBearerToken,
-  extractApiKey,
   HeaderKey,
+  JwtTokenVerifier,
+  requireMcpAuth,
+  API_KEY_CLIENT_ID,
 } from '../../src/core/authentication';
+
+/** Builds a minimal unsigned JWT with the given payload. */
+function makeJwt(payload: Record<string, unknown>): string {
+  const header = Buffer.from(JSON.stringify({ alg: 'none' })).toString('base64url');
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  return `${header}.${body}.sig`;
+}
 
 describe('Authentication Module', () => {
   describe('OAuth2 Configuration', () => {
@@ -91,277 +98,32 @@ describe('Authentication Module', () => {
       );
     });
 
-    it('should serve authorization server metadata endpoint', () => {
+    it('should serve authorization server metadata endpoint', async () => {
       const app = express();
       const config = getOAuth2Config();
       config.baseUrl = 'http://test.example.com/';
       setupOAuth2Direct(app, config);
 
-      // Mock request and response
-      const mockReq = {} as express.Request;
-      const mockRes = {
-        json: jest.fn(),
-      } as unknown as express.Response;
-
-      // Find and call the authorization server metadata handler
-      const authServerRoute = (app as any)._router?.stack?.find(
-        (layer: any) => layer.route?.path === '/.well-known/oauth-authorization-server'
-      );
-
-      if (authServerRoute?.route?.stack?.[0]?.handle) {
-        authServerRoute.route.stack[0].handle(mockReq, mockRes);
-
-        expect(mockRes.json).toHaveBeenCalledWith(
-          expect.objectContaining({
-            issuer: 'https://auth.upsun.com',
-            authorization_endpoint: 'https://auth.upsun.com/oauth2/authorize',
-          })
-        );
-      }
+      const res = await request(app).get('/.well-known/oauth-authorization-server');
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        issuer: 'https://auth.upsun.com',
+        authorization_endpoint: 'https://auth.upsun.com/oauth2/authorize',
+      });
     });
 
-    it('should serve protected resource metadata endpoint', () => {
+    it('should serve protected resource metadata endpoint', async () => {
       const app = express();
       const config = getOAuth2Config();
       config.baseUrl = 'http://test.example.com/';
       setupOAuth2Direct(app, config);
 
-      // Mock request and response
-      const mockReq = {} as express.Request;
-      const mockRes = {
-        json: jest.fn(),
-      } as unknown as express.Response;
-
-      // Find and call the protected resource metadata handler
-      const protectedResourceRoute = (app as any)._router?.stack?.find(
-        (layer: any) => layer.route?.path === '/.well-known/oauth-protected-resource'
-      );
-
-      if (protectedResourceRoute?.route?.stack?.[0]?.handle) {
-        protectedResourceRoute.route.stack[0].handle(mockReq, mockRes);
-
-        expect(mockRes.json).toHaveBeenCalledWith(
-          expect.objectContaining({
-            resource: 'http://test.example.com/',
-            authorization_servers: ['https://auth.upsun.com'],
-          })
-        );
-      }
-    });
-
-    it('should serve dynamic client registration endpoint', () => {
-      const app = express();
-      const config = getOAuth2Config();
-      config.baseUrl = 'http://test.example.com/';
-      setupOAuth2Direct(app, config);
-
-      // Mock request and response
-      const mockReq = {} as express.Request;
-      const mockRes = {
-        json: jest.fn(),
-      } as unknown as express.Response;
-
-      // Find and call the register endpoint handler
-      const registerRoute = (app as any)._router?.stack?.find(
-        (layer: any) => layer.route?.path === '/register'
-      );
-
-      if (registerRoute?.route?.stack?.[0]?.handle) {
-        registerRoute.route.stack[0].handle(mockReq, mockRes);
-
-        expect(mockRes.json).toHaveBeenCalledWith(
-          expect.objectContaining({
-            application_type: 'web',
-            redirect_uris: ['http://test.example.com/callback'],
-          })
-        );
-      }
-    });
-  });
-
-  describe('Bearer Token Extraction', () => {
-    let mockReq: Partial<express.Request>;
-
-    beforeEach(() => {
-      mockReq = {
-        headers: {},
-      };
-      // Mock console.log to avoid output during tests
-      jest.spyOn(console, 'log').mockImplementation(() => {});
-    });
-
-    it('should extract bearer token from Authorization header', () => {
-      mockReq.headers = {
-        authorization: 'Bearer test-token-123',
-      };
-
-      const token = extractBearerToken(mockReq as express.Request);
-      expect(token).toBe('test-token-123');
-    });
-
-    it('should extract bearer token from Authorization header (capitalized)', () => {
-      mockReq.headers = {
-        Authorization: 'Bearer test-token-456',
-      };
-
-      const token = extractBearerToken(mockReq as express.Request);
-      expect(token).toBe('test-token-456');
-    });
-
-    it('should return undefined for missing Authorization header', () => {
-      const token = extractBearerToken(mockReq as express.Request);
-      expect(token).toBeUndefined();
-    });
-
-    it('should return undefined for non-Bearer authorization', () => {
-      mockReq.headers = {
-        authorization: 'Basic dXNlcjpwYXNz',
-      };
-
-      const token = extractBearerToken(mockReq as express.Request);
-      expect(token).toBeUndefined();
-    });
-
-    it('should return undefined for empty Bearer token', () => {
-      mockReq.headers = {
-        authorization: 'Bearer ',
-      };
-
-      const token = extractBearerToken(mockReq as express.Request);
-      expect(token).toBeUndefined();
-    });
-  });
-
-  describe('Bearer Token Validation', () => {
-    let mockReq: Partial<express.Request>;
-
-    beforeEach(() => {
-      mockReq = {
-        headers: {},
-      };
-      jest.spyOn(console, 'log').mockImplementation(() => {});
-    });
-
-    it('should validate valid bearer token', () => {
-      mockReq.headers = {
-        authorization: 'Bearer valid-token',
-      };
-
-      const result = validateBearerToken(mockReq as express.Request);
-
-      expect(result.isValid).toBe(true);
-      expect(result.token).toBe('valid-token');
-      expect(result.error).toBeUndefined();
-    });
-
-    it('should reject missing bearer token', () => {
-      const result = validateBearerToken(mockReq as express.Request);
-
-      expect(result.isValid).toBe(false);
-      expect(result.token).toBeUndefined();
-      expect(result.error).toEqual({
-        code: 'missing_token',
-        message: 'Bearer token required in Authorization header',
+      const res = await request(app).get('/.well-known/oauth-protected-resource');
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        resource: 'http://test.example.com/',
+        authorization_servers: ['https://auth.upsun.com'],
       });
-    });
-
-    it('should reject empty bearer token', () => {
-      mockReq.headers = {
-        authorization: 'Bearer ',
-      };
-
-      const result = validateBearerToken(mockReq as express.Request);
-
-      expect(result.isValid).toBe(false);
-      expect(result.token).toBeUndefined();
-      expect(result.error).toEqual({
-        code: 'invalid_token',
-        message: 'Bearer token cannot be empty',
-      });
-    });
-  });
-
-  describe('Bearer Token Middleware', () => {
-    let mockReq: Partial<express.Request>;
-    let mockRes: Partial<express.Response>;
-    let mockNext: jest.Mock;
-
-    beforeEach(() => {
-      mockReq = {
-        headers: {},
-      };
-      mockRes = {
-        status: jest.fn().mockReturnThis() as any,
-        json: jest.fn() as any,
-      };
-      mockNext = jest.fn();
-      jest.spyOn(console, 'log').mockImplementation(() => {});
-    });
-
-    it('should call next() for valid bearer token', () => {
-      mockReq.headers = {
-        authorization: 'Bearer valid-token',
-      };
-
-      requireBearerToken(mockReq as express.Request, mockRes as express.Response, mockNext);
-
-      expect(mockNext).toHaveBeenCalled();
-      expect((mockReq as any).bearerToken).toBe('valid-token');
-      expect(mockRes.status).not.toHaveBeenCalled();
-    });
-
-    it('should return 401 for missing bearer token', () => {
-      requireBearerToken(mockReq as express.Request, mockRes as express.Response, mockNext);
-
-      expect(mockRes.status).toHaveBeenCalledWith(401);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'missing_token',
-        message: 'Bearer token required in Authorization header',
-      });
-      expect(mockNext).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Legacy API Key Validation', () => {
-    let mockReq: Partial<express.Request>;
-    let mockRes: Partial<express.Response>;
-
-    beforeEach(() => {
-      mockReq = {
-        headers: {},
-        ip: '127.0.0.1',
-      };
-      mockRes = {
-        status: jest.fn().mockReturnThis() as any,
-        send: jest.fn() as any,
-      };
-      jest.spyOn(console, 'log').mockImplementation(() => {});
-    });
-
-    it('should validate legacy API key', () => {
-      mockReq.headers = {
-        'upsun-api-token': 'test-api-key-123',
-      };
-
-      const apiKey = extractApiKey(mockReq as express.Request);
-
-      expect(apiKey).toBe('test-api-key-123');
-    });
-
-    it('should reject missing API key', () => {
-      const apiKey = extractApiKey(mockReq as express.Request);
-
-      expect(apiKey).toBeUndefined();
-    });
-
-    it('should use custom header name', () => {
-      mockReq.headers = {
-        'custom-api-key': 'custom-key-456',
-      };
-
-      const apiKey = extractApiKey(mockReq as express.Request, 'custom-api-key');
-
-      expect(apiKey).toBe('custom-key-456');
     });
   });
 
@@ -369,6 +131,171 @@ describe('Authentication Module', () => {
     it('should export correct HTTP header constants', () => {
       expect(HeaderKey.API_KEY).toBe('upsun-api-token');
       expect(HeaderKey.MCP_SESSION_ID).toBe('mcp-session-id');
+    });
+  });
+
+  describe('JwtTokenVerifier', () => {
+    const verifier = new JwtTokenVerifier();
+
+    it('should parse a valid JWT and return AuthInfo with clock-skew buffer', async () => {
+      const token = makeJwt({ sub: 'user-1', scope: 'read write', exp: 9999999999 });
+      const info = await verifier.verifyAccessToken(token);
+      expect(info.token).toBe(token);
+      expect(info.clientId).toBe('user-1');
+      expect(info.scopes).toEqual(['read', 'write']);
+      expect(info.expiresAt).toBe(9999999999 - 30);
+    });
+
+    it('should allow configuring the clock-skew buffer', async () => {
+      const v = new JwtTokenVerifier(60);
+      const token = makeJwt({ sub: 'user-1', exp: 9999999999 });
+      const info = await v.verifyAccessToken(token);
+      expect(info.expiresAt).toBe(9999999999 - 60);
+    });
+
+    it('should allow disabling the clock-skew buffer', async () => {
+      const v = new JwtTokenVerifier(0);
+      const token = makeJwt({ sub: 'user-1', exp: 9999999999 });
+      const info = await v.verifyAccessToken(token);
+      expect(info.expiresAt).toBe(9999999999);
+    });
+
+    it('should default clientId to "unknown" when sub is missing', async () => {
+      const token = makeJwt({ exp: 9999999999 });
+      const info = await verifier.verifyAccessToken(token);
+      expect(info.clientId).toBe('unknown');
+    });
+
+    it('should handle missing scope', async () => {
+      const token = makeJwt({ sub: 'u', exp: 9999999999 });
+      const info = await verifier.verifyAccessToken(token);
+      expect(info.scopes).toEqual([]);
+    });
+
+    it('should reject a JWT missing the exp claim', async () => {
+      const token = makeJwt({ sub: 'u' });
+      await expect(verifier.verifyAccessToken(token)).rejects.toThrow('JWT missing exp claim');
+    });
+
+    it('should reject a non-JWT string', async () => {
+      await expect(verifier.verifyAccessToken('not-a-jwt')).rejects.toThrow('Not a valid JWT');
+    });
+
+    it('should reject a JWT with malformed payload', async () => {
+      const header = Buffer.from('{}').toString('base64url');
+      const token = `${header}.!!!.sig`;
+      await expect(verifier.verifyAccessToken(token)).rejects.toThrow('Malformed JWT payload');
+    });
+  });
+
+  describe('requireMcpAuth', () => {
+    let mockNext: jest.Mock;
+
+    beforeEach(() => {
+      mockNext = jest.fn();
+      jest.spyOn(console, 'log').mockImplementation(() => {});
+    });
+
+    it('should pass API key requests through without bearer validation', () => {
+      const verifier = new JwtTokenVerifier();
+      const middleware = requireMcpAuth(verifier);
+
+      const req = { headers: { 'upsun-api-token': 'my-key' } } as unknown as express.Request;
+      const res = {} as express.Response;
+
+      middleware(req, res, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
+      expect(req.auth).toEqual({ token: 'my-key', clientId: API_KEY_CLIENT_ID, scopes: [] });
+    });
+
+    it('should authenticate valid JWT bearer token and populate req.auth', async () => {
+      const verifier = new JwtTokenVerifier();
+      const middleware = requireMcpAuth(verifier);
+
+      const token = makeJwt({ sub: 'user-42', scope: 'offline_access', exp: 9999999999 });
+      const req = {
+        headers: { authorization: `Bearer ${token}` },
+      } as unknown as express.Request;
+      const res = {
+        status: jest.fn().mockReturnThis() as any,
+        json: jest.fn() as any,
+        set: jest.fn() as any,
+        setHeader: jest.fn() as any,
+      } as unknown as express.Response;
+
+      await new Promise<void>(resolve => {
+        middleware(req, res, () => {
+          mockNext();
+          resolve();
+        });
+      });
+
+      expect(mockNext).toHaveBeenCalled();
+      expect(req.auth).toEqual({
+        token,
+        clientId: 'user-42',
+        scopes: ['offline_access'],
+        expiresAt: 9999999999 - 30,
+      });
+    });
+
+    it('should delegate to bearer auth when no API key is present', () => {
+      const verifier = new JwtTokenVerifier();
+      const middleware = requireMcpAuth(verifier);
+
+      const req = { headers: {} } as unknown as express.Request;
+      const res = {
+        status: jest.fn().mockReturnThis() as any,
+        json: jest.fn() as any,
+        set: jest.fn() as any,
+        setHeader: jest.fn() as any,
+      } as unknown as express.Response;
+
+      middleware(req, res, mockNext);
+
+      // Without a bearer token, the SDK middleware returns 401.
+      expect(mockNext).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(401);
+    });
+  });
+
+  describe('Path-suffixed well-known routes', () => {
+    it('should register path-suffixed routes when mcpPath is provided', () => {
+      const app = express();
+      const getSpy = jest.spyOn(app, 'get');
+
+      setupOAuth2Direct(app, undefined, '/mcp');
+
+      expect(getSpy).toHaveBeenCalledWith(
+        '/.well-known/oauth-authorization-server/mcp',
+        expect.any(Function)
+      );
+      expect(getSpy).toHaveBeenCalledWith(
+        '/.well-known/oauth-protected-resource/mcp',
+        expect.any(Function)
+      );
+    });
+
+    it('should serve metadata on the path-suffixed protected resource route', async () => {
+      const app = express();
+      const config = getOAuth2Config();
+      setupOAuth2Direct(app, config, '/mcp');
+
+      const res = await request(app).get('/.well-known/oauth-protected-resource/mcp');
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ resource: expect.stringContaining('mcp') });
+    });
+
+    it('should not register path-suffixed routes when mcpPath is omitted', () => {
+      const app = express();
+      const getSpy = jest.spyOn(app, 'get');
+
+      setupOAuth2Direct(app);
+
+      const calls = getSpy.mock.calls.map(c => c[0]);
+      expect(calls).not.toContain('/.well-known/oauth-authorization-server/mcp');
+      expect(calls).not.toContain('/.well-known/oauth-protected-resource/mcp');
     });
   });
 });

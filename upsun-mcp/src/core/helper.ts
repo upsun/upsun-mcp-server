@@ -1,6 +1,11 @@
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { withSpanAsync, addSpanAttribute, addSpanEvent } from './telemetry.js';
+import { ResponseError } from 'upsun-sdk-node/dist/core/runtime.js';
+import { requestContext } from './requestContext.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('MCP:ToolWrapper');
 
 /**
  * List of sensitive parameter names that should be excluded from telemetry logs.
@@ -182,6 +187,56 @@ export class Response {
 }
 
 /**
+ * If the error is a ResponseError with status 401 and an Express response is
+ * available via AsyncLocalStorage, forward the upstream 401 (body + headers)
+ * directly to the MCP client and return a dummy CallToolResult. Otherwise
+ * return null so the caller can throw normally.
+ */
+export async function forwardUpstream401<TResult>(error: unknown): Promise<TResult | null> {
+  if (!(error instanceof ResponseError) || error.response?.status !== 401) {
+    return null;
+  }
+
+  const store = requestContext.getStore();
+  if (!store || store.res.headersSent) {
+    return null;
+  }
+
+  const { res } = store;
+  log.info('Forwarding upstream 401 to MCP client');
+
+  let body: string;
+  try {
+    body = await error.response.text();
+  } catch {
+    // Body may already have been consumed or be unreadable.
+    body = '';
+  }
+
+  // Re-check after the async read (another handler could have written meanwhile).
+  if (res.headersSent) {
+    return null;
+  }
+
+  res.status(401);
+
+  // Copy relevant headers from the upstream response.
+  const wwwAuth = error.response.headers.get('www-authenticate');
+  if (wwwAuth) {
+    res.setHeader('WWW-Authenticate', wwwAuth);
+  }
+  const contentType = error.response.headers.get('content-type');
+  if (contentType) {
+    res.setHeader('Content-Type', contentType);
+  }
+
+  res.end(body);
+
+  // Return a dummy result so the MCP SDK does not invoke createToolError.
+  return { content: [], isError: true } as TResult;
+}
+
+/**
  * Tool execution wrapper with automatic OpenTelemetry tracing.
  *
  * This utility wraps tool handler functions with distributed tracing,
@@ -278,6 +333,10 @@ export class ToolWrapper {
 
           return result;
         } catch (error) {
+          const forwarded = await forwardUpstream401<TResult>(error);
+          if (forwarded) {
+            return forwarded;
+          }
           // Error is automatically recorded by withSpanAsync
           addSpanEvent('tool.execution.failed', {
             tool: toolName,
@@ -357,6 +416,10 @@ export class ToolWrapper {
 
           return result;
         } catch (error) {
+          const forwarded = await forwardUpstream401<TResult>(error);
+          if (forwarded) {
+            return forwarded;
+          }
           addSpanEvent('tool.execution.failed', {
             tool: toolName,
             error: (error as Error).message,

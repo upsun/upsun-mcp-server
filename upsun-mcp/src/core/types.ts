@@ -38,3 +38,6 @@ export enum HeaderKey {
   API_KEY = 'upsun-api-token',
   ENABLE_WRITE = 'enable-write',
 }
+
+/** The clientId value assigned to API-key-authenticated requests by requireMcpAuth. */
+export const API_KEY_CLIENT_ID = 'api-key' as const;
