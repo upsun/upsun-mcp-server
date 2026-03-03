@@ -115,7 +115,7 @@ export function registerOrganization(adapter: McpAdapter): void {
 
   /**
    * Tool: list-organization
-   * Lists all organizations the current user has access to.
+   * Lists all organizations the current user is a member of.
    *
    * Returns an array of organizations with basic information such as
    * organization ID, name, owner, and number of projects.
