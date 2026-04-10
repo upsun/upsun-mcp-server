@@ -8,11 +8,8 @@ import { McpType } from './core/types.js';
 const log = createLogger('main');
 
 // Initialize OpenTelemetry before starting the server.
-try {
-  await initTelemetry();
-} catch (err) {
-  log.error('Failed to initialize OpenTelemetry, continuing without tracing:', err);
-}
+// initTelemetry() handles errors internally and never throws.
+await initTelemetry();
 
 // Log configuration on startup
 log.info('Starting Upsun MCP Server...');

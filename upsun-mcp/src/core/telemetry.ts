@@ -56,17 +56,25 @@ function getSpanExporter(): ConsoleSpanExporter | OTLPTraceExporter {
 }
 
 /**
- * Initialize OpenTelemetry SDK
+ * Initialize OpenTelemetry SDK.
  *
  * Sets up distributed tracing with configured sampling rate, exporter,
  * and automatic instrumentation for Node.js libraries (HTTP, Express, etc.)
  *
- * @returns Promise that resolves when initialization is complete
+ * If initialization fails the error is logged, any partially-initialized SDK
+ * is cleaned up, and the function resolves normally so the server can
+ * continue without tracing. Use {@link isTelemetryEnabled} to check whether
+ * initialization succeeded.
+ *
+ * @returns Promise that resolves when initialization is complete (or has
+ *   failed gracefully).
  *
  * @example
  * ```typescript
  * await initTelemetry();
- * // Telemetry is now active
+ * if (isTelemetryEnabled()) {
+ *   // Tracing is active.
+ * }
  * ```
  */
 export async function initTelemetry(): Promise<void> {
