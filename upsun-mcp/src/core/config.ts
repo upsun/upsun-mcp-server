@@ -29,6 +29,8 @@ if (process.env.SKIP_DOTENV_LOAD !== 'true') {
   // Load environment-specific .env file first so it takes precedence over the
   // base .env. Neither call uses override, so pre-existing OS/platform
   // variables always win. Precedence: OS env > .env.<env> > .env
+  // NODE_ENV must be set via OS/platform env to select a non-default file;
+  // a value inside .env cannot influence which .env.<env> is loaded.
   const typeEnv = getNodeEnvironment();
   if (typeEnv) {
     const envPath = join(projectRoot, `.env.${typeEnv}`);

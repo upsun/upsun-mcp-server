@@ -5,10 +5,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { writeFileSync, mkdirSync, rmSync } from 'fs';
-import { join } from 'path';
+import { writeFileSync, rmSync } from 'fs';
+import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
 import { WritableMode, McpType } from '../../src/core/types.js';
 
