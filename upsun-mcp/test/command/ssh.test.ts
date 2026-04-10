@@ -15,8 +15,6 @@ jest.mock('../../src/core/logger', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 
-const listSshKeysMessage = 'Not implemented in upsun-sdk-node@0.4.1 (no list SSH keys endpoint)';
-
 // Mock the Upsun client (add methods here if needed)
 const mockClient: any = {};
 
@@ -82,12 +80,11 @@ describe('SSH Key Command Module', () => {
     it('should register all SSH key tools', () => {
       registerSshKey(mockAdapter);
 
-      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(3);
+      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(2);
 
       // Verify all tools are registered
       expect(toolCallbacks['add-sshkey']).toBeDefined();
       expect(toolCallbacks['delete-sshkey']).toBeDefined();
-      expect(toolCallbacks['list-sshkey']).toBeDefined();
     });
 
     it('should register tools with correct names and descriptions', () => {
@@ -108,15 +105,6 @@ describe('SSH Key Command Module', () => {
         'delete-sshkey',
         {
           description: 'Delete a SSH key of upsun account',
-          inputSchema: expect.any(Object),
-        },
-        expect.any(Function),
-      ]);
-
-      expect(calls[2]).toEqual([
-        'list-sshkey',
-        {
-          description: 'List all SSH keys of upsun account',
           inputSchema: expect.any(Object),
         },
         expect.any(Function),
@@ -277,88 +265,6 @@ describe('SSH Key Command Module', () => {
     });
   });
 
-  describe('list-sshkey tool', () => {
-    beforeEach(() => {
-      registerSshKey(mockAdapter);
-    });
-
-    it('should return TODO for list SSH keys', async () => {
-      const callback = toolCallbacks['list-sshkey'];
-      const params = {
-        user_id: 'user-123',
-      };
-
-      const result = await callback(params);
-
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(listSshKeysMessage, null, 2),
-          },
-        ],
-      });
-    });
-
-    it('should handle listing for different user types', async () => {
-      const callback = toolCallbacks['list-sshkey'];
-      const testCases = [
-        { user_id: 'admin-user' },
-        { user_id: 'regular-user-456' },
-        { user_id: 'service-account-789' },
-        { user_id: 'enterprise-user-abc' },
-      ];
-
-      for (const params of testCases) {
-        const result = await callback(params);
-        expect(result).toEqual({
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(listSshKeysMessage, null, 2),
-            },
-          ],
-        });
-      }
-    });
-
-    it('should handle corporate user accounts', async () => {
-      const callback = toolCallbacks['list-sshkey'];
-      const params = {
-        user_id: 'corporate-admin-123456',
-      };
-
-      const result = await callback(params);
-
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(listSshKeysMessage, null, 2),
-          },
-        ],
-      });
-    });
-
-    it('should handle API service accounts', async () => {
-      const callback = toolCallbacks['list-sshkey'];
-      const params = {
-        user_id: 'api-service-deployment-bot',
-      };
-
-      const result = await callback(params);
-
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(listSshKeysMessage, null, 2),
-          },
-        ],
-      });
-    });
-  });
-
   describe('parameter validation and edge cases', () => {
     beforeEach(() => {
       registerSshKey(mockAdapter);
@@ -373,6 +279,7 @@ describe('SSH Key Command Module', () => {
             ssh_key: 'ssh-rsa AAAA... test@test.com',
             key_id: 'k',
           },
+          expected: 'sshkey-added',
         },
         {
           name: 'delete-sshkey',
@@ -380,26 +287,13 @@ describe('SSH Key Command Module', () => {
             user_id: 'u',
             key_id: 'k',
           },
-        },
-        {
-          name: 'list-sshkey',
-          params: {
-            user_id: 'u',
-          },
+          expected: 'sshkey-deleted',
         },
       ];
 
-      for (const { name, params } of callbacks) {
+      for (const { name, params, expected } of callbacks) {
         const callback = toolCallbacks[name];
         const result = await callback(params);
-        let expected;
-        if (name === 'add-sshkey') {
-          expected = 'sshkey-added';
-        } else if (name === 'delete-sshkey') {
-          expected = 'sshkey-deleted';
-        } else if (name === 'list-sshkey') {
-          expected = listSshKeysMessage;
-        }
         expect(result).toEqual({
           content: [{ type: 'text', text: JSON.stringify(expected, null, 2) }],
         });
@@ -419,24 +313,6 @@ describe('SSH Key Command Module', () => {
 
       expect(result).toEqual({
         content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
-      });
-    });
-
-    it('should handle numeric user IDs', async () => {
-      const callback = toolCallbacks['list-sshkey'];
-      const params = {
-        user_id: '123456789',
-      };
-
-      const result = await callback(params);
-
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(listSshKeysMessage, null, 2),
-          },
-        ],
       });
     });
 

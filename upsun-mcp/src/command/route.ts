@@ -17,10 +17,9 @@ const log = createLogger('MCP:Tool:route-commands');
 /**
  * Registers route management tools with the MCP server.
  *
- * This function adds three tools for route operations:
+ * This function adds two tools for route operations:
  * - get-route: Retrieves information about a specific route
  * - list-route: Lists all routes for an environment
- * - get-console: Gets the web console URL for a project
  *
  * @param adapter - The MCP adapter instance to register tools with
  *
@@ -91,30 +90,4 @@ export function registerRoute(adapter: McpAdapter): void {
     })
   );
 
-  /**
-   * Tool: get-console
-   * Retrieves the web console URL for a specific project.
-   *
-   * The web console URL provides access to the Upsun management interface
-   * for the project, where users can view and manage environments, deployments,
-   * and other project settings.
-   *
-   * @param project_id - The project ID to get the console URL for
-   */
-  adapter.server.registerTool(
-    'get-console',
-    {
-      description: 'Get console URL of upsun project',
-      inputSchema: {
-        project_id: Schema.projectId(),
-      },
-    },
-    ToolWrapper.trace('get-console', async ({ project_id }) => {
-      log.debug(`Get Console URL of Project: ${project_id}`);
-      //const result = (await adapter.client.routes.web(project_id)).ui;
-      const result = 'Not implemented';
-
-      return Response.json(result);
-    })
-  );
 }
