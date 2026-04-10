@@ -112,6 +112,7 @@ describe('SSH Key Command Module', () => {
         expect.any(Function),
       ]);
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
       expect(calls[2]).toEqual([
@@ -124,6 +125,8 @@ describe('SSH Key Command Module', () => {
         expect.any(Function),
       ]);
 >>>>>>> 2b40403 (feat: add MCP tool annotations for read-only and destructive hints (#20))
+=======
+>>>>>>> 8613ec4 (fix: remove unimplemented list-sshkey and get-console tools)
     });
   });
 

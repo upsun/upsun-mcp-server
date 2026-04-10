@@ -101,6 +101,7 @@ export function registerSshKey(adapter: McpAdapter): void {
     );
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
   /**
@@ -129,4 +130,6 @@ export function registerSshKey(adapter: McpAdapter): void {
     })
   );
 >>>>>>> 2b40403 (feat: add MCP tool annotations for read-only and destructive hints (#20))
+=======
+>>>>>>> 8613ec4 (fix: remove unimplemented list-sshkey and get-console tools)
 }

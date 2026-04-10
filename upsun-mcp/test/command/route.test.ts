@@ -97,6 +97,7 @@ describe('Route Command Module', () => {
         expect.any(Function),
       ]) as any;
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
       expect(calls[2]).toEqual([
@@ -109,6 +110,8 @@ describe('Route Command Module', () => {
         expect.any(Function),
       ]) as any;
 >>>>>>> 2b40403 (feat: add MCP tool annotations for read-only and destructive hints (#20))
+=======
+>>>>>>> 8613ec4 (fix: remove unimplemented list-sshkey and get-console tools)
     });
   });
 
