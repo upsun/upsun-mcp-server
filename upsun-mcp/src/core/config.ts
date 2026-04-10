@@ -36,7 +36,7 @@ if (process.env.SKIP_DOTENV_LOAD !== 'true') {
   if (typeEnv) {
     const envPath = join(projectRoot, `.env.${typeEnv}`);
     if (existsSync(envPath)) {
-      const specificEnv = dotenv.config({ path: envPath, override: true });
+      const specificEnv = dotenv.config({ path: envPath });
       dotenvExpand.expand(specificEnv);
     }
   }
