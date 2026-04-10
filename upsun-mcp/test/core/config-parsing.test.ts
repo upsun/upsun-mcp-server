@@ -5,8 +5,17 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { writeFileSync, mkdirSync, rmSync } from 'fs';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
 import { WritableMode, McpType } from '../../src/core/types.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+// config.ts resolves projectRoot as two levels up from src/core/config.ts
+const projectRoot = join(__dirname, '..', '..');
 
 describe('Configuration Parsing', () => {
   const originalEnv = process.env;
@@ -269,6 +278,48 @@ describe('Configuration Parsing', () => {
       const summary = getConfigSummary();
 
       expect(summary).toContain('2 headers');
+    });
+  });
+
+  describe('dotenv loading precedence', () => {
+    const envFile = join(projectRoot, '.env.test-dotenv');
+
+    afterEach(() => {
+      try {
+        rmSync(envFile);
+      } catch {
+        // File may not exist.
+      }
+    });
+
+    it('should not override pre-existing OS environment variables', async () => {
+      // Simulate a platform-provided env var that must not be clobbered.
+      process.env.OAUTH_BASE_URL = 'https://platform-provided.example.com/';
+
+      // Write a .env file that tries to set the same key.
+      writeFileSync(envFile, 'OAUTH_BASE_URL=http://127.0.0.1:3000/\n');
+
+      // Enable dotenv loading and point NODE_ENV at the temp file.
+      delete process.env.SKIP_DOTENV_LOAD;
+      process.env.NODE_ENV = 'test-dotenv';
+
+      const { oauth2Config } = await import('../../src/core/config.js');
+      expect(oauth2Config.resourceUrl).toBe('https://platform-provided.example.com/');
+    });
+
+    it('should use .env.<env> value over .env base value for same key', async () => {
+      // Write env-specific file with a distinct value.
+      writeFileSync(envFile, 'OTEL_SERVICE_NAME=from-env-specific\n');
+
+      // Enable dotenv loading.
+      delete process.env.SKIP_DOTENV_LOAD;
+      process.env.NODE_ENV = 'test-dotenv';
+      // Ensure the key is not already in OS env so dotenv files compete.
+      delete process.env.OTEL_SERVICE_NAME;
+
+      const { otelConfig } = await import('../../src/core/config.js');
+      // .env.test-dotenv is loaded first, so its value wins over .env base.
+      expect(otelConfig.serviceName).toBe('from-env-specific');
     });
   });
 });

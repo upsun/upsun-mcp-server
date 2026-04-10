@@ -23,15 +23,12 @@ const __dirname = dirname(__filename);
 // Project root is two levels up from this file (src/core/config.ts -> upsun-mcp/)
 const projectRoot = join(__dirname, '..', '..');
 
-// Skip loading .env files during tests to allow tests to control environment
-// Tests will set SKIP_DOTENV_LOAD=true to prevent .env loading
+// Skip loading .env files during tests to allow tests to control environment.
+// Tests will set SKIP_DOTENV_LOAD=true to prevent .env loading.
 if (process.env.SKIP_DOTENV_LOAD !== 'true') {
-  // Load base .env file first
-  const baseEnv = dotenv.config({ path: join(projectRoot, '.env') });
-  dotenvExpand.expand(baseEnv);
-
-  // Then try to load environment-specific .env file based on TYPE_ENV
-  // Use override: true to allow the specific env file to override base values
+  // Load environment-specific .env file first so it takes precedence over the
+  // base .env. Neither call uses override, so pre-existing OS/platform
+  // variables always win. Precedence: OS env > .env.<env> > .env
   const typeEnv = getNodeEnvironment();
   if (typeEnv) {
     const envPath = join(projectRoot, `.env.${typeEnv}`);
@@ -40,6 +37,10 @@ if (process.env.SKIP_DOTENV_LOAD !== 'true') {
       dotenvExpand.expand(specificEnv);
     }
   }
+
+  // Load base .env file (only sets keys not already present).
+  const baseEnv = dotenv.config({ path: join(projectRoot, '.env') });
+  dotenvExpand.expand(baseEnv);
 }
 
 /**
