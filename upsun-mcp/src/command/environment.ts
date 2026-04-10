@@ -51,6 +51,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'activate-environment',
       {
+        annotations: { destructiveHint: false },
         description: 'Activate a environment of upsun project',
         inputSchema: {
           project_id: Schema.projectId(),
@@ -80,6 +81,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'delete-environment',
       {
+        annotations: { destructiveHint: true },
         description: 'Delete a environment of upsun project',
         inputSchema: {
           project_id: Schema.projectId(),
@@ -108,6 +110,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'info-environment',
     {
+      annotations: { readOnlyHint: true },
       description: 'Get information of environment on upsun project',
       inputSchema: {
         project_id: Schema.projectId(),
@@ -134,6 +137,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'list-environment',
     {
+      annotations: { readOnlyHint: true },
       description: 'List all environments of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),
@@ -158,6 +162,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'logs-environment',
     {
+      annotations: { readOnlyHint: true },
       description: 'Display logs of app of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),
@@ -284,6 +289,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'resume-environment',
       {
+        annotations: { destructiveHint: false },
         description: 'Resume a environment of upsun project',
         inputSchema: {
           project_id: Schema.projectId(),
@@ -312,6 +318,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'urls-environment',
     {
+      annotations: { readOnlyHint: true },
       description: 'Get URLs of environment on upsun project',
       inputSchema: {
         project_id: Schema.projectId(),

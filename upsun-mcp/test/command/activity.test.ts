@@ -139,6 +139,7 @@ describe('Activity Command Module', () => {
       expect(calls[1]).toEqual([
         'get-activity',
         {
+          annotations: { readOnlyHint: true },
           description: 'Get detail of activity on upsun project',
           inputSchema: expect.any(Object),
         },
@@ -148,6 +149,7 @@ describe('Activity Command Module', () => {
       expect(calls[2]).toEqual([
         'list-activity',
         {
+          annotations: { readOnlyHint: true },
           description: 'List all activities of upsun project',
           inputSchema: expect.any(Object),
         },
@@ -157,6 +159,7 @@ describe('Activity Command Module', () => {
       expect(calls[3]).toEqual([
         'log-activity',
         {
+          annotations: { readOnlyHint: true },
           description: 'Get log activity of upsun project',
           inputSchema: expect.any(Object),
         },

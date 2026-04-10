@@ -76,6 +76,7 @@ export function registerActivity(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'get-activity',
     {
+      annotations: { readOnlyHint: true },
       description: 'Get detail of activity on upsun project',
       inputSchema: {
         project_id: Schema.projectId(),
@@ -102,6 +103,7 @@ export function registerActivity(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'list-activity',
     {
+      annotations: { readOnlyHint: true },
       description: 'List all activities of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),
@@ -128,6 +130,7 @@ export function registerActivity(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'log-activity',
     {
+      annotations: { readOnlyHint: true },
       description: 'Get log activity of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),

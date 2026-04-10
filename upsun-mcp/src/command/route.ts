@@ -47,6 +47,7 @@ export function registerRoute(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'get-route',
     {
+      annotations: { readOnlyHint: true },
       description: 'Get route URL of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),
@@ -77,6 +78,7 @@ export function registerRoute(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'list-route',
     {
+      annotations: { readOnlyHint: true },
       description: 'List routes URL of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),
@@ -104,6 +106,7 @@ export function registerRoute(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'get-console',
     {
+      annotations: { readOnlyHint: true },
       description: 'Get console URL of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),

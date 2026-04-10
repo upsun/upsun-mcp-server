@@ -48,6 +48,7 @@ export function registerProject(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'create-project',
       {
+        annotations: { destructiveHint: false },
         description: 'Create a new upsun project',
         inputSchema: {
           organization_id: Schema.organizationId(),
@@ -97,6 +98,7 @@ export function registerProject(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'delete-project',
       {
+        annotations: { destructiveHint: true },
         description: 'Delete a upsun project',
         inputSchema: {
           project_id: Schema.projectId(),
@@ -123,6 +125,7 @@ export function registerProject(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'info-project',
     {
+      annotations: { readOnlyHint: true },
       description: 'Get information of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),
@@ -148,6 +151,7 @@ export function registerProject(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'list-project',
     {
+      annotations: { readOnlyHint: true },
       description: 'List all upsun projects',
       inputSchema: {
         organization_id: Schema.organizationId(),

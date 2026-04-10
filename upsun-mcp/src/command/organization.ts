@@ -46,6 +46,7 @@ export function registerOrganization(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'create-organization',
       {
+        annotations: { destructiveHint: false },
         description: 'Create a Organization on upsun',
         inputSchema: {
           organization_name: Schema.organizationName(),
@@ -74,6 +75,7 @@ export function registerOrganization(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'delete-organization',
       {
+        annotations: { destructiveHint: true },
         description: 'Delete a Organization on upsun',
         inputSchema: {
           organization_id: Schema.organizationId(),
@@ -100,6 +102,7 @@ export function registerOrganization(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'info-organization',
     {
+      annotations: { readOnlyHint: true },
       description: 'Get information of organization on upsun',
       inputSchema: {
         organization_id: Schema.organizationId(),
@@ -126,6 +129,7 @@ export function registerOrganization(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'list-organization',
     {
+      annotations: { readOnlyHint: true },
       description: 'List all my organizations on upsun',
       inputSchema: {},
     },
