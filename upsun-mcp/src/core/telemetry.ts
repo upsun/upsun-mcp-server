@@ -147,6 +147,16 @@ export async function initTelemetry(): Promise<void> {
     log.info('OpenTelemetry initialized successfully ✓');
   } catch (error) {
     log.error('Failed to initialize OpenTelemetry:', error);
+
+    // Clean up any partially-initialized SDK to prevent resource leaks.
+    try {
+      await sdk?.shutdown();
+    } catch (shutdownError) {
+      log.warn('Failed to clean up partially initialized OpenTelemetry SDK:', shutdownError);
+    } finally {
+      sdk = null;
+      isInitialized = false;
+    }
   }
 }
 
