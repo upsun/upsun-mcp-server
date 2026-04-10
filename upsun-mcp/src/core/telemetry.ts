@@ -49,11 +49,6 @@ function getSpanExporter(): ConsoleSpanExporter | OTLPTraceExporter {
       });
     }
 
-    case 'none':
-      log.info('Using no span exporter (traces collected but not exported)');
-      // Return a no-op exporter that does nothing
-      return new ConsoleSpanExporter(); // Will be filtered by sampler
-
     default:
       log.warn(`Unknown exporter type: ${otelConfig.exporterType}, defaulting to console`);
       return new ConsoleSpanExporter();
@@ -77,6 +72,11 @@ function getSpanExporter(): ConsoleSpanExporter | OTLPTraceExporter {
 export async function initTelemetry(): Promise<void> {
   if (!otelConfig.enabled) {
     log.info('OpenTelemetry is disabled via configuration');
+    return;
+  }
+
+  if (otelConfig.exporterType === 'none') {
+    log.info('OpenTelemetry exporter set to none, tracing is disabled');
     return;
   }
 
@@ -147,7 +147,6 @@ export async function initTelemetry(): Promise<void> {
     log.info('OpenTelemetry initialized successfully ✓');
   } catch (error) {
     log.error('Failed to initialize OpenTelemetry:', error);
-    throw error;
   }
 }
 
