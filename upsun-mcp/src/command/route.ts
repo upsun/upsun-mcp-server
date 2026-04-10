@@ -89,5 +89,4 @@ export function registerRoute(adapter: McpAdapter): void {
       return Response.json(result);
     })
   );
-
 }
