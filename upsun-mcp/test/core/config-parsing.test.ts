@@ -281,7 +281,8 @@ describe('Configuration Parsing', () => {
   });
 
   describe('dotenv loading precedence', () => {
-    const envFile = join(projectRoot, '.env.test-dotenv');
+    const envSuffix = `test-${process.pid}`;
+    const envFile = join(projectRoot, `.env.${envSuffix}`);
 
     afterEach(() => {
       try {
@@ -300,7 +301,7 @@ describe('Configuration Parsing', () => {
 
       // Enable dotenv loading and point NODE_ENV at the temp file.
       delete process.env.SKIP_DOTENV_LOAD;
-      process.env.NODE_ENV = 'test-dotenv';
+      process.env.NODE_ENV = envSuffix;
 
       const { oauth2Config } = await import('../../src/core/config.js');
       expect(oauth2Config.resourceUrl).toBe('https://platform-provided.example.com/');
@@ -312,12 +313,12 @@ describe('Configuration Parsing', () => {
 
       // Enable dotenv loading.
       delete process.env.SKIP_DOTENV_LOAD;
-      process.env.NODE_ENV = 'test-dotenv';
+      process.env.NODE_ENV = envSuffix;
       // Ensure the key is not already in OS env so dotenv files compete.
       delete process.env.OTEL_SERVICE_NAME;
 
       const { otelConfig } = await import('../../src/core/config.js');
-      // .env.test-dotenv is loaded first, so its value wins over .env base.
+      // .env.<env> is loaded first, so its value wins over .env base.
       expect(otelConfig.serviceName).toBe('from-env-specific');
     });
   });
