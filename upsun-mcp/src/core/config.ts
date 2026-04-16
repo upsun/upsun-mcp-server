@@ -251,7 +251,7 @@ export const storageConfig = {
  */
 export const otelConfig = {
   /** Enable or disable OpenTelemetry distributed tracing */
-  enabled: parseBoolean(process.env.OTEL_ENABLED, true),
+  enabled: parseBoolean(process.env.OTEL_ENABLED, false),
 
   /** Sampling rate for traces (0.0 to 1.0) */
   samplingRate: parseNumber(process.env.OTEL_SAMPLING_RATE, 1.0, 0.0, 1.0),

@@ -49,11 +49,6 @@ function getSpanExporter(): ConsoleSpanExporter | OTLPTraceExporter {
       });
     }
 
-    case 'none':
-      log.info('Using no span exporter (traces collected but not exported)');
-      // Return a no-op exporter that does nothing
-      return new ConsoleSpanExporter(); // Will be filtered by sampler
-
     default:
       log.warn(`Unknown exporter type: ${otelConfig.exporterType}, defaulting to console`);
       return new ConsoleSpanExporter();
@@ -61,22 +56,35 @@ function getSpanExporter(): ConsoleSpanExporter | OTLPTraceExporter {
 }
 
 /**
- * Initialize OpenTelemetry SDK
+ * Initialize OpenTelemetry SDK.
  *
  * Sets up distributed tracing with configured sampling rate, exporter,
  * and automatic instrumentation for Node.js libraries (HTTP, Express, etc.)
  *
- * @returns Promise that resolves when initialization is complete
+ * If initialization fails the error is logged, any partially-initialized SDK
+ * is cleaned up, and the function resolves normally so the server can
+ * continue without tracing. Use {@link isTelemetryEnabled} to check whether
+ * initialization succeeded.
+ *
+ * @returns Promise that resolves when initialization is complete (or has
+ *   failed gracefully).
  *
  * @example
  * ```typescript
  * await initTelemetry();
- * // Telemetry is now active
+ * if (isTelemetryEnabled()) {
+ *   // Tracing is active.
+ * }
  * ```
  */
 export async function initTelemetry(): Promise<void> {
   if (!otelConfig.enabled) {
     log.info('OpenTelemetry is disabled via configuration');
+    return;
+  }
+
+  if (otelConfig.exporterType === 'none') {
+    log.info('OpenTelemetry exporter set to none, tracing is disabled');
     return;
   }
 
@@ -147,7 +155,16 @@ export async function initTelemetry(): Promise<void> {
     log.info('OpenTelemetry initialized successfully ✓');
   } catch (error) {
     log.error('Failed to initialize OpenTelemetry:', error);
-    throw error;
+
+    // Clean up any partially-initialized SDK to prevent resource leaks.
+    try {
+      await sdk?.shutdown();
+    } catch (shutdownError) {
+      log.warn('Failed to clean up partially initialized OpenTelemetry SDK:', shutdownError);
+    } finally {
+      sdk = null;
+      isInitialized = false;
+    }
   }
 }
 

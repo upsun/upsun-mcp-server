@@ -241,15 +241,8 @@ describe('Telemetry Module', () => {
       await shutdownTelemetry();
     });
 
-    it('should handle initTelemetry with none exporter', async () => {
-      process.env.OTEL_ENABLED = 'true';
-      process.env.OTEL_EXPORTER_TYPE = 'none';
-
-      const { initTelemetry, shutdownTelemetry } = await import('../../src/core/telemetry.js');
-
-      await expect(initTelemetry()).resolves.not.toThrow();
-      await shutdownTelemetry();
-    });
+    // The none exporter path is tested with proper module isolation
+    // in telemetry-init.test.ts ('should return early with none exporter').
 
     it('should handle initTelemetry with otlp exporter', async () => {
       process.env.OTEL_ENABLED = 'true';

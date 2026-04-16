@@ -7,7 +7,8 @@ import { McpType } from './core/types.js';
 
 const log = createLogger('main');
 
-// Initialize OpenTelemetry before starting the server
+// Initialize OpenTelemetry before starting the server.
+// initTelemetry() handles errors internally and never throws.
 await initTelemetry();
 
 // Log configuration on startup

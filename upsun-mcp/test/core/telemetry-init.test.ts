@@ -40,14 +40,14 @@ describe('Telemetry Initialization Paths', () => {
       await shutdownTelemetry();
     });
 
-    it('should initialize with none exporter', async () => {
+    it('should return early with none exporter (treated as disabled)', async () => {
       process.env.OTEL_ENABLED = 'true';
       process.env.OTEL_EXPORTER_TYPE = 'none';
 
-      const { initTelemetry, shutdownTelemetry } = await import('../../src/core/telemetry.js');
+      const { initTelemetry, isTelemetryEnabled } = await import('../../src/core/telemetry.js');
 
       await expect(initTelemetry()).resolves.not.toThrow();
-      await shutdownTelemetry();
+      expect(isTelemetryEnabled()).toBe(false);
     });
 
     it('should handle unknown exporter type', async () => {
