@@ -14,7 +14,7 @@ import dotenv from 'dotenv';
 import dotenvExpand from 'dotenv-expand';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { WritableMode, LogLevel, McpType } from './types.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,23 +26,46 @@ const projectRoot = join(__dirname, '..', '..');
 // Skip loading .env files during tests to allow tests to control environment.
 // Tests will set SKIP_DOTENV_LOAD=true to prevent .env loading.
 if (process.env.SKIP_DOTENV_LOAD !== 'true') {
-  // Load environment-specific .env file first so it takes precedence over the
-  // base .env. Neither call uses override, so pre-existing OS/platform
-  // variables always win. Precedence: OS env > .env.<env> > .env
+  // Merge dotenv files first, then expand once to support references across
+  // files. This allows .env.<env> to reference shared variables from .env.
+  // Precedence remains: OS env > .env.<env> > .env.
   // NODE_ENV must be set via OS/platform env to select a non-default file;
   // a value inside .env cannot influence which .env.<env> is loaded.
   const typeEnv = getNodeEnvironment();
-  if (typeEnv) {
-    const envPath = join(projectRoot, `.env.${typeEnv}`);
-    if (existsSync(envPath)) {
-      const specificEnv = dotenv.config({ path: envPath });
-      dotenvExpand.expand(specificEnv);
-    }
+  const baseEnvPath = join(projectRoot, '.env');
+  const specificEnvPath = typeEnv ? join(projectRoot, `.env.${typeEnv}`) : undefined;
+
+  const mergedDotenv: Record<string, string> = {};
+
+  if (existsSync(baseEnvPath)) {
+    Object.assign(mergedDotenv, dotenv.parse(readFileSync(baseEnvPath)));
   }
 
-  // Load base .env file (only sets keys not already present).
-  const baseEnv = dotenv.config({ path: join(projectRoot, '.env') });
-  dotenvExpand.expand(baseEnv);
+  if (specificEnvPath && existsSync(specificEnvPath)) {
+    Object.assign(mergedDotenv, dotenv.parse(readFileSync(specificEnvPath)));
+  }
+
+  if (Object.keys(mergedDotenv).length > 0) {
+    const processEnvForExpansion: Record<string, string> = {};
+    for (const [key, value] of Object.entries(process.env)) {
+      if (value !== undefined) {
+        processEnvForExpansion[key] = value;
+      }
+    }
+
+    const expanded = dotenvExpand.expand({
+      parsed: mergedDotenv,
+      // Use a copy to avoid dotenv-expand mutating process.env directly.
+      processEnv: processEnvForExpansion,
+    });
+
+    const resolvedDotenv = expanded.parsed ?? mergedDotenv;
+    for (const [key, value] of Object.entries(resolvedDotenv)) {
+      if (!Object.prototype.hasOwnProperty.call(process.env, key)) {
+        process.env[key] = value;
+      }
+    }
+  }
 }
 
 /**

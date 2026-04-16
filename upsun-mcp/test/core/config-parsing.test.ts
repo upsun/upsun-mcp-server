@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { writeFileSync, rmSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
@@ -283,12 +283,28 @@ describe('Configuration Parsing', () => {
   describe('dotenv loading precedence', () => {
     const envSuffix = `test-${process.pid}`;
     const envFile = join(projectRoot, `.env.${envSuffix}`);
+    const baseEnvFile = join(projectRoot, '.env');
+    let originalBaseEnvContents: string | null = null;
+
+    beforeEach(() => {
+      originalBaseEnvContents = existsSync(baseEnvFile) ? readFileSync(baseEnvFile, 'utf-8') : null;
+    });
 
     afterEach(() => {
       try {
         rmSync(envFile);
       } catch {
         // File may not exist.
+      }
+
+      if (originalBaseEnvContents === null) {
+        try {
+          rmSync(baseEnvFile);
+        } catch {
+          // File may not exist.
+        }
+      } else {
+        writeFileSync(baseEnvFile, originalBaseEnvContents);
       }
     });
 
@@ -318,8 +334,26 @@ describe('Configuration Parsing', () => {
       delete process.env.OTEL_SERVICE_NAME;
 
       const { otelConfig } = await import('../../src/core/config.js');
-      // .env.<env> is loaded first, so its value wins over .env base.
+      // .env.<env> overrides .env base for the same key.
       expect(otelConfig.serviceName).toBe('from-env-specific');
+    });
+
+    it('should allow .env.<env> to reference shared values from .env', async () => {
+      // Shared base variables.
+      writeFileSync(baseEnvFile, 'PORT=4321\n');
+      // Environment-specific variable referencing the shared base variable.
+      writeFileSync(envFile, 'OAUTH_BASE_URL=http://127.0.0.1:${PORT}/\n');
+
+      // Enable dotenv loading.
+      delete process.env.SKIP_DOTENV_LOAD;
+      process.env.NODE_ENV = envSuffix;
+      // Ensure values come from dotenv files rather than OS environment.
+      delete process.env.PORT;
+      delete process.env.OAUTH_BASE_URL;
+
+      const { oauth2Config, appConfig } = await import('../../src/core/config.js');
+      expect(appConfig.port).toBe(4321);
+      expect(oauth2Config.resourceUrl).toBe('http://127.0.0.1:4321/');
     });
   });
 });
