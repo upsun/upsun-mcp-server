@@ -129,6 +129,7 @@ describe('Organization Command Module', () => {
       expect(calls[0]).toEqual([
         'create-organization',
         {
+          annotations: { destructiveHint: false },
           description: 'Create a Organization on upsun',
           inputSchema: expect.any(Object),
         },
@@ -138,6 +139,7 @@ describe('Organization Command Module', () => {
       expect(calls[1]).toEqual([
         'delete-organization',
         {
+          annotations: { destructiveHint: true },
           description: 'Delete a Organization on upsun',
           inputSchema: expect.any(Object),
         },
@@ -147,6 +149,7 @@ describe('Organization Command Module', () => {
       expect(calls[2]).toEqual([
         'info-organization',
         {
+          annotations: { readOnlyHint: true },
           description: 'Get information of organization on upsun',
           inputSchema: expect.any(Object),
         },
@@ -156,6 +159,7 @@ describe('Organization Command Module', () => {
       expect(calls[3]).toEqual([
         'list-organization',
         {
+          annotations: { readOnlyHint: true },
           description: 'List all my organizations on upsun',
           inputSchema: expect.any(Object),
         },

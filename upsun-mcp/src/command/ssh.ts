@@ -49,6 +49,7 @@ export function registerSshKey(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'add-sshkey',
       {
+        annotations: { destructiveHint: false },
         description: 'Add a SSH key on upsun account',
         inputSchema: {
           user_id: z.string(),
@@ -84,6 +85,7 @@ export function registerSshKey(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'delete-sshkey',
       {
+        annotations: { destructiveHint: true },
         description: 'Delete a SSH key of upsun account',
         inputSchema: {
           user_id: z.string(),
@@ -112,6 +114,7 @@ export function registerSshKey(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'list-sshkey',
     {
+      annotations: { readOnlyHint: true },
       description: 'List all SSH keys of upsun account',
       inputSchema: {
         user_id: z.string(),

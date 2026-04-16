@@ -100,6 +100,7 @@ describe('Domain Command Module', () => {
       expect(calls[0]).toEqual([
         'add-domain',
         {
+          annotations: { destructiveHint: false },
           description: 'Add Domain on upsun project',
           inputSchema: expect.any(Object),
         },
@@ -109,6 +110,7 @@ describe('Domain Command Module', () => {
       expect(calls[1]).toEqual([
         'delete-domain',
         {
+          annotations: { destructiveHint: true },
           description: 'Delete a Domain on upsun project',
           inputSchema: expect.any(Object),
         },
@@ -118,6 +120,7 @@ describe('Domain Command Module', () => {
       expect(calls[2]).toEqual([
         'get-domain',
         {
+          annotations: { readOnlyHint: true },
           description: 'Get a Domain of upsun project',
           inputSchema: expect.any(Object),
         },
@@ -127,6 +130,7 @@ describe('Domain Command Module', () => {
       expect(calls[3]).toEqual([
         'list-domain',
         {
+          annotations: { readOnlyHint: true },
           description: 'List all Domains of upsun project',
           inputSchema: expect.any(Object),
         },
@@ -136,6 +140,7 @@ describe('Domain Command Module', () => {
       expect(calls[4]).toEqual([
         'update-domain',
         {
+          annotations: { destructiveHint: false },
           description: 'Update a Domain of upsun project',
           inputSchema: expect.any(Object),
         },

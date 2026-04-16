@@ -98,6 +98,7 @@ describe('SSH Key Command Module', () => {
       expect(calls[0]).toEqual([
         'add-sshkey',
         {
+          annotations: { destructiveHint: false },
           description: 'Add a SSH key on upsun account',
           inputSchema: expect.any(Object),
         },
@@ -107,6 +108,7 @@ describe('SSH Key Command Module', () => {
       expect(calls[1]).toEqual([
         'delete-sshkey',
         {
+          annotations: { destructiveHint: true },
           description: 'Delete a SSH key of upsun account',
           inputSchema: expect.any(Object),
         },
@@ -116,6 +118,7 @@ describe('SSH Key Command Module', () => {
       expect(calls[2]).toEqual([
         'list-sshkey',
         {
+          annotations: { readOnlyHint: true },
           description: 'List all SSH keys of upsun account',
           inputSchema: expect.any(Object),
         },

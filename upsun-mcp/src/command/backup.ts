@@ -53,6 +53,7 @@ export function registerBackup(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'create-backup',
       {
+        annotations: { destructiveHint: false },
         description: 'Create a backup on upsun project',
         inputSchema: {
           project_id: Schema.projectId(),
@@ -85,6 +86,7 @@ export function registerBackup(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'delete-backup',
       {
+        annotations: { destructiveHint: true },
         description: 'Delete a backup of upsun project',
         inputSchema: {
           project_id: Schema.projectId(),
@@ -116,6 +118,7 @@ export function registerBackup(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'get-backup',
     {
+      annotations: { readOnlyHint: true },
       description: 'Get a backup of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),
@@ -145,6 +148,7 @@ export function registerBackup(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'list-backup',
     {
+      annotations: { readOnlyHint: true },
       description: 'List all backups of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),
@@ -179,6 +183,7 @@ export function registerBackup(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'restore-backup',
       {
+        annotations: { destructiveHint: true },
         description: 'Restore a backups of upsun project',
         inputSchema: {
           project_id: Schema.projectId(),

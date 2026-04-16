@@ -51,6 +51,7 @@ export function registerCertificate(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'add-certificate',
       {
+        annotations: { destructiveHint: false },
         description: 'Add an SSL/TLS certificate of upsun project',
         inputSchema: {
           project_id: Schema.projectId(),
@@ -85,6 +86,7 @@ export function registerCertificate(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'delete-certificate',
       {
+        annotations: { destructiveHint: true },
         description: 'Delete an SSL/TLS certificate of upsun project',
         inputSchema: {
           project_id: Schema.projectId(),
@@ -112,6 +114,7 @@ export function registerCertificate(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'get-certificate',
     {
+      annotations: { readOnlyHint: true },
       description: 'Get an SSL/TLS certificate of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),
@@ -137,6 +140,7 @@ export function registerCertificate(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'list-certificate',
     {
+      annotations: { readOnlyHint: true },
       description: 'List all SSL/TLS certificates of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),

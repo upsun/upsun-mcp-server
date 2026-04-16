@@ -115,6 +115,7 @@ describe('Backup Command Module', () => {
       expect(calls[0]).toEqual([
         'create-backup',
         {
+          annotations: { destructiveHint: false },
           description: 'Create a backup on upsun project',
           inputSchema: expect.any(Object),
         },
@@ -124,6 +125,7 @@ describe('Backup Command Module', () => {
       expect(calls[1]).toEqual([
         'delete-backup',
         {
+          annotations: { destructiveHint: true },
           description: 'Delete a backup of upsun project',
           inputSchema: expect.any(Object),
         },
@@ -133,6 +135,7 @@ describe('Backup Command Module', () => {
       expect(calls[2]).toEqual([
         'get-backup',
         {
+          annotations: { readOnlyHint: true },
           description: 'Get a backup of upsun project',
           inputSchema: expect.any(Object),
         },
@@ -142,6 +145,7 @@ describe('Backup Command Module', () => {
       expect(calls[3]).toEqual([
         'list-backup',
         {
+          annotations: { readOnlyHint: true },
           description: 'List all backups of upsun project',
           inputSchema: expect.any(Object),
         },
@@ -151,6 +155,7 @@ describe('Backup Command Module', () => {
       expect(calls[4]).toEqual([
         'restore-backup',
         {
+          annotations: { destructiveHint: true },
           description: 'Restore a backups of upsun project',
           inputSchema: expect.any(Object),
         },
