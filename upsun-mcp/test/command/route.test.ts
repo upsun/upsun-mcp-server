@@ -18,7 +18,6 @@ jest.mock('../../src/core/logger', () => ({
 const mockRoutesApi = {
   get: jest.fn(),
   list: jest.fn(),
-  web: jest.fn(),
 };
 
 // Mock the adapter
@@ -67,12 +66,11 @@ describe('Route Command Module', () => {
   describe('registerRoute function', () => {
     it('should register all route tools', () => {
       // Don't call registerRoute again since it's already called in beforeEach
-      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(3) as any;
+      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(2) as any;
 
       // Verify all tools are registered
       expect(toolCallbacks['get-route']).toBeDefined() as any;
       expect(toolCallbacks['list-route']).toBeDefined() as any;
-      expect(toolCallbacks['get-console']).toBeDefined() as any;
     });
 
     it('should register tools with correct names and descriptions', () => {
@@ -99,15 +97,6 @@ describe('Route Command Module', () => {
         expect.any(Function),
       ]) as any;
 
-      expect(calls[2]).toEqual([
-        'get-console',
-        {
-          annotations: { readOnlyHint: true },
-          description: 'Get console URL of upsun project',
-          inputSchema: expect.any(Object),
-        },
-        expect.any(Function),
-      ]) as any;
     });
   });
 
@@ -350,87 +339,6 @@ describe('Route Command Module', () => {
     }) as any;
   }) as any;
 
-  describe('get-console tool', () => {
-    it('should get console URL for project', async () => {
-      const mockWebData = {
-        ui: 'https://console.upsun.com/projects/test-project-13',
-      };
-
-      // @ts-ignore
-      mockAdapter.client.routes.web = jest.fn().mockResolvedValue(mockWebData) as any;
-
-      const callback = toolCallbacks['get-console'];
-      const params = {
-        project_id: 'test-project-13',
-      };
-
-      const result = (await callback(params)) as any;
-
-      // Since the function returns "Not implemented", we don't expect any client calls
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('Not implemented', null, 2),
-          },
-        ],
-      }) as any;
-    }) as any;
-
-    it('should handle different project console URLs', async () => {
-      const mockWebData = {
-        ui: 'https://console.upsun.com/projects/enterprise-project-456',
-      };
-
-      // @ts-ignore
-      mockAdapter.client.routes.web = jest.fn().mockResolvedValue(mockWebData) as any;
-
-      const callback = toolCallbacks['get-console'];
-      const params = {
-        project_id: 'enterprise-project-456',
-      };
-
-      const result = (await callback(params)) as any;
-
-      // Since the function returns "Not implemented", we don't expect any client calls
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('Not implemented', null, 2),
-          },
-        ],
-      }) as any;
-    }) as any;
-
-    it('should handle console URL with additional metadata', async () => {
-      const mockWebData = {
-        ui: 'https://console.upsun.com/projects/complex-project',
-        api: 'https://api.upsun.com/projects/complex-project',
-        ssh: 'ssh://complex-project@ssh.upsun.com',
-      };
-
-      // @ts-ignore
-      mockAdapter.client.routes.web = jest.fn().mockResolvedValue(mockWebData) as any;
-
-      const callback = toolCallbacks['get-console'];
-      const params = {
-        project_id: 'complex-project',
-      };
-
-      const result = (await callback(params)) as any;
-
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('Not implemented', null, 2),
-          },
-        ],
-      }) as any;
-    }) as any;
-  }) as any;
-
   describe('error handling and edge cases', () => {
     it('should handle API errors for get-route', async () => {
       const error = new Error('Route not found') as any;
@@ -459,25 +367,6 @@ describe('Route Command Module', () => {
       };
 
       (await expect(callback(params)).rejects.toThrow('Environment not found')) as any;
-    }) as any;
-
-    it('should handle API errors for get-console', async () => {
-      // Since get-console always returns "Not implemented" and doesn't call the client,
-      // it cannot throw errors. This test verifies the current behavior.
-      const callback = toolCallbacks['get-console'];
-      const params = {
-        project_id: 'restricted-project',
-      };
-
-      const result = (await callback(params)) as any;
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('Not implemented', null, 2),
-          },
-        ],
-      }) as any;
     }) as any;
 
     it('should handle null/undefined responses', async () => {
