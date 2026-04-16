@@ -183,6 +183,7 @@ export function registerBackup(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'restore-backup',
       {
+        annotations: { destructiveHint: true },
         description: 'Restore a backups of upsun project',
         inputSchema: {
           project_id: Schema.projectId(),

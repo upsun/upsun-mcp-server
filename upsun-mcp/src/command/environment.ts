@@ -201,6 +201,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'merge-environment',
       {
+        annotations: { destructiveHint: false },
         description: 'Merge a environment to parent environment of upsun project',
         inputSchema: {
           project_id: Schema.projectId(),
@@ -230,6 +231,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'pause-environment',
       {
+        annotations: { destructiveHint: false },
         description: 'Pause a environment of upsun project',
         inputSchema: {
           project_id: Schema.projectId(),
@@ -260,6 +262,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'redeploy-environment',
       {
+        annotations: { destructiveHint: false },
         description: 'Redeploy a environment of upsun project',
         inputSchema: {
           project_id: Schema.projectId(),

@@ -130,6 +130,7 @@ describe('Activity Command Module', () => {
       expect(calls[0]).toEqual([
         'cancel-activity',
         {
+          annotations: { destructiveHint: false },
           description: 'Cancel a activity of upsun project',
           inputSchema: expect.any(Object),
         },

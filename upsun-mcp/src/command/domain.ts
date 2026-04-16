@@ -164,6 +164,7 @@ export function registerDomain(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'update-domain',
       {
+        annotations: { destructiveHint: false },
         description: 'Update a Domain of upsun project',
         inputSchema: {
           project_id: Schema.projectId(),

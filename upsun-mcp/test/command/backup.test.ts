@@ -155,6 +155,7 @@ describe('Backup Command Module', () => {
       expect(calls[4]).toEqual([
         'restore-backup',
         {
+          annotations: { destructiveHint: true },
           description: 'Restore a backups of upsun project',
           inputSchema: expect.any(Object),
         },

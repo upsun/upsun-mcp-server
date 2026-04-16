@@ -49,6 +49,7 @@ export function registerActivity(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'cancel-activity',
       {
+        annotations: { destructiveHint: false },
         description: 'Cancel a activity of upsun project',
         inputSchema: {
           project_id: Schema.projectId(),

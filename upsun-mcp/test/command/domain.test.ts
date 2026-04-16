@@ -140,6 +140,7 @@ describe('Domain Command Module', () => {
       expect(calls[4]).toEqual([
         'update-domain',
         {
+          annotations: { destructiveHint: false },
           description: 'Update a Domain of upsun project',
           inputSchema: expect.any(Object),
         },
