@@ -80,6 +80,7 @@ describe('Route Command Module', () => {
       expect(calls[0]).toEqual([
         'get-route',
         {
+          annotations: { readOnlyHint: true },
           description: 'Get route URL of upsun project',
           inputSchema: expect.any(Object),
         },
@@ -89,11 +90,25 @@ describe('Route Command Module', () => {
       expect(calls[1]).toEqual([
         'list-route',
         {
+          annotations: { readOnlyHint: true },
           description: 'List routes URL of upsun project',
           inputSchema: expect.any(Object),
         },
         expect.any(Function),
       ]) as any;
+<<<<<<< HEAD
+=======
+
+      expect(calls[2]).toEqual([
+        'get-console',
+        {
+          annotations: { readOnlyHint: true },
+          description: 'Get console URL of upsun project',
+          inputSchema: expect.any(Object),
+        },
+        expect.any(Function),
+      ]) as any;
+>>>>>>> 2b40403 (feat: add MCP tool annotations for read-only and destructive hints (#20))
     });
   });
 

@@ -50,6 +50,7 @@ export function registerDomain(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'add-domain',
       {
+        annotations: { destructiveHint: false },
         description: 'Add Domain on upsun project',
         inputSchema: {
           project_id: Schema.projectId(),
@@ -79,6 +80,7 @@ export function registerDomain(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'delete-domain',
       {
+        annotations: { destructiveHint: true },
         description: 'Delete a Domain on upsun project',
         inputSchema: {
           project_id: Schema.projectId(),
@@ -107,6 +109,7 @@ export function registerDomain(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'get-domain',
     {
+      annotations: { readOnlyHint: true },
       description: 'Get a Domain of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),
@@ -133,6 +136,7 @@ export function registerDomain(adapter: McpAdapter): void {
   adapter.server.registerTool(
     'list-domain',
     {
+      annotations: { readOnlyHint: true },
       description: 'List all Domains of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),
@@ -160,6 +164,7 @@ export function registerDomain(adapter: McpAdapter): void {
     adapter.server.registerTool(
       'update-domain',
       {
+        annotations: { destructiveHint: false },
         description: 'Update a Domain of upsun project',
         inputSchema: {
           project_id: Schema.projectId(),
