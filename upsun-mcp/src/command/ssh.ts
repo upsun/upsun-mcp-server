@@ -101,5 +101,4 @@ export function registerSshKey(adapter: McpAdapter): void {
       })
     );
   }
-
 }

@@ -96,7 +96,6 @@ describe('Route Command Module', () => {
         },
         expect.any(Function),
       ]) as any;
-
     });
   });
 

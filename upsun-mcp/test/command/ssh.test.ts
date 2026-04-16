@@ -106,7 +106,6 @@ describe('SSH Key Command Module', () => {
         },
         expect.any(Function),
       ]);
-
     });
   });
 
