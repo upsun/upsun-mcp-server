@@ -19,7 +19,7 @@ The Upsun MCP Server integrates OpenTelemetry for distributed tracing, providing
 
 | Variable             | Description                                  | Default            | Values                      |
 | -------------------- | -------------------------------------------- | ------------------ | --------------------------- |
-| `OTEL_ENABLED`       | Enable/disable OpenTelemetry tracing         | `true`             | `true`, `false`             |
+| `OTEL_ENABLED`       | Enable/disable OpenTelemetry tracing         | `false`            | `true`, `false`             |
 | `OTEL_SAMPLING_RATE` | Percentage of traces to capture (0.0 to 1.0) | `1.0`              | `0.0` - `1.0`               |
 | `OTEL_EXPORTER_TYPE` | Type of trace exporter to use                | `console`          | `console`, `otlp`, `none`   |
 | `OTEL_SERVICE_NAME`  | Service name in traces                       | `upsun-mcp-server` | Any string                  |
@@ -136,14 +136,14 @@ OTEL_EXPORTER_ENDPOINT=https://your-collector.example.com/v1/traces
 
 ### None Exporter
 
-Traces are collected but not exported:
+Tracing is disabled:
 
 ```bash
 OTEL_EXPORTER_TYPE=none
 ```
 
 - Useful for testing without overhead
-- Tracing code runs but doesn't send data
+- No traces are collected or exported
 
 ## Verification
 
