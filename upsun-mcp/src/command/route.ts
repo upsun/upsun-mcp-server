@@ -2,8 +2,8 @@
  * @fileoverview Route management command module for Upsun MCP server.
  *
  * This module provides MCP tools for managing Upsun routes, which define how
- * HTTP requests are handled within a project environment. It also includes
- * utilities for retrieving URLs and console access links.
+ * HTTP requests are handled within a project environment. It includes
+ * utilities for retrieving route information and URLs.
  */
 
 import { McpAdapter } from '../core/adapter.js';
