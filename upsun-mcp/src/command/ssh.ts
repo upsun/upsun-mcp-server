@@ -18,10 +18,10 @@ const log = createLogger('MCP:Tool:ssh-commands');
 /**
  * Registers SSH key management tools with the MCP server.
  *
- * This function adds three tools for SSH key operations:
+ * This function adds two tools for SSH key operations:
  * - add-sshkey: Adds a new SSH key to a user account
  * - delete-sshkey: Removes an existing SSH key from a user account
- * - list-sshkey: Lists all SSH keys for a user account
+ *
  *
  * @param adapter - The MCP adapter instance to register tools with
  *
@@ -101,30 +101,4 @@ export function registerSshKey(adapter: McpAdapter): void {
       })
     );
   }
-
-  /**
-   * Tool: list-sshkey
-   * Lists all SSH keys for a specific user account.
-   *
-   * Returns an array of SSH keys with information such as key ID,
-   * fingerprint, type, and creation date.
-   *
-   * @param user_id - The ID of the user to list SSH keys for
-   */
-  adapter.server.registerTool(
-    'list-sshkey',
-    {
-      annotations: { readOnlyHint: true },
-      description: 'List all SSH keys of upsun account',
-      inputSchema: {
-        user_id: z.string(),
-      },
-    },
-    ToolWrapper.trace('list-sshkey', async ({ user_id }) => {
-      log.debug(`List SSH Keys for User: ${user_id}`);
-      const result = 'Not implemented in upsun-sdk-node@0.4.1 (no list SSH keys endpoint)';
-
-      return Response.json(result);
-    })
-  );
 }
