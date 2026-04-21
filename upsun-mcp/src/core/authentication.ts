@@ -166,9 +166,21 @@ export class JwtTokenVerifier {
 }
 
 /**
+ * Detects unsubstituted shell-style placeholders (e.g. `${UPSUN_API_TOKEN}`)
+ * that can reach the server when a client forwards a templated config header
+ * verbatim because the referenced environment variable is unset.
+ */
+function isUnsubstitutedPlaceholder(value: string): boolean {
+  return /^\$\{[^}]*\}$/.test(value);
+}
+
+/**
  * Combined authentication middleware that supports both bearer tokens (via the
  * SDK's requireBearerAuth) and legacy API keys. API key requests bypass bearer
  * validation entirely.
+ *
+ * An API key header whose value is empty or an unsubstituted placeholder is
+ * ignored so the bearer flow can still run.
  */
 export function requireMcpAuth(
   verifier: JwtTokenVerifier,
@@ -178,10 +190,15 @@ export function requireMcpAuth(
 
   return (req, res, next) => {
     const raw = req.headers[HeaderKey.API_KEY];
-    const apiKey = typeof raw === 'string' ? raw : undefined;
-    if (apiKey) {
+    const apiKey = typeof raw === 'string' ? raw.trim() : undefined;
+    if (apiKey && !isUnsubstitutedPlaceholder(apiKey)) {
       req.auth = { token: apiKey, clientId: API_KEY_CLIENT_ID, scopes: [] };
       return next();
+    }
+    if (apiKey && isUnsubstitutedPlaceholder(apiKey)) {
+      log.warn(
+        `Ignoring ${HeaderKey.API_KEY} header with unsubstituted placeholder value; falling back to bearer auth`
+      );
     }
     bearerAuth(req, res, next);
   };
