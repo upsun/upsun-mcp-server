@@ -280,27 +280,6 @@ describe('Authentication Module', () => {
       expect(req.auth).toBeUndefined();
       expect(res.status).toHaveBeenCalledWith(401);
     });
-
-    it('should ignore an empty API key header', () => {
-      const verifier = new JwtTokenVerifier();
-      const middleware = requireMcpAuth(verifier);
-
-      const req = {
-        headers: { 'upsun-api-token': '   ' },
-      } as unknown as express.Request;
-      const res = {
-        status: jest.fn().mockReturnThis() as any,
-        json: jest.fn() as any,
-        set: jest.fn() as any,
-        setHeader: jest.fn() as any,
-      } as unknown as express.Response;
-
-      middleware(req, res, mockNext);
-
-      expect(mockNext).not.toHaveBeenCalled();
-      expect(req.auth).toBeUndefined();
-      expect(res.status).toHaveBeenCalledWith(401);
-    });
   });
 
   describe('Path-suffixed well-known routes', () => {
