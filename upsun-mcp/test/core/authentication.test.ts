@@ -258,6 +258,28 @@ describe('Authentication Module', () => {
       expect(mockNext).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
     });
+
+    it('should ignore an API key header with an unsubstituted placeholder value', () => {
+      const verifier = new JwtTokenVerifier();
+      const middleware = requireMcpAuth(verifier);
+
+      const req = {
+        headers: { 'upsun-api-token': '${UPSUN_API_TOKEN}' },
+      } as unknown as express.Request;
+      const res = {
+        status: jest.fn().mockReturnThis() as any,
+        json: jest.fn() as any,
+        set: jest.fn() as any,
+        setHeader: jest.fn() as any,
+      } as unknown as express.Response;
+
+      middleware(req, res, mockNext);
+
+      // Placeholder is ignored; bearer middleware runs and rejects unauthenticated requests.
+      expect(mockNext).not.toHaveBeenCalled();
+      expect(req.auth).toBeUndefined();
+      expect(res.status).toHaveBeenCalledWith(401);
+    });
   });
 
   describe('Path-suffixed well-known routes', () => {
