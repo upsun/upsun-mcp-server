@@ -12,7 +12,7 @@ import { createLogger } from '../core/logger.js';
 
 // Create logger for project operations
 const log = createLogger('MCP:Tool:project-commands');
-import { Response, Schema, ToolWrapper } from '../core/helper.js';
+import { Response, Schema, ToolWrapper, toSdkPagination } from '../core/helper.js';
 import { z } from 'zod';
 
 /**
@@ -152,16 +152,21 @@ export function registerProject(adapter: McpAdapter): void {
     'list-project',
     {
       annotations: { readOnlyHint: true },
-      description: 'List all upsun projects',
+      description:
+        'List upsun projects in an organization. Results are paginated; follow `links.next.href` via `page_after` to retrieve additional pages.',
       inputSchema: {
         organization_id: Schema.organizationId(),
+        ...Schema.pagination(),
       },
     },
     ToolWrapper.traceWithMetrics(
       'list-project',
-      async ({ organization_id }) => {
+      async ({ organization_id, page_size, page_after, page_before }) => {
         log.debug(`List all my projects in Organization: ${organization_id}`);
-        const result = await adapter.client.projects.list(organization_id);
+        const result = await adapter.client.projects.list(
+          organization_id,
+          toSdkPagination({ page_size, page_after, page_before })
+        );
 
         return Response.json(result);
       },

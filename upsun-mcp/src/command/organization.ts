@@ -7,7 +7,7 @@
  */
 
 import { McpAdapter } from '../core/adapter.js';
-import { Response, Schema, ToolWrapper } from '../core/helper.js';
+import { Response, Schema, ToolWrapper, toSdkPagination } from '../core/helper.js';
 import { createLogger } from '../core/logger.js';
 
 // Create logger for organization operations
@@ -130,12 +130,17 @@ export function registerOrganization(adapter: McpAdapter): void {
     'list-organization',
     {
       annotations: { readOnlyHint: true },
-      description: 'List all my organizations on upsun',
-      inputSchema: {},
+      description:
+        'List all my organizations on upsun. Results are paginated; follow `links.next.href` via `page_after` to retrieve additional pages.',
+      inputSchema: {
+        ...Schema.pagination(),
+      },
     },
-    ToolWrapper.trace('list-organization', async () => {
+    ToolWrapper.trace('list-organization', async ({ page_size, page_after, page_before }) => {
       log.debug(`List all my organizations`);
-      const result = await adapter.client.organizations.listCurrentUserOrgs();
+      const result = await adapter.client.organizations.listCurrentUserOrgs(
+        toSdkPagination({ page_size, page_after, page_before })
+      );
 
       return Response.json(result);
     })

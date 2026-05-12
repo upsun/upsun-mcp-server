@@ -118,6 +118,85 @@ export class Schema {
   static domainName(): z.ZodString {
     return z.string().max(255, 'Domain name must be less than 255 characters');
   }
+
+  /**
+   * Returns the Zod schema fields for pagination parameters supported by the
+   * Upsun API. To follow a next/previous page, take the cursor from
+   * `links.next.href` (or `links.previous.href`) in the previous response and
+   * pass it back as `page_after` or `page_before`.
+   *
+   * @returns Zod input-schema fields for cursor-based pagination.
+   */
+  static pagination(): {
+    page_size: z.ZodOptional<z.ZodNumber>;
+    page_after: z.ZodOptional<z.ZodString>;
+    page_before: z.ZodOptional<z.ZodString>;
+  } {
+    return {
+      page_size: z
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe('Number of items per page (1-100). Defaults to the API default (typically 50).'),
+      page_after: z
+        .string()
+        .optional()
+        .describe(
+          'Cursor for the next page. Use the value from `links.next.href` of the previous response.'
+        ),
+      page_before: z
+        .string()
+        .optional()
+        .describe(
+          'Cursor for the previous page. Use the value from `links.previous.href` of the previous response.'
+        ),
+    };
+  }
+}
+
+/**
+ * Pagination parameters accepted by paginatable list tools.
+ */
+export interface PaginationParams {
+  page_size?: number;
+  page_after?: string;
+  page_before?: string;
+}
+
+/**
+ * Translates MCP-style snake_case pagination params into the camelCase filter
+ * shape expected by the Upsun SDK. The `pageBefore` / `pageAfter` values may be
+ * either a bare cursor or a URL (e.g. `links.next.href`); URLs are parsed so
+ * the embedded cursor is forwarded.
+ */
+export function toSdkPagination(params: PaginationParams): {
+  pageSize?: number;
+  pageBefore?: string;
+  pageAfter?: string;
+} {
+  return {
+    pageSize: params.page_size,
+    pageBefore: extractCursor(params.page_before),
+    pageAfter: extractCursor(params.page_after),
+  };
+}
+
+function extractCursor(value: string | undefined): string | undefined {
+  if (!value) {
+    return value;
+  }
+  // If the caller passed a URL (e.g. links.next.href), pull the cursor out.
+  if (value.includes('://') || value.startsWith('/')) {
+    try {
+      const url = new URL(value, 'https://placeholder.invalid');
+      return url.searchParams.get('pageAfter') ?? url.searchParams.get('pageBefore') ?? value;
+    } catch {
+      return value;
+    }
+  }
+  return value;
 }
 
 /**

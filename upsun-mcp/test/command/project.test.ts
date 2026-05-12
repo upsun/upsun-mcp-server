@@ -184,7 +184,11 @@ describe('Project Command Module', () => {
 
     it('lists projects successfully', async () => {
       const result = await toolCallbacks['list-project']({ organization_id: 'org-123' });
-      expect(mockClient.projects.list).toHaveBeenCalledWith('org-123');
+      expect(mockClient.projects.list).toHaveBeenCalledWith('org-123', {
+        pageSize: undefined,
+        pageBefore: undefined,
+        pageAfter: undefined,
+      });
       expect(result).toHaveProperty('content');
     });
 
@@ -199,6 +203,32 @@ describe('Project Command Module', () => {
       mockClient.projects.list.mockResolvedValueOnce([]);
       const result = await toolCallbacks['list-project']({ organization_id: 'org-123' });
       expect(result).toHaveProperty('content');
+    });
+
+    it('forwards pagination params to the SDK', async () => {
+      await toolCallbacks['list-project']({
+        organization_id: 'org-123',
+        page_size: 100,
+        page_after: 'cursor-abc',
+      });
+      expect(mockClient.projects.list).toHaveBeenCalledWith('org-123', {
+        pageSize: 100,
+        pageBefore: undefined,
+        pageAfter: 'cursor-abc',
+      });
+    });
+
+    it('extracts cursor from a next-link URL', async () => {
+      await toolCallbacks['list-project']({
+        organization_id: 'org-123',
+        page_after:
+          'https://api.upsun.com/organizations/org-123/projects?pageAfter=cursor-xyz&pageSize=50',
+      });
+      expect(mockClient.projects.list).toHaveBeenCalledWith('org-123', {
+        pageSize: undefined,
+        pageBefore: undefined,
+        pageAfter: 'cursor-xyz',
+      });
     });
   });
 

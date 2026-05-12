@@ -160,7 +160,8 @@ describe('Organization Command Module', () => {
         'list-organization',
         {
           annotations: { readOnlyHint: true },
-          description: 'List all my organizations on upsun',
+          description:
+            'List all my organizations on upsun. Results are paginated; follow `links.next.href` via `page_after` to retrieve additional pages.',
           inputSchema: expect.any(Object),
         },
         expect.any(Function),
@@ -375,7 +376,11 @@ describe('Organization Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.organizations.listCurrentUserOrgs).toHaveBeenCalledWith();
+      expect(mockClient.organizations.listCurrentUserOrgs).toHaveBeenCalledWith({
+        pageSize: undefined,
+        pageBefore: undefined,
+        pageAfter: undefined,
+      });
       expect(result).toEqual({
         content: [
           {
@@ -394,7 +399,11 @@ describe('Organization Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.organizations.listCurrentUserOrgs).toHaveBeenCalledWith();
+      expect(mockClient.organizations.listCurrentUserOrgs).toHaveBeenCalledWith({
+        pageSize: undefined,
+        pageBefore: undefined,
+        pageAfter: undefined,
+      });
       expect(result).toEqual({
         content: [
           {
@@ -413,7 +422,21 @@ describe('Organization Command Module', () => {
       const params = {};
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
-      expect(mockClient.organizations.listCurrentUserOrgs).toHaveBeenCalledWith();
+      expect(mockClient.organizations.listCurrentUserOrgs).toHaveBeenCalledWith({
+        pageSize: undefined,
+        pageBefore: undefined,
+        pageAfter: undefined,
+      });
+    });
+
+    it('should forward pagination params to the SDK', async () => {
+      const callback = toolCallbacks['list-organization'];
+      await callback({ page_size: 25, page_after: 'cursor-abc' });
+      expect(mockClient.organizations.listCurrentUserOrgs).toHaveBeenCalledWith({
+        pageSize: 25,
+        pageBefore: undefined,
+        pageAfter: 'cursor-abc',
+      });
     });
 
     it('should handle large organization lists', async () => {
