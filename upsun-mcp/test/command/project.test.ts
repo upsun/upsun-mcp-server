@@ -209,23 +209,22 @@ describe('Project Command Module', () => {
       await toolCallbacks['list-project']({
         organization_id: 'org-123',
         page_size: 100,
-        page_after: 'cursor-abc',
       });
       expect(mockClient.projects.list).toHaveBeenCalledWith('org-123', {
         pageSize: 100,
         pageBefore: undefined,
-        pageAfter: 'cursor-abc',
+        pageAfter: undefined,
       });
     });
 
     it('extracts cursor from a next-link URL', async () => {
       await toolCallbacks['list-project']({
         organization_id: 'org-123',
-        page_after:
+        page_link:
           'https://api.upsun.com/organizations/org-123/projects?pageAfter=cursor-xyz&pageSize=50',
       });
       expect(mockClient.projects.list).toHaveBeenCalledWith('org-123', {
-        pageSize: undefined,
+        pageSize: 50,
         pageBefore: undefined,
         pageAfter: 'cursor-xyz',
       });

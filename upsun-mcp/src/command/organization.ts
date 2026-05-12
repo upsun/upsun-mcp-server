@@ -131,15 +131,15 @@ export function registerOrganization(adapter: McpAdapter): void {
     {
       annotations: { readOnlyHint: true },
       description:
-        'List all my organizations on upsun. Results are paginated; follow `links.next.href` via `page_after` to retrieve additional pages.',
+        'List all my organizations on upsun. Results are paginated; pass `links.next.href` or `links.previous.href` as `page_link` to follow pages.',
       inputSchema: {
         ...Schema.pagination(),
       },
     },
-    ToolWrapper.trace('list-organization', async ({ page_size, page_after, page_before }) => {
+    ToolWrapper.trace('list-organization', async ({ page_size, page_link }) => {
       log.debug(`List all my organizations`);
       const result = await adapter.client.organizations.listCurrentUserOrgs(
-        toSdkPagination({ page_size, page_after, page_before })
+        toSdkPagination({ page_size, page_link })
       );
 
       return Response.json(result);

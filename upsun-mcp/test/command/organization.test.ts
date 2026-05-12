@@ -161,7 +161,7 @@ describe('Organization Command Module', () => {
         {
           annotations: { readOnlyHint: true },
           description:
-            'List all my organizations on upsun. Results are paginated; follow `links.next.href` via `page_after` to retrieve additional pages.',
+            'List all my organizations on upsun. Results are paginated; pass `links.next.href` or `links.previous.href` as `page_link` to follow pages.',
           inputSchema: expect.any(Object),
         },
         expect.any(Function),
@@ -431,7 +431,9 @@ describe('Organization Command Module', () => {
 
     it('should forward pagination params to the SDK', async () => {
       const callback = toolCallbacks['list-organization'];
-      await callback({ page_size: 25, page_after: 'cursor-abc' });
+      await callback({
+        page_link: '/users/user-1/organizations?page%5Bafter%5D=cursor-abc&page%5Bsize%5D=25',
+      });
       expect(mockClient.organizations.listCurrentUserOrgs).toHaveBeenCalledWith({
         pageSize: 25,
         pageBefore: undefined,

@@ -121,16 +121,14 @@ export class Schema {
 
   /**
    * Returns the Zod schema fields for pagination parameters supported by the
-   * Upsun API. To follow a next/previous page, take the cursor from
-   * `links.next.href` (or `links.previous.href`) in the previous response and
-   * pass it back as `page_after` or `page_before`.
+   * Upsun API. To follow a next/previous page, pass `links.next.href` or
+   * `links.previous.href` from the previous response as `page_link`.
    *
-   * @returns Zod input-schema fields for cursor-based pagination.
+   * @returns Zod input-schema fields for link-based pagination.
    */
   static pagination(): {
     page_size: z.ZodOptional<z.ZodNumber>;
-    page_after: z.ZodOptional<z.ZodString>;
-    page_before: z.ZodOptional<z.ZodString>;
+    page_link: z.ZodOptional<z.ZodString>;
   } {
     return {
       page_size: z
@@ -139,18 +137,14 @@ export class Schema {
         .min(1)
         .max(100)
         .optional()
-        .describe('Number of items per page (1-100). Defaults to the API default (typically 50).'),
-      page_after: z
-        .string()
-        .optional()
         .describe(
-          'Cursor for the next page. Use the value from `links.next.href` of the previous response.'
+          'Number of items for the first page (1-100). Defaults to the API default (typically 50).'
         ),
-      page_before: z
+      page_link: z
         .string()
         .optional()
         .describe(
-          'Cursor for the previous page. Use the value from `links.previous.href` of the previous response.'
+          'Opaque pagination link. Use `links.next.href` or `links.previous.href` from the previous response.'
         ),
     };
   }
@@ -161,42 +155,64 @@ export class Schema {
  */
 export interface PaginationParams {
   page_size?: number;
-  page_after?: string;
-  page_before?: string;
+  page_link?: string;
 }
 
 /**
  * Translates MCP-style snake_case pagination params into the camelCase filter
- * shape expected by the Upsun SDK. The `pageBefore` / `pageAfter` values may be
- * either a bare cursor or a URL (e.g. `links.next.href`); URLs are parsed so
- * the embedded cursor is forwarded.
+ * shape expected by the Upsun SDK. The `page_link` value is treated as an
+ * opaque continuation link from the API response; this boundary parses only the
+ * SDK fields needed to follow that link.
  */
 export function toSdkPagination(params: PaginationParams): {
   pageSize?: number;
   pageBefore?: string;
   pageAfter?: string;
 } {
-  return {
-    pageSize: params.page_size,
-    pageBefore: extractCursor(params.page_before),
-    pageAfter: extractCursor(params.page_after),
-  };
+  if (!params.page_link) {
+    return {
+      pageSize: params.page_size,
+      pageBefore: undefined,
+      pageAfter: undefined,
+    };
+  }
+
+  return extractPaginationLink(params.page_link);
 }
 
-function extractCursor(value: string | undefined): string | undefined {
-  if (!value) {
-    return value;
+function extractPaginationLink(value: string): {
+  pageSize?: number;
+  pageBefore?: string;
+  pageAfter?: string;
+} {
+  try {
+    const url = new URL(value, 'https://placeholder.invalid');
+    return {
+      pageSize: extractPageSize(url),
+      pageBefore:
+        url.searchParams.get('page[before]') ?? url.searchParams.get('pageBefore') ?? undefined,
+      pageAfter:
+        url.searchParams.get('page[after]') ?? url.searchParams.get('pageAfter') ?? undefined,
+    };
+  } catch {
+    return {
+      pageSize: undefined,
+      pageBefore: undefined,
+      pageAfter: undefined,
+    };
   }
-  // If the caller passed a URL (e.g. links.next.href), pull the cursor out.
-  if (value.includes('://') || value.startsWith('/')) {
-    try {
-      const url = new URL(value, 'https://placeholder.invalid');
-      return url.searchParams.get('pageAfter') ?? url.searchParams.get('pageBefore') ?? value;
-    } catch {
-      return value;
-    }
+}
+
+function extractPageSize(url: URL): number | undefined {
+  const rawPageSize = url.searchParams.get('page[size]') ?? url.searchParams.get('pageSize');
+  if (!rawPageSize) {
+    return undefined;
   }
-  return value;
+  const pageSize = Number(rawPageSize);
+  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) {
+    return undefined;
+  }
+  return pageSize;
 }
 
 /**

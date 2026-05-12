@@ -153,7 +153,7 @@ export function registerProject(adapter: McpAdapter): void {
     {
       annotations: { readOnlyHint: true },
       description:
-        'List upsun projects in an organization. Results are paginated; follow `links.next.href` via `page_after` to retrieve additional pages.',
+        'List upsun projects in an organization. Results are paginated; pass `links.next.href` or `links.previous.href` as `page_link` to follow pages.',
       inputSchema: {
         organization_id: Schema.organizationId(),
         ...Schema.pagination(),
@@ -161,11 +161,11 @@ export function registerProject(adapter: McpAdapter): void {
     },
     ToolWrapper.traceWithMetrics(
       'list-project',
-      async ({ organization_id, page_size, page_after, page_before }) => {
+      async ({ organization_id, page_size, page_link }) => {
         log.debug(`List all my projects in Organization: ${organization_id}`);
         const result = await adapter.client.projects.list(
           organization_id,
-          toSdkPagination({ page_size, page_after, page_before })
+          toSdkPagination({ page_size, page_link })
         );
 
         return Response.json(result);
