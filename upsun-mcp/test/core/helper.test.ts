@@ -365,14 +365,26 @@ describe('Helper Module', () => {
       });
     });
 
-    it('falls back to the original value when a URL has no cursor param', () => {
+    it('forwards the raw page_link as pageAfter when a URL has no cursor param', () => {
       expect(
         toSdkPagination({
           page_link: 'https://api.upsun.com/somewhere',
         })
       ).toEqual({
         pageSize: undefined,
-        pageAfter: undefined,
+        pageAfter: 'https://api.upsun.com/somewhere',
+        pageBefore: undefined,
+      });
+    });
+
+    it('forwards a bare cursor string as pageAfter', () => {
+      expect(
+        toSdkPagination({
+          page_link: 'cursor-abc',
+        })
+      ).toEqual({
+        pageSize: undefined,
+        pageAfter: 'cursor-abc',
         pageBefore: undefined,
       });
     });

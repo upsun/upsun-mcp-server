@@ -138,7 +138,7 @@ export class Schema {
         .max(100)
         .optional()
         .describe(
-          'Number of items for the first page (1-100). Defaults to the API default (typically 50).'
+          'Number of items for the first page (1-100). Defaults to the API default (typically 50). Ignored when `page_link` is set; the page size embedded in the link is used.'
         ),
       page_link: z
         .string()
@@ -185,22 +185,32 @@ function extractPaginationLink(value: string): {
   pageBefore?: string;
   pageAfter?: string;
 } {
+  let url: URL;
   try {
-    const url = new URL(value, 'https://placeholder.invalid');
-    return {
-      pageSize: extractPageSize(url),
-      pageBefore:
-        url.searchParams.get('page[before]') ?? url.searchParams.get('pageBefore') ?? undefined,
-      pageAfter:
-        url.searchParams.get('page[after]') ?? url.searchParams.get('pageAfter') ?? undefined,
-    };
+    url = new URL(value, 'https://placeholder.invalid');
   } catch {
-    return {
-      pageSize: undefined,
-      pageBefore: undefined,
-      pageAfter: undefined,
-    };
+    log.warn('Failed to parse page_link as a URL; forwarding the raw value as pageAfter');
+    return { pageSize: undefined, pageBefore: undefined, pageAfter: value };
   }
+
+  const pageAfter = url.searchParams.get('page[after]') ?? url.searchParams.get('pageAfter');
+  const pageBefore = url.searchParams.get('page[before]') ?? url.searchParams.get('pageBefore');
+  const pageSize = extractPageSize(url);
+
+  if (!pageAfter && !pageBefore) {
+    // The link is parseable but carries no recognized cursor (e.g. a bare cursor string or a
+    // URL that has been stripped of query params). Forward the raw value to the API as
+    // pageAfter so it gets a chance to honour or reject it explicitly, instead of silently
+    // re-requesting the first page.
+    log.warn('page_link has no recognized cursor parameter; forwarding the raw value as pageAfter');
+    return { pageSize, pageBefore: undefined, pageAfter: value };
+  }
+
+  return {
+    pageSize,
+    pageBefore: pageBefore ?? undefined,
+    pageAfter: pageAfter ?? undefined,
+  };
 }
 
 function extractPageSize(url: URL): number | undefined {
