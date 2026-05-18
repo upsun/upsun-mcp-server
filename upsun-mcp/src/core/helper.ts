@@ -193,8 +193,8 @@ function extractPaginationLink(value: string): {
     return { pageSize: undefined, pageBefore: undefined, pageAfter: value };
   }
 
-  const pageAfter = url.searchParams.get('page[after]') ?? url.searchParams.get('pageAfter');
-  const pageBefore = url.searchParams.get('page[before]') ?? url.searchParams.get('pageBefore');
+  const pageAfter = pageParam(url, 'after');
+  const pageBefore = pageParam(url, 'before');
   const pageSize = extractPageSize(url);
 
   if (!pageAfter && !pageBefore) {
@@ -206,19 +206,22 @@ function extractPaginationLink(value: string): {
     return { pageSize, pageBefore: undefined, pageAfter: value };
   }
 
-  return {
-    pageSize,
-    pageBefore: pageBefore ?? undefined,
-    pageAfter: pageAfter ?? undefined,
-  };
+  return { pageSize, pageBefore, pageAfter };
+}
+
+// The Upsun API uses bracketed query params (`page[after]`); some SDKs emit the
+// camelCase form (`pageAfter`). Accept either.
+function pageParam(url: URL, name: 'after' | 'before' | 'size'): string | undefined {
+  const camel = `page${name[0].toUpperCase()}${name.slice(1)}`;
+  return url.searchParams.get(`page[${name}]`) ?? url.searchParams.get(camel) ?? undefined;
 }
 
 function extractPageSize(url: URL): number | undefined {
-  const rawPageSize = url.searchParams.get('page[size]') ?? url.searchParams.get('pageSize');
-  if (!rawPageSize) {
+  const raw = pageParam(url, 'size');
+  if (!raw) {
     return undefined;
   }
-  const pageSize = Number(rawPageSize);
+  const pageSize = Number(raw);
   if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) {
     return undefined;
   }
