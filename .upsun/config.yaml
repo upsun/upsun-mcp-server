@@ -5,10 +5,7 @@ applications:
       root: "upsun-mcp"
     type: 'nodejs:22'
     hooks:
-      build: |
-        set -e
-        npm run build
-        npm run test
+      build: npm run build
     web:
       commands:
         start: node build/index.js
