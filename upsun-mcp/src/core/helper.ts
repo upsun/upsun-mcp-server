@@ -118,6 +118,114 @@ export class Schema {
   static domainName(): z.ZodString {
     return z.string().max(255, 'Domain name must be less than 255 characters');
   }
+
+  /**
+   * Returns the Zod schema fields for pagination parameters supported by the
+   * Upsun API. To follow a next/previous page, pass `links.next.href` or
+   * `links.previous.href` from the previous response as `page_link`.
+   *
+   * @returns Zod input-schema fields for link-based pagination.
+   */
+  static pagination(): {
+    page_size: z.ZodOptional<z.ZodNumber>;
+    page_link: z.ZodOptional<z.ZodString>;
+  } {
+    return {
+      page_size: z
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe(
+          'Number of items for the first page (1-100). Defaults to the API default (typically 50). Ignored when `page_link` is set; the page size embedded in the link is used.'
+        ),
+      page_link: z
+        .string()
+        .optional()
+        .describe(
+          'Opaque pagination link. Use `links.next.href` or `links.previous.href` from the previous response.'
+        ),
+    };
+  }
+}
+
+/**
+ * Pagination parameters accepted by paginatable list tools.
+ */
+export interface PaginationParams {
+  page_size?: number;
+  page_link?: string;
+}
+
+/**
+ * Translates MCP-style snake_case pagination params into the camelCase filter
+ * shape expected by the Upsun SDK. The `page_link` value is treated as an
+ * opaque continuation link from the API response; this boundary parses only the
+ * SDK fields needed to follow that link.
+ */
+export function toSdkPagination(params: PaginationParams): {
+  pageSize?: number;
+  pageBefore?: string;
+  pageAfter?: string;
+} {
+  if (!params.page_link) {
+    return {
+      pageSize: params.page_size,
+      pageBefore: undefined,
+      pageAfter: undefined,
+    };
+  }
+
+  return extractPaginationLink(params.page_link);
+}
+
+function extractPaginationLink(value: string): {
+  pageSize?: number;
+  pageBefore?: string;
+  pageAfter?: string;
+} {
+  let url: URL;
+  try {
+    url = new URL(value, 'https://placeholder.invalid');
+  } catch {
+    log.warn('Failed to parse page_link as a URL; forwarding the raw value as pageAfter');
+    return { pageSize: undefined, pageBefore: undefined, pageAfter: value };
+  }
+
+  const pageAfter = pageParam(url, 'after');
+  const pageBefore = pageParam(url, 'before');
+  const pageSize = extractPageSize(url);
+
+  if (!pageAfter && !pageBefore) {
+    // The link is parseable but carries no recognized cursor (e.g. a bare cursor string or a
+    // URL that has been stripped of query params). Forward the raw value to the API as
+    // pageAfter so it gets a chance to honour or reject it explicitly, instead of silently
+    // re-requesting the first page.
+    log.warn('page_link has no recognized cursor parameter; forwarding the raw value as pageAfter');
+    return { pageSize, pageBefore: undefined, pageAfter: value };
+  }
+
+  return { pageSize, pageBefore, pageAfter };
+}
+
+// The Upsun API uses bracketed query params (`page[after]`); some SDKs emit the
+// camelCase form (`pageAfter`). Accept either.
+function pageParam(url: URL, name: 'after' | 'before' | 'size'): string | undefined {
+  const camel = `page${name[0].toUpperCase()}${name.slice(1)}`;
+  return url.searchParams.get(`page[${name}]`) ?? url.searchParams.get(camel) ?? undefined;
+}
+
+function extractPageSize(url: URL): number | undefined {
+  const raw = pageParam(url, 'size');
+  if (!raw) {
+    return undefined;
+  }
+  const pageSize = Number(raw);
+  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) {
+    return undefined;
+  }
+  return pageSize;
 }
 
 /**

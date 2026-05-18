@@ -7,6 +7,7 @@ import {
   isSensitiveParam,
   SENSITIVE_PARAM_KEYWORDS,
   forwardUpstream401,
+  toSdkPagination,
 } from '../../src/core/helper';
 import { z } from 'zod';
 import { ResponseError } from 'upsun-sdk-node/dist/core/runtime.js';
@@ -243,6 +244,148 @@ describe('Helper Module', () => {
         expect(() => schema.parse(123)).toThrow();
         expect(() => schema.parse(null)).toThrow();
         expect(() => schema.parse(undefined)).toThrow();
+      });
+    });
+
+    describe('pagination', () => {
+      it('should expose page_size and page_link as optional fields', () => {
+        const fields = Schema.pagination();
+        expect(fields.page_size.parse(undefined)).toBeUndefined();
+        expect(fields.page_size.parse(50)).toBe(50);
+        expect(
+          fields.page_link.parse('/organizations/org-1/projects?page%5Bafter%5D=cursor-abc')
+        ).toBe('/organizations/org-1/projects?page%5Bafter%5D=cursor-abc');
+        expect(fields.page_link.parse(undefined)).toBeUndefined();
+      });
+
+      it('should reject non-positive or non-integer page_size values', () => {
+        const fields = Schema.pagination();
+        expect(() => fields.page_size.parse(0)).toThrow();
+        expect(() => fields.page_size.parse(-1)).toThrow();
+        expect(() => fields.page_size.parse(1.5)).toThrow();
+      });
+
+      it('should reject page_size values above the API maximum of 100', () => {
+        const fields = Schema.pagination();
+        expect(fields.page_size.parse(100)).toBe(100);
+        expect(() => fields.page_size.parse(101)).toThrow();
+      });
+    });
+  });
+
+  describe('toSdkPagination', () => {
+    it('sets page size for first page requests', () => {
+      expect(toSdkPagination({ page_size: 25 })).toEqual({
+        pageSize: 25,
+        pageAfter: undefined,
+        pageBefore: undefined,
+      });
+    });
+
+    it('returns undefined for missing values', () => {
+      expect(toSdkPagination({})).toEqual({
+        pageSize: undefined,
+        pageAfter: undefined,
+        pageBefore: undefined,
+      });
+    });
+
+    it('extracts pageAfter cursor from a full continuation link', () => {
+      expect(
+        toSdkPagination({
+          page_link:
+            'https://api.upsun.com/organizations/org-1/projects?pageAfter=cursor-xyz&pageSize=50',
+        })
+      ).toEqual({
+        pageSize: 50,
+        pageAfter: 'cursor-xyz',
+        pageBefore: undefined,
+      });
+    });
+
+    it('extracts page[after] cursor from an API next link', () => {
+      expect(
+        toSdkPagination({
+          page_link:
+            'https://api.upsun.com/organizations/org-1/projects?page%5Bafter%5D=cursor-xyz&page%5Bsize%5D=50',
+        })
+      ).toEqual({
+        pageSize: 50,
+        pageAfter: 'cursor-xyz',
+        pageBefore: undefined,
+      });
+    });
+
+    it('extracts pageBefore cursor from a relative continuation link', () => {
+      expect(
+        toSdkPagination({
+          page_link: '/organizations/org-1/projects?pageBefore=cursor-prev',
+        })
+      ).toEqual({
+        pageSize: undefined,
+        pageAfter: undefined,
+        pageBefore: 'cursor-prev',
+      });
+    });
+
+    it('extracts page[size] from an API previous link', () => {
+      expect(
+        toSdkPagination({
+          page_link: '/organizations/org-1/projects?page%5Bbefore%5D=cursor-prev&page%5Bsize%5D=25',
+        })
+      ).toEqual({
+        pageSize: 25,
+        pageAfter: undefined,
+        pageBefore: 'cursor-prev',
+      });
+    });
+
+    it('follows page_link exactly when page_size is also provided', () => {
+      expect(
+        toSdkPagination({
+          page_size: 10,
+          page_link: '/organizations/org-1/projects?page%5Bafter%5D=cursor-next&page%5Bsize%5D=25',
+        })
+      ).toEqual({
+        pageSize: 25,
+        pageAfter: 'cursor-next',
+        pageBefore: undefined,
+      });
+    });
+
+    it('extracts page[before] cursor from an API previous link', () => {
+      expect(
+        toSdkPagination({
+          page_link: '/organizations/org-1/projects?page%5Bbefore%5D=cursor-prev',
+        })
+      ).toEqual({
+        pageSize: undefined,
+        pageAfter: undefined,
+        pageBefore: 'cursor-prev',
+      });
+    });
+
+    it('forwards the raw page_link as pageAfter when a URL has no cursor param', () => {
+      expect(
+        toSdkPagination({
+          page_link: 'https://api.upsun.com/somewhere',
+        })
+      ).toEqual({
+        pageSize: undefined,
+        pageAfter: 'https://api.upsun.com/somewhere',
+        pageBefore: undefined,
+      });
+    });
+
+    it('forwards a bare cursor string as pageAfter', () => {
+      expect(
+        toSdkPagination({
+          page_link: 'cursor-abc',
+        })
+      ).toEqual({
+        pageSize: undefined,
+        pageAfter: 'cursor-abc',
+        pageBefore: undefined,
       });
     });
   });

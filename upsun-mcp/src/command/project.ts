@@ -7,13 +7,12 @@
  */
 
 import { SubscriptionStatusEnum } from 'upsun-sdk-node/dist/model/index.js';
+import { z } from 'zod';
 import { McpAdapter } from '../core/adapter.js';
+import { Response, Schema, ToolWrapper, toSdkPagination } from '../core/helper.js';
 import { createLogger } from '../core/logger.js';
 
-// Create logger for project operations
 const log = createLogger('MCP:Tool:project-commands');
-import { Response, Schema, ToolWrapper } from '../core/helper.js';
-import { z } from 'zod';
 
 /**
  * Registers project management tools with the MCP server.
@@ -152,16 +151,21 @@ export function registerProject(adapter: McpAdapter): void {
     'list-project',
     {
       annotations: { readOnlyHint: true },
-      description: 'List all upsun projects',
+      description:
+        'List upsun projects in an organization. Results are paginated; pass `links.next.href` or `links.previous.href` as `page_link` to follow pages.',
       inputSchema: {
         organization_id: Schema.organizationId(),
+        ...Schema.pagination(),
       },
     },
     ToolWrapper.traceWithMetrics(
       'list-project',
-      async ({ organization_id }) => {
+      async ({ organization_id, page_size, page_link }) => {
         log.debug(`List all my projects in Organization: ${organization_id}`);
-        const result = await adapter.client.projects.list(organization_id);
+        const result = await adapter.client.projects.list(
+          organization_id,
+          toSdkPagination({ page_size, page_link })
+        );
 
         return Response.json(result);
       },

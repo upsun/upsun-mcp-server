@@ -18,7 +18,7 @@ You don't need to install or run anything locally unless you're developing or cu
 - **create-project**: Create new Upsun projects within organizations
 - **delete-project**: Permanently delete projects and all resources
 - **info-project**: Get detailed project information and metadata
-- **list-project**: List all projects in an organization
+- **list-project**: List projects in an organization. Supports pagination via `page_size` for the first page and `page_link` with `links.next.href` or `links.previous.href` to follow pages.
 
 ### 🌍 Environment Management
 - **activate-environment**: Activate paused environments
@@ -33,7 +33,7 @@ You don't need to install or run anything locally unless you're developing or cu
 
 ### 🏢 Organization Management
 - **info-organization**: Get organization details
-- **list-organization**: List all accessible organizations
+- **list-organization**: List accessible organizations. Supports pagination via `page_size` for the first page and `page_link` with `links.next.href` or `links.previous.href` to follow pages.
 
 ### 📊 Activity & Monitoring
 - **list-activity**: View deployment activities and logs
