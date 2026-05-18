@@ -7,13 +7,12 @@
  */
 
 import { SubscriptionStatusEnum } from 'upsun-sdk-node/dist/model/index.js';
+import { z } from 'zod';
 import { McpAdapter } from '../core/adapter.js';
+import { Response, Schema, ToolWrapper, toSdkPagination } from '../core/helper.js';
 import { createLogger } from '../core/logger.js';
 
-// Create logger for project operations
 const log = createLogger('MCP:Tool:project-commands');
-import { Response, Schema, ToolWrapper, toSdkPagination } from '../core/helper.js';
-import { z } from 'zod';
 
 /**
  * Registers project management tools with the MCP server.
