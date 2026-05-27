@@ -49,12 +49,6 @@ export class UpsunMcpServer implements McpAdapter {
   public client!: UpsunClient;
 
   /**
-   * The current bearer token for the active request.
-   * This is set by the gateway for each request and used by tools to create fresh clients.
-   */
-  public currentBearerToken?: string;
-
-  /**
    * Creates a new UpsunMcpServer instance.
    *
    * Initializes the MCP server with the package name and version, then registers
@@ -89,22 +83,6 @@ export class UpsunMcpServer implements McpAdapter {
 
     // Register all tasks with their respective prompts
     registerConfig(this);
-  }
-
-  /**
-   * Sets the current bearer token for this adapter instance.
-   * This is called by the gateway before each tool invocation.
-   *
-   * @param token - The bearer token to set as current
-   *
-   * @example
-   * ```typescript
-   * server.setCurrentBearerToken('your-bearer-token');
-   * ```
-   */
-  setCurrentBearerToken(token: string): void {
-    this.currentBearerToken = token;
-    this.client.setBearerToken(token);
   }
 
   /**

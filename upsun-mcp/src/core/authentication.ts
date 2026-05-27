@@ -1,4 +1,5 @@
 import express, { RequestHandler } from 'express';
+import { createHash, timingSafeEqual } from 'crypto';
 import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
 import { InvalidTokenError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
 import { createLogger } from './logger.js';
@@ -202,6 +203,56 @@ export function requireMcpAuth(
     }
     bearerAuth(req, res, next);
   };
+}
+
+/**
+ * Identity of the principal that created an MCP session: a hex SHA-256 of the
+ * credential token presented at creation (an OAuth bearer JWT or an API key).
+ *
+ * A session is bound to the exact token that created it. Binding to the token
+ * rather than to a claim means the guarantee holds without verifying the JWT
+ * signature: someone who learns a session id cannot drive the session without
+ * also presenting the same token, and anyone holding that token already has the
+ * access the session would grant. When an OAuth token is refreshed the new
+ * token no longer matches, so the client transparently starts a new session.
+ */
+export type SessionOwner = string;
+
+function hashToken(token: string): Buffer {
+  return createHash('sha256').update(token).digest();
+}
+
+/**
+ * Derives the session owner from the authenticated request.
+ */
+export function sessionOwnerFromAuth(auth: AuthInfo): SessionOwner {
+  return hashToken(auth.token).toString('hex');
+}
+
+/**
+ * Reports whether a request presents the same token that created the session,
+ * using a constant-time comparison of the token hashes.
+ */
+export function authMatchesSessionOwner(auth: AuthInfo, owner: SessionOwner): boolean {
+  const presented = hashToken(auth.token);
+  const expected = Buffer.from(owner, 'hex');
+  return presented.length === expected.length && timingSafeEqual(presented, expected);
+}
+
+/**
+ * Sends the "session not found" response (HTTP 404) used when a request targets
+ * a session that does not exist or whose binding token does not match. The two
+ * cases are deliberately indistinguishable so a session id cannot be used to
+ * probe for live sessions. A compliant MCP client responds by starting a new
+ * session with a fresh `initialize` request, which covers the legitimate case
+ * of an OAuth access token having been refreshed.
+ */
+export function rejectSessionNotFound(res: express.Response): void {
+  res.status(404).json({
+    jsonrpc: '2.0',
+    error: { code: -32001, message: 'Session not found' },
+    id: null,
+  });
 }
 
 /**

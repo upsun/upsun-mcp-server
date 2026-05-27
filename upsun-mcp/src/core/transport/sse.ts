@@ -3,8 +3,14 @@ import { McpAdapter } from '../adapter.js';
 import express from 'express';
 import { GatewayServer } from '../gateway.js';
 import { createLogger } from '../logger.js';
-import { extractMode, API_KEY_CLIENT_ID } from '../authentication.js';
-import type { AuthInfo } from '../authentication.js';
+import {
+  extractMode,
+  API_KEY_CLIENT_ID,
+  sessionOwnerFromAuth,
+  authMatchesSessionOwner,
+  rejectSessionNotFound,
+} from '../authentication.js';
+import type { AuthInfo, SessionOwner } from '../authentication.js';
 
 const sseLog = createLogger('Web:SSE');
 
@@ -18,7 +24,10 @@ export const HTTP_MSG_PATH = '/messages';
 // commits HTTP 200 headers as soon as the connection is established.
 export class SseTransport {
   /** Active SSE server transports (protocol version 2024-11-05) */
-  readonly sse = {} as Record<string, { transport: SSEServerTransport; server: McpAdapter }>;
+  readonly sse = {} as Record<
+    string,
+    { transport: SSEServerTransport; server: McpAdapter; owner: SessionOwner }
+  >;
 
   /**
    * Active SSE connections with their keep-alive intervals.
@@ -51,19 +60,17 @@ export class SseTransport {
     const sessionId = req.query.sessionId as string;
     const transportSession = this.sse[sessionId];
 
-    if (transportSession) {
-      const { transport, server } = transportSession;
-
-      // Update the server with fresh bearer token.
-      if (auth.clientId !== API_KEY_CLIENT_ID) {
-        server.setCurrentBearerToken(auth.token);
-      }
-
-      sseLog.info(`Message call from ${ip} with ID: ${transport.sessionId}`);
-      await transport.handlePostMessage(req, res, req.body);
-    } else {
-      res.status(400).send('No transport found for sessionId');
+    // The session is bound to the token that created it. An unknown id and a
+    // non-matching token are treated alike, so neither reveals a live session.
+    if (!transportSession || !authMatchesSessionOwner(auth, transportSession.owner)) {
+      sseLog.warn(`Rejecting message from ${ip}: unknown session id or non-matching token`);
+      rejectSessionNotFound(res);
+      return;
     }
+
+    const { transport } = transportSession;
+    sseLog.info(`Message call from ${ip} with ID: ${transport.sessionId}`);
+    await transport.handlePostMessage(req, res, req.body);
   }
 
   async getSessionRequest(req: express.Request, res: express.Response): Promise<void> {
@@ -85,7 +92,7 @@ export class SseTransport {
 
     const server = this.gateway.makeInstanceAdapterMcpServer(mode);
 
-    this.sse[transport.sessionId] = { transport, server };
+    this.sse[transport.sessionId] = { transport, server, owner: sessionOwnerFromAuth(auth) };
 
     // Start keep-alive ping.
     const intervalId = setInterval(() => {

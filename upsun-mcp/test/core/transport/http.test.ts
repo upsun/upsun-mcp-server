@@ -1,7 +1,7 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { GatewayServer } from '../../../src/core/gateway';
 import { HttpTransport } from '../../../src/core/transport/http';
-import { API_KEY_CLIENT_ID } from '../../../src/core/authentication';
+import { API_KEY_CLIENT_ID, sessionOwnerFromAuth } from '../../../src/core/authentication';
 
 describe('HttpTransport', () => {
   let gateway: GatewayServer<any>;
@@ -30,12 +30,13 @@ describe('HttpTransport', () => {
     expect(typeof httpTransport.postSessionRequest).toBe('function');
   });
 
-  it('should call setCurrentBearerToken and handleRequest if sessionId and bearer auth', async () => {
-    const setCurrentBearerToken = jest.fn();
+  it('should dispatch to the session when the same token is presented', async () => {
     const handleRequest = jest.fn();
+    const owner = sessionOwnerFromAuth({ token: 'token', clientId: 'user-1', scopes: [] } as any);
     httpTransport.streamable['sess2'] = {
       transport: { handleRequest },
-      server: { setCurrentBearerToken },
+      server: {},
+      owner,
     } as any;
     const req = {
       headers: { 'mcp-session-id': 'sess2' },
@@ -44,26 +45,41 @@ describe('HttpTransport', () => {
     } as any;
     const res = {} as any;
     await httpTransport.postSessionRequest(req, res);
-    expect(setCurrentBearerToken).toHaveBeenCalledWith('token');
     expect(handleRequest).toHaveBeenCalled();
   });
 
-  it('should not call setCurrentBearerToken for API key auth on existing session', async () => {
-    const setCurrentBearerToken = jest.fn();
+  it('should reject reuse with a different token as 404 Session not found', async () => {
     const handleRequest = jest.fn();
+    const owner = sessionOwnerFromAuth({
+      token: 'victim-token',
+      clientId: 'user-1',
+      scopes: [],
+    } as any);
     httpTransport.streamable['sess3'] = {
       transport: { handleRequest },
-      server: { setCurrentBearerToken },
+      server: {},
+      owner,
     } as any;
     const req = {
       headers: { 'mcp-session-id': 'sess3' },
       body: {},
-      auth: { token: 'my-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
+      auth: { token: 'attacker-token', clientId: API_KEY_CLIENT_ID, scopes: [] },
     } as any;
-    const res = {} as any;
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
     await httpTransport.postSessionRequest(req, res);
-    expect(setCurrentBearerToken).not.toHaveBeenCalled();
-    expect(handleRequest).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(handleRequest).not.toHaveBeenCalled();
+  });
+
+  it('should reject an unknown session id as 404, indistinguishable from a wrong token', async () => {
+    const req = {
+      headers: { 'mcp-session-id': 'does-not-exist' },
+      body: {},
+      auth: { token: 'token', clientId: 'user-1', scopes: [] },
+    } as any;
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
+    await httpTransport.postSessionRequest(req, res);
+    expect(res.status).toHaveBeenCalledWith(404);
   });
 
   it('should create transport with enableJsonResponse: true on init', async () => {
@@ -72,7 +88,6 @@ describe('HttpTransport', () => {
     const fakeAdapter = {
       connectWithApiKey,
       connectWithBearer: jest.fn(),
-      setCurrentBearerToken: jest.fn(),
       server: {},
       client: {},
       isMode: jest.fn(),
@@ -111,7 +126,6 @@ describe('HttpTransport', () => {
     const fakeAdapter = {
       connectWithBearer,
       connectWithApiKey: jest.fn(),
-      setCurrentBearerToken: jest.fn(),
       server: {},
       client: {},
       isMode: jest.fn(),
@@ -141,7 +155,6 @@ describe('HttpTransport', () => {
     const fakeAdapter = {
       connectWithApiKey,
       connectWithBearer: jest.fn(),
-      setCurrentBearerToken: jest.fn(),
       server: {},
       client: {},
       isMode: jest.fn(),
@@ -180,25 +193,56 @@ describe('HttpTransport', () => {
   });
 
   it('should call handleSessionRequest and return 400 if sessionId missing', async () => {
-    const req = { headers: {} } as any;
+    const req = { headers: {}, auth: { token: 'tok', clientId: 'user-1', scopes: [] } } as any;
     const res = { status: jest.fn().mockReturnThis(), send: jest.fn() } as any;
     await httpTransport.handleSessionRequest(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.send).toHaveBeenCalledWith('Invalid or missing session ID');
   });
 
-  it('should handle handleSessionRequest with valid sessionId', async () => {
+  it('should handle handleSessionRequest with valid sessionId and matching token', async () => {
     const handleRequest = jest.fn(async () => {});
+    const owner = sessionOwnerFromAuth({ token: 'tok', clientId: 'user-1', scopes: [] } as any);
     httpTransport.streamable['valid-sess'] = {
       transport: { handleRequest },
-      server: { setCurrentBearerToken: jest.fn() },
+      server: {},
+      owner,
     } as any;
 
-    const req = { headers: { 'mcp-session-id': 'valid-sess' }, body: {} } as any;
+    const req = {
+      headers: { 'mcp-session-id': 'valid-sess' },
+      body: {},
+      auth: { token: 'tok', clientId: 'user-1', scopes: [] },
+    } as any;
     const res = {} as any;
 
     await httpTransport.handleSessionRequest(req, res);
     expect(handleRequest).toHaveBeenCalled();
+  });
+
+  it('should reject handleSessionRequest presenting a different token as 404', async () => {
+    const handleRequest = jest.fn(async () => {});
+    const owner = sessionOwnerFromAuth({
+      token: 'owner-tok',
+      clientId: 'user-1',
+      scopes: [],
+    } as any);
+    httpTransport.streamable['owned-sess'] = {
+      transport: { handleRequest },
+      server: {},
+      owner,
+    } as any;
+
+    const req = {
+      headers: { 'mcp-session-id': 'owned-sess' },
+      body: {},
+      auth: { token: 'attacker-token', clientId: API_KEY_CLIENT_ID, scopes: [] },
+    } as any;
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
+
+    await httpTransport.handleSessionRequest(req, res);
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(handleRequest).not.toHaveBeenCalled();
   });
 
   it('should call closeAllSessions and clear streamable', async () => {
@@ -215,5 +259,39 @@ describe('HttpTransport', () => {
     await httpTransport.closeAllSessions();
     await Promise.resolve();
     expect(httpTransport.streamable['err']).toBeUndefined();
+  });
+
+  it('should close a session when its token expiry is reached', async () => {
+    jest.useFakeTimers();
+    try {
+      const close = jest.fn(async () => {});
+      httpTransport.streamable['exp-sess'] = {
+        transport: { close },
+        server: {},
+        owner: 'deadbeef',
+      } as any;
+      const expiresAt = Math.floor(Date.now() / 1000) + 60;
+      (httpTransport as any).scheduleExpiry('exp-sess', expiresAt);
+
+      // Still present before the token expires.
+      jest.advanceTimersByTime(59_000);
+      expect(close).not.toHaveBeenCalled();
+
+      jest.advanceTimersByTime(1_000);
+      await Promise.resolve();
+      expect(close).toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('should not schedule expiry for tokens without an expiry (e.g. API keys)', () => {
+    httpTransport.streamable['no-exp'] = {
+      transport: { close: jest.fn() },
+      server: {},
+      owner: 'deadbeef',
+    } as any;
+    (httpTransport as any).scheduleExpiry('no-exp', undefined);
+    expect(httpTransport.streamable['no-exp'].expiryTimer).toBeUndefined();
   });
 });

@@ -10,7 +10,10 @@ import {
   JwtTokenVerifier,
   requireMcpAuth,
   API_KEY_CLIENT_ID,
+  sessionOwnerFromAuth,
+  authMatchesSessionOwner,
 } from '../../src/core/authentication';
+import type { AuthInfo } from '../../src/core/authentication';
 
 /** Builds a minimal unsigned JWT with the given payload. */
 function makeJwt(payload: Record<string, unknown>): string {
@@ -318,6 +321,42 @@ describe('Authentication Module', () => {
       const calls = getSpy.mock.calls.map(c => c[0]);
       expect(calls).not.toContain('/.well-known/oauth-authorization-server/mcp');
       expect(calls).not.toContain('/.well-known/oauth-protected-resource/mcp');
+    });
+  });
+
+  describe('Session ownership binding', () => {
+    const bearer = (token: string): AuthInfo => ({ token, clientId: 'user-1', scopes: [] });
+    const apiKey = (token: string): AuthInfo => ({
+      token,
+      clientId: API_KEY_CLIENT_ID,
+      scopes: [],
+    });
+
+    it('derives the owner as a hex SHA-256 that does not leak the token', () => {
+      const owner = sessionOwnerFromAuth(bearer('secret-token'));
+      expect(owner).toMatch(/^[0-9a-f]{64}$/);
+      expect(owner).not.toContain('secret-token');
+    });
+
+    it('matches when the same token is presented again', () => {
+      const owner = sessionOwnerFromAuth(bearer('jwt-abc'));
+      expect(authMatchesSessionOwner(bearer('jwt-abc'), owner)).toBe(true);
+    });
+
+    it('matches the same key regardless of how clientId is labelled', () => {
+      // The binding is to the token bytes, not the authentication type.
+      const owner = sessionOwnerFromAuth(apiKey('shared-secret'));
+      expect(authMatchesSessionOwner(bearer('shared-secret'), owner)).toBe(true);
+    });
+
+    it('rejects a different bearer token (e.g. a refreshed or attacker token)', () => {
+      const owner = sessionOwnerFromAuth(bearer('jwt-1'));
+      expect(authMatchesSessionOwner(bearer('jwt-2-refreshed'), owner)).toBe(false);
+    });
+
+    it('rejects a different api key', () => {
+      const owner = sessionOwnerFromAuth(apiKey('victim-key'));
+      expect(authMatchesSessionOwner(apiKey('attacker-key'), owner)).toBe(false);
     });
   });
 });
