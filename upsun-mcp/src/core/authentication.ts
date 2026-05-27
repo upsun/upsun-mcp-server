@@ -207,14 +207,16 @@ export function requireMcpAuth(
 
 /**
  * Identity of the principal that created an MCP session: a hex SHA-256 of the
- * credential token presented at creation (an OAuth bearer JWT or an API key).
+ * credential token presented at creation.
  *
  * A session is bound to the exact token that created it. Binding to the token
  * rather than to a claim means the guarantee holds without verifying the JWT
  * signature: someone who learns a session id cannot drive the session without
- * also presenting the same token, and anyone holding that token already has the
- * access the session would grant. When an OAuth token is refreshed the new
- * token no longer matches, so the client transparently starts a new session.
+ * also presenting the same token, and anyone holding that token already has
+ * the access the session would grant.
+ *
+ * Streamable HTTP bearer requests are stateless, so this exact-token binding
+ * applies to API-key Streamable sessions and legacy SSE sessions.
  */
 export type SessionOwner = string;
 
@@ -243,9 +245,7 @@ export function authMatchesSessionOwner(auth: AuthInfo, owner: SessionOwner): bo
  * Sends the "session not found" response (HTTP 404) used when a request targets
  * a session that does not exist or whose binding token does not match. The two
  * cases are deliberately indistinguishable so a session id cannot be used to
- * probe for live sessions. A compliant MCP client responds by starting a new
- * session with a fresh `initialize` request, which covers the legitimate case
- * of an OAuth access token having been refreshed.
+ * probe for live sessions.
  */
 export function rejectSessionNotFound(res: express.Response): void {
   res.status(404).json({

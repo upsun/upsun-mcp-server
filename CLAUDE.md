@@ -129,21 +129,21 @@ upsun-mcp/
 1. **API Key**: Direct authentication via `upsun-api-token` header
 2. **Bearer Token**: Alternative authentication via `Authorization: Bearer` header
 3. **Write Control**: Write operations controlled via `enable-write` header
-4. **Session token binding**: Each session is bound to the exact credential token that
-   created it. The session stores a SHA-256 hash of that token (`sessionOwnerFromAuth`
-   in `core/authentication.ts`), and every request that reuses an existing
-   `mcp-session-id` must present a token with the same hash (`authMatchesSessionOwner`,
-   constant-time compared). Because the binding is to the token rather than to a claim,
-   it holds without verifying the JWT signature: a leaked `mcp-session-id` is useless
-   without the token, and anyone holding the token already has the access the session
-   would grant. A request whose token does not match — including an unknown session id —
-   receives `404 Session not found` (the two are indistinguishable, so the id cannot be
-   used to probe for live sessions); a compliant client responds by starting a new
-   session, which also covers the case of an OAuth access token having been refreshed.
-   This applies to the HTTP POST/GET/DELETE handlers and the SSE message handler. Because
-   a bearer session cannot outlive its token, HTTP sessions are evicted at the token's
-   `exp` so that refreshed-out sessions do not accumulate; API keys carry no expiry and
-   their sessions live until the transport closes.
+4. **Session token binding**: Stateful sessions are bound to the exact credential token
+   that created them. The session stores a SHA-256 hash of that token
+   (`sessionOwnerFromAuth` in `core/authentication.ts`), and every request that reuses an
+   existing `mcp-session-id` must present a token with the same hash
+   (`authMatchesSessionOwner`, constant-time compared). Because the binding is to the
+   token rather than to a claim, it holds without verifying the JWT signature: a leaked
+   `mcp-session-id` is useless without the token, and anyone holding the token already has
+   the access the session would grant. A request whose token does not match — including an
+   unknown session id — receives `404 Session not found` (the two are indistinguishable,
+   so the id cannot be used to probe for live sessions). Streamable HTTP bearer requests
+   are stateless and use a fresh transport for each POST, so refreshed OAuth access tokens
+   do not depend on client-side 404 session reinitialization. Bearer GET/DELETE requests
+   return `405` with `Allow: POST` because there is no stateful session or standalone SSE
+   stream to attach to. Exact-token session binding still applies to API-key Streamable
+   HTTP sessions and legacy SSE sessions.
 5. **Upstream 401 forwarding**: When the Upsun API returns 401 (expired/revoked token),
    the HTTP transport forwards the 401 status and `WWW-Authenticate` header directly to
    the MCP client so it can trigger OAuth2 token refresh. This only works on the
