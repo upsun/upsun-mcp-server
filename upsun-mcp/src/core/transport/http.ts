@@ -55,8 +55,6 @@ export class HttpTransport {
       return;
     }
     const sessionId = req.headers[HeaderKey.MCP_SESSION_ID] as string | undefined;
-    const mode = extractMode(req);
-    const isApiKey = auth.clientId === API_KEY_CLIENT_ID;
 
     if (sessionId) {
       // The session is bound to the token that created it. A request that does
@@ -78,6 +76,8 @@ export class HttpTransport {
     if (isInitializeRequest(req.body)) {
       httpLog.info('New session initialization request');
 
+      const mode = extractMode(req);
+      const isApiKey = auth.clientId === API_KEY_CLIENT_ID;
       const server = this.gateway.makeInstanceAdapterMcpServer(mode);
 
       // enableJsonResponse defers writing HTTP headers until the handler completes,
