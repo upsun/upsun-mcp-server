@@ -1,7 +1,7 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { GatewayServer } from '../../../src/core/gateway';
 import { SseTransport } from '../../../src/core/transport/sse';
-import { API_KEY_CLIENT_ID } from '../../../src/core/authentication';
+import { API_KEY_CLIENT_ID, sessionOwnerFromAuth } from '../../../src/core/authentication';
 
 describe('SseTransport', () => {
   let gateway: GatewayServer<any>;
@@ -35,6 +35,7 @@ describe('SseTransport', () => {
     sseTransport.sse['sess2'] = {
       transport: { handlePostMessage, sessionId: 'sess2' },
       server: { setCurrentBearerToken },
+      owner: { authType: 'bearer' },
     } as any;
     const req = {
       query: { sessionId: 'sess2' },
@@ -54,6 +55,11 @@ describe('SseTransport', () => {
     sseTransport.sse['sess3'] = {
       transport: { handlePostMessage, sessionId: 'sess3' },
       server: { setCurrentBearerToken },
+      owner: sessionOwnerFromAuth({
+        token: 'my-key',
+        clientId: API_KEY_CLIENT_ID,
+        scopes: [],
+      } as any),
     } as any;
     const req = {
       query: { sessionId: 'sess3' },
@@ -65,6 +71,31 @@ describe('SseTransport', () => {
     await sseTransport.postSessionRequest(req, res);
     expect(setCurrentBearerToken).not.toHaveBeenCalled();
     expect(handlePostMessage).toHaveBeenCalled();
+  });
+
+  it('should reject reuse of a bearer session when an API key header is presented', async () => {
+    const setCurrentBearerToken = jest.fn();
+    const handlePostMessage = jest.fn();
+    sseTransport.sse['sess-cross'] = {
+      transport: { handlePostMessage, sessionId: 'sess-cross' },
+      server: { setCurrentBearerToken },
+      owner: { authType: 'bearer' },
+    } as any;
+    const req = {
+      query: { sessionId: 'sess-cross' },
+      headers: {},
+      ip: '127.0.0.1',
+      auth: { token: 'attacker-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
+    } as any;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as any;
+    await sseTransport.postSessionRequest(req, res);
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(setCurrentBearerToken).not.toHaveBeenCalled();
+    expect(handlePostMessage).not.toHaveBeenCalled();
   });
 
   it('should return 400 if postSessionRequest called with unknown sessionId', async () => {

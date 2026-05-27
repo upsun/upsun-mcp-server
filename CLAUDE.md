@@ -129,7 +129,16 @@ upsun-mcp/
 1. **API Key**: Direct authentication via `upsun-api-token` header
 2. **Bearer Token**: Alternative authentication via `Authorization: Bearer` header
 3. **Write Control**: Write operations controlled via `enable-write` header
-4. **Upstream 401 forwarding**: When the Upsun API returns 401 (expired/revoked token),
+4. **Session ownership binding**: Each session is bound to the principal that created it.
+   API-key sessions store a SHA-256 hash of the key; bearer sessions store only the
+   authentication type. Every request that reuses an existing `mcp-session-id` must
+   authenticate as the same principal (`authMatchesSessionOwner` in
+   `core/authentication.ts`): the authentication type must match, and an API-key request
+   must present the same key. Mismatches receive 401. The upstream client is always
+   rebound to the token presented on the current request, so a call never executes
+   against a stored credential. This applies to the HTTP POST/GET/DELETE handlers and the
+   SSE message handler.
+5. **Upstream 401 forwarding**: When the Upsun API returns 401 (expired/revoked token),
    the HTTP transport forwards the 401 status and `WWW-Authenticate` header directly to
    the MCP client so it can trigger OAuth2 token refresh. This only works on the
    Streamable HTTP transport (`enableJsonResponse: true`); SSE commits 200 headers

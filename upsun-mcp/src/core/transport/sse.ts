@@ -3,8 +3,14 @@ import { McpAdapter } from '../adapter.js';
 import express from 'express';
 import { GatewayServer } from '../gateway.js';
 import { createLogger } from '../logger.js';
-import { extractMode, API_KEY_CLIENT_ID } from '../authentication.js';
-import type { AuthInfo } from '../authentication.js';
+import {
+  extractMode,
+  API_KEY_CLIENT_ID,
+  sessionOwnerFromAuth,
+  authMatchesSessionOwner,
+  rejectUnauthorized,
+} from '../authentication.js';
+import type { AuthInfo, SessionOwner } from '../authentication.js';
 
 const sseLog = createLogger('Web:SSE');
 
@@ -18,7 +24,10 @@ export const HTTP_MSG_PATH = '/messages';
 // commits HTTP 200 headers as soon as the connection is established.
 export class SseTransport {
   /** Active SSE server transports (protocol version 2024-11-05) */
-  readonly sse = {} as Record<string, { transport: SSEServerTransport; server: McpAdapter }>;
+  readonly sse = {} as Record<
+    string,
+    { transport: SSEServerTransport; server: McpAdapter; owner: SessionOwner }
+  >;
 
   /**
    * Active SSE connections with their keep-alive intervals.
@@ -52,9 +61,18 @@ export class SseTransport {
     const transportSession = this.sse[sessionId];
 
     if (transportSession) {
-      const { transport, server } = transportSession;
+      const { transport, server, owner } = transportSession;
 
-      // Update the server with fresh bearer token.
+      // The session is bound to its creator; a request reusing it must
+      // authenticate as the same principal.
+      if (!authMatchesSessionOwner(auth, owner)) {
+        sseLog.warn(`Rejecting message from ${ip}: request principal does not own the session`);
+        rejectUnauthorized(res);
+        return;
+      }
+
+      // Rebind the upstream client to the token presented on this request so a
+      // call never executes against a stored credential.
       if (auth.clientId !== API_KEY_CLIENT_ID) {
         server.setCurrentBearerToken(auth.token);
       }
@@ -85,7 +103,7 @@ export class SseTransport {
 
     const server = this.gateway.makeInstanceAdapterMcpServer(mode);
 
-    this.sse[transport.sessionId] = { transport, server };
+    this.sse[transport.sessionId] = { transport, server, owner: sessionOwnerFromAuth(auth) };
 
     // Start keep-alive ping.
     const intervalId = setInterval(() => {

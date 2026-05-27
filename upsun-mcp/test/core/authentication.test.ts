@@ -10,7 +10,10 @@ import {
   JwtTokenVerifier,
   requireMcpAuth,
   API_KEY_CLIENT_ID,
+  sessionOwnerFromAuth,
+  authMatchesSessionOwner,
 } from '../../src/core/authentication';
+import type { AuthInfo } from '../../src/core/authentication';
 
 /** Builds a minimal unsigned JWT with the given payload. */
 function makeJwt(payload: Record<string, unknown>): string {
@@ -318,6 +321,54 @@ describe('Authentication Module', () => {
       const calls = getSpy.mock.calls.map(c => c[0]);
       expect(calls).not.toContain('/.well-known/oauth-authorization-server/mcp');
       expect(calls).not.toContain('/.well-known/oauth-protected-resource/mcp');
+    });
+  });
+
+  describe('Session ownership binding', () => {
+    const bearer = (token: string): AuthInfo => ({ token, clientId: 'user-1', scopes: [] });
+    const apiKey = (token: string): AuthInfo => ({
+      token,
+      clientId: API_KEY_CLIENT_ID,
+      scopes: [],
+    });
+
+    it('derives a bearer owner from a bearer request', () => {
+      expect(sessionOwnerFromAuth(bearer('jwt'))).toEqual({ authType: 'bearer' });
+    });
+
+    it('derives an api-key owner with a key hash from an api-key request', () => {
+      const owner = sessionOwnerFromAuth(apiKey('secret-key'));
+      expect(owner.authType).toBe('api-key');
+      if (owner.authType === 'api-key') {
+        expect(owner.keyHash).toMatch(/^[0-9a-f]{64}$/);
+        // The raw key must not be stored.
+        expect(owner.keyHash).not.toContain('secret-key');
+      }
+    });
+
+    it('allows a bearer request to reuse a bearer session', () => {
+      const owner = sessionOwnerFromAuth(bearer('jwt-1'));
+      expect(authMatchesSessionOwner(bearer('jwt-2-refreshed'), owner)).toBe(true);
+    });
+
+    it('rejects an api-key request against a bearer session', () => {
+      const owner = sessionOwnerFromAuth(bearer('jwt'));
+      expect(authMatchesSessionOwner(apiKey('anything'), owner)).toBe(false);
+    });
+
+    it('allows an api-key request with the matching key', () => {
+      const owner = sessionOwnerFromAuth(apiKey('the-key'));
+      expect(authMatchesSessionOwner(apiKey('the-key'), owner)).toBe(true);
+    });
+
+    it('rejects an api-key request with a different key', () => {
+      const owner = sessionOwnerFromAuth(apiKey('victim-key'));
+      expect(authMatchesSessionOwner(apiKey('attacker-key'), owner)).toBe(false);
+    });
+
+    it('rejects a bearer request against an api-key session', () => {
+      const owner = sessionOwnerFromAuth(apiKey('the-key'));
+      expect(authMatchesSessionOwner(bearer('jwt'), owner)).toBe(false);
     });
   });
 });

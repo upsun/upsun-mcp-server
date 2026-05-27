@@ -1,7 +1,7 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { GatewayServer } from '../../../src/core/gateway';
 import { HttpTransport } from '../../../src/core/transport/http';
-import { API_KEY_CLIENT_ID } from '../../../src/core/authentication';
+import { API_KEY_CLIENT_ID, sessionOwnerFromAuth } from '../../../src/core/authentication';
 
 describe('HttpTransport', () => {
   let gateway: GatewayServer<any>;
@@ -36,6 +36,7 @@ describe('HttpTransport', () => {
     httpTransport.streamable['sess2'] = {
       transport: { handleRequest },
       server: { setCurrentBearerToken },
+      owner: { authType: 'bearer' },
     } as any;
     const req = {
       headers: { 'mcp-session-id': 'sess2' },
@@ -48,20 +49,95 @@ describe('HttpTransport', () => {
     expect(handleRequest).toHaveBeenCalled();
   });
 
-  it('should not call setCurrentBearerToken for API key auth on existing session', async () => {
+  it('should rebind the bearer token on every reuse so refreshed tokens take effect', async () => {
+    const setCurrentBearerToken = jest.fn();
+    const handleRequest = jest.fn();
+    httpTransport.streamable['sess2b'] = {
+      transport: { handleRequest },
+      server: { setCurrentBearerToken },
+      owner: { authType: 'bearer' },
+    } as any;
+    const req = {
+      headers: { 'mcp-session-id': 'sess2b' },
+      body: {},
+      auth: { token: 'refreshed-token', clientId: 'user-1', scopes: [] },
+    } as any;
+    await httpTransport.postSessionRequest(req, { headers: {} } as any);
+    expect(setCurrentBearerToken).toHaveBeenCalledWith('refreshed-token');
+  });
+
+  it('should reject reuse of a bearer session when an API key header is presented', async () => {
     const setCurrentBearerToken = jest.fn();
     const handleRequest = jest.fn();
     httpTransport.streamable['sess3'] = {
       transport: { handleRequest },
       server: { setCurrentBearerToken },
+      owner: { authType: 'bearer' },
     } as any;
     const req = {
       headers: { 'mcp-session-id': 'sess3' },
       body: {},
-      auth: { token: 'my-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
+      auth: { token: 'attacker-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
     } as any;
-    const res = {} as any;
+    const setHeader = jest.fn().mockReturnThis();
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      set: setHeader,
+      json: jest.fn(),
+    } as any;
     await httpTransport.postSessionRequest(req, res);
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(setCurrentBearerToken).not.toHaveBeenCalled();
+    expect(handleRequest).not.toHaveBeenCalled();
+  });
+
+  it('should reject reuse of an API-key session presented with a different key', async () => {
+    const handleRequest = jest.fn();
+    const owner = sessionOwnerFromAuth({
+      token: 'victim-key',
+      clientId: API_KEY_CLIENT_ID,
+      scopes: [],
+    } as any);
+    httpTransport.streamable['sess4'] = {
+      transport: { handleRequest },
+      server: { setCurrentBearerToken: jest.fn() },
+      owner,
+    } as any;
+    const req = {
+      headers: { 'mcp-session-id': 'sess4' },
+      body: {},
+      auth: { token: 'attacker-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
+    } as any;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as any;
+    await httpTransport.postSessionRequest(req, res);
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(handleRequest).not.toHaveBeenCalled();
+  });
+
+  it('should allow reuse of an API-key session presented with the same key', async () => {
+    const handleRequest = jest.fn();
+    const setCurrentBearerToken = jest.fn();
+    const owner = sessionOwnerFromAuth({
+      token: 'same-key',
+      clientId: API_KEY_CLIENT_ID,
+      scopes: [],
+    } as any);
+    httpTransport.streamable['sess5'] = {
+      transport: { handleRequest },
+      server: { setCurrentBearerToken },
+      owner,
+    } as any;
+    const req = {
+      headers: { 'mcp-session-id': 'sess5' },
+      body: {},
+      auth: { token: 'same-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
+    } as any;
+    await httpTransport.postSessionRequest(req, { headers: {} } as any);
+    // API-key sessions are already bound to the key, so no bearer rebind occurs.
     expect(setCurrentBearerToken).not.toHaveBeenCalled();
     expect(handleRequest).toHaveBeenCalled();
   });
@@ -180,25 +256,54 @@ describe('HttpTransport', () => {
   });
 
   it('should call handleSessionRequest and return 400 if sessionId missing', async () => {
-    const req = { headers: {} } as any;
+    const req = { headers: {}, auth: { token: 'tok', clientId: 'user-1', scopes: [] } } as any;
     const res = { status: jest.fn().mockReturnThis(), send: jest.fn() } as any;
     await httpTransport.handleSessionRequest(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.send).toHaveBeenCalledWith('Invalid or missing session ID');
   });
 
-  it('should handle handleSessionRequest with valid sessionId', async () => {
+  it('should handle handleSessionRequest with valid sessionId owned by the requester', async () => {
     const handleRequest = jest.fn(async () => {});
     httpTransport.streamable['valid-sess'] = {
       transport: { handleRequest },
       server: { setCurrentBearerToken: jest.fn() },
+      owner: { authType: 'bearer' },
     } as any;
 
-    const req = { headers: { 'mcp-session-id': 'valid-sess' }, body: {} } as any;
+    const req = {
+      headers: { 'mcp-session-id': 'valid-sess' },
+      body: {},
+      auth: { token: 'tok', clientId: 'user-1', scopes: [] },
+    } as any;
     const res = {} as any;
 
     await httpTransport.handleSessionRequest(req, res);
     expect(handleRequest).toHaveBeenCalled();
+  });
+
+  it('should reject handleSessionRequest from a non-owning principal', async () => {
+    const handleRequest = jest.fn(async () => {});
+    httpTransport.streamable['owned-sess'] = {
+      transport: { handleRequest },
+      server: { setCurrentBearerToken: jest.fn() },
+      owner: { authType: 'bearer' },
+    } as any;
+
+    const req = {
+      headers: { 'mcp-session-id': 'owned-sess' },
+      body: {},
+      auth: { token: 'attacker-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
+    } as any;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as any;
+
+    await httpTransport.handleSessionRequest(req, res);
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(handleRequest).not.toHaveBeenCalled();
   });
 
   it('should call closeAllSessions and clear streamable', async () => {

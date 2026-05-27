@@ -9,8 +9,15 @@ import express from 'express';
 
 import { McpAdapter } from '../adapter.js';
 import { createLogger } from '../logger.js';
-import { extractMode, HeaderKey, API_KEY_CLIENT_ID } from '../authentication.js';
-import type { AuthInfo } from '../authentication.js';
+import {
+  extractMode,
+  HeaderKey,
+  API_KEY_CLIENT_ID,
+  sessionOwnerFromAuth,
+  authMatchesSessionOwner,
+  rejectUnauthorized,
+} from '../authentication.js';
+import type { AuthInfo, SessionOwner } from '../authentication.js';
 import { GatewayServer } from '../gateway.js';
 import { requestContext } from '../requestContext.js';
 
@@ -20,7 +27,7 @@ export class HttpTransport {
   /** Active streamable HTTP server transports (protocol version 2025-03-26) */
   readonly streamable = {} as Record<
     string,
-    { transport: StreamableHTTPServerTransport; server: McpAdapter }
+    { transport: StreamableHTTPServerTransport; server: McpAdapter; owner: SessionOwner }
   >;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,9 +54,18 @@ export class HttpTransport {
     const isApiKey = auth.clientId === API_KEY_CLIENT_ID;
 
     if (sessionId && this.streamable[sessionId]) {
-      // Reuse existing transport - inject fresh authentication token.
-      const { transport, server } = this.streamable[sessionId];
+      // Reuse existing transport. The session is bound to its creator, so a
+      // request reusing the session must authenticate as the same principal.
+      const { transport, server, owner } = this.streamable[sessionId];
 
+      if (!authMatchesSessionOwner(auth, owner)) {
+        httpLog.warn('Rejecting session reuse: request principal does not own the session');
+        rejectUnauthorized(res);
+        return;
+      }
+
+      // Rebind the upstream client to the token presented on this request so a
+      // call never executes against a stored credential.
       if (!isApiKey) {
         httpLog.debug('Bearer token found for existing session, updating server');
         server.setCurrentBearerToken(auth.token);
@@ -68,7 +84,7 @@ export class HttpTransport {
         sessionIdGenerator: (): string => randomUUID(),
         enableJsonResponse: true,
         onsessioninitialized: (sessionId): void => {
-          this.streamable[sessionId] = { transport, server };
+          this.streamable[sessionId] = { transport, server, owner: sessionOwnerFromAuth(auth) };
         },
       });
 
@@ -110,13 +126,26 @@ export class HttpTransport {
   async handleSessionRequest(req: express.Request, res: express.Response): Promise<void> {
     httpLog.info('Received GET/DELETE request to /mcp (Streamable transport)');
 
+    const auth = req.auth as AuthInfo | undefined;
+    if (!auth) {
+      res
+        .status(500)
+        .json({ error: 'server_error', message: 'Authentication middleware did not run' });
+      return;
+    }
     const sessionId = req.headers[HeaderKey.MCP_SESSION_ID] as string | undefined;
     if (!sessionId || !this.streamable[sessionId]) {
       res.status(400).send('Invalid or missing session ID');
       return;
     }
 
-    const { transport } = this.streamable[sessionId];
+    const { transport, owner } = this.streamable[sessionId];
+    if (!authMatchesSessionOwner(auth, owner)) {
+      httpLog.warn('Rejecting session request: request principal does not own the session');
+      rejectUnauthorized(res);
+      return;
+    }
+
     await transport.handleRequest(req, res);
   }
 
