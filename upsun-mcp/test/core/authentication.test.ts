@@ -332,43 +332,31 @@ describe('Authentication Module', () => {
       scopes: [],
     });
 
-    it('derives a bearer owner from a bearer request', () => {
-      expect(sessionOwnerFromAuth(bearer('jwt'))).toEqual({ authType: 'bearer' });
+    it('derives the owner as a hex SHA-256 that does not leak the token', () => {
+      const owner = sessionOwnerFromAuth(bearer('secret-token'));
+      expect(owner).toMatch(/^[0-9a-f]{64}$/);
+      expect(owner).not.toContain('secret-token');
     });
 
-    it('derives an api-key owner with a key hash from an api-key request', () => {
-      const owner = sessionOwnerFromAuth(apiKey('secret-key'));
-      expect(owner.authType).toBe('api-key');
-      if (owner.authType === 'api-key') {
-        expect(owner.keyHash).toMatch(/^[0-9a-f]{64}$/);
-        // The raw key must not be stored.
-        expect(owner.keyHash).not.toContain('secret-key');
-      }
+    it('matches when the same token is presented again', () => {
+      const owner = sessionOwnerFromAuth(bearer('jwt-abc'));
+      expect(authMatchesSessionOwner(bearer('jwt-abc'), owner)).toBe(true);
     });
 
-    it('allows a bearer request to reuse a bearer session', () => {
+    it('matches the same key regardless of how clientId is labelled', () => {
+      // The binding is to the token bytes, not the authentication type.
+      const owner = sessionOwnerFromAuth(apiKey('shared-secret'));
+      expect(authMatchesSessionOwner(bearer('shared-secret'), owner)).toBe(true);
+    });
+
+    it('rejects a different bearer token (e.g. a refreshed or attacker token)', () => {
       const owner = sessionOwnerFromAuth(bearer('jwt-1'));
-      expect(authMatchesSessionOwner(bearer('jwt-2-refreshed'), owner)).toBe(true);
+      expect(authMatchesSessionOwner(bearer('jwt-2-refreshed'), owner)).toBe(false);
     });
 
-    it('rejects an api-key request against a bearer session', () => {
-      const owner = sessionOwnerFromAuth(bearer('jwt'));
-      expect(authMatchesSessionOwner(apiKey('anything'), owner)).toBe(false);
-    });
-
-    it('allows an api-key request with the matching key', () => {
-      const owner = sessionOwnerFromAuth(apiKey('the-key'));
-      expect(authMatchesSessionOwner(apiKey('the-key'), owner)).toBe(true);
-    });
-
-    it('rejects an api-key request with a different key', () => {
+    it('rejects a different api key', () => {
       const owner = sessionOwnerFromAuth(apiKey('victim-key'));
       expect(authMatchesSessionOwner(apiKey('attacker-key'), owner)).toBe(false);
-    });
-
-    it('rejects a bearer request against an api-key session', () => {
-      const owner = sessionOwnerFromAuth(apiKey('the-key'));
-      expect(authMatchesSessionOwner(bearer('jwt'), owner)).toBe(false);
     });
   });
 });

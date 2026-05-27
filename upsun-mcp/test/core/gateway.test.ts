@@ -24,7 +24,6 @@ describe('LocalServer', () => {
     mockAdapterFactory = jest.fn().mockImplementation(() => ({
       connectWithApiKey: jest.fn().mockResolvedValue(undefined),
       connectWithBearer: jest.fn().mockResolvedValue(undefined),
-      setCurrentBearerToken: jest.fn(),
     })) as any;
   });
 
@@ -71,7 +70,6 @@ describe('GatewayServer', () => {
     mockAdapterFactory = jest.fn().mockImplementation(() => ({
       connectWithApiKey: jest.fn().mockResolvedValue(undefined),
       connectWithBearer: jest.fn().mockResolvedValue(undefined),
-      setCurrentBearerToken: jest.fn(),
     })) as any;
 
     // Create server instance

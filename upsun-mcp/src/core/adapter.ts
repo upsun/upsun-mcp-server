@@ -25,20 +25,6 @@ export interface McpAdapter {
   readonly client: UpsunClient;
 
   /**
-   * The current bearer token for the active request.
-   * This is set by the gateway for each request and used by tools to create fresh clients.
-   */
-  currentBearerToken?: string;
-
-  /**
-   * Sets the current bearer token for this adapter instance.
-   * This is called by the gateway before each tool invocation.
-   *
-   * @param token - The bearer token to set as current
-   */
-  setCurrentBearerToken(token: string): void;
-
-  /**
    * Establishes a connection between the MCP server and transport layer using a Bearer token.
    *
    * This method initializes the MCP server with the provided transport and

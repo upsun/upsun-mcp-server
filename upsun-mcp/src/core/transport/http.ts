@@ -15,7 +15,7 @@ import {
   API_KEY_CLIENT_ID,
   sessionOwnerFromAuth,
   authMatchesSessionOwner,
-  rejectUnauthorized,
+  rejectSessionNotFound,
 } from '../authentication.js';
 import type { AuthInfo, SessionOwner } from '../authentication.js';
 import { GatewayServer } from '../gateway.js';
@@ -27,7 +27,12 @@ export class HttpTransport {
   /** Active streamable HTTP server transports (protocol version 2025-03-26) */
   readonly streamable = {} as Record<
     string,
-    { transport: StreamableHTTPServerTransport; server: McpAdapter; owner: SessionOwner }
+    {
+      transport: StreamableHTTPServerTransport;
+      server: McpAdapter;
+      owner: SessionOwner;
+      expiryTimer?: NodeJS.Timeout;
+    }
   >;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,26 +58,24 @@ export class HttpTransport {
     const mode = extractMode(req);
     const isApiKey = auth.clientId === API_KEY_CLIENT_ID;
 
-    if (sessionId && this.streamable[sessionId]) {
-      // Reuse existing transport. The session is bound to its creator, so a
-      // request reusing the session must authenticate as the same principal.
-      const { transport, server, owner } = this.streamable[sessionId];
-
-      if (!authMatchesSessionOwner(auth, owner)) {
-        httpLog.warn('Rejecting session reuse: request principal does not own the session');
-        rejectUnauthorized(res);
+    if (sessionId) {
+      // The session is bound to the token that created it. A request that does
+      // not present that token is treated as if the session does not exist, so
+      // an unknown id and a wrong token are indistinguishable to the caller.
+      const session = this.streamable[sessionId];
+      if (!session || !authMatchesSessionOwner(auth, session.owner)) {
+        httpLog.warn('Rejecting session reuse: unknown session id or non-matching token');
+        rejectSessionNotFound(res);
         return;
       }
 
-      // Rebind the upstream client to the token presented on this request so a
-      // call never executes against a stored credential.
-      if (!isApiKey) {
-        httpLog.debug('Bearer token found for existing session, updating server');
-        server.setCurrentBearerToken(auth.token);
-      }
+      // No credential rebind is needed: reuse only succeeds for the same token,
+      // which the session's client is already bound to.
+      await requestContext.run({ res }, () => session.transport.handleRequest(req, res, req.body));
+      return;
+    }
 
-      await requestContext.run({ res }, () => transport.handleRequest(req, res, req.body));
-    } else if (!sessionId && isInitializeRequest(req.body)) {
+    if (isInitializeRequest(req.body)) {
       httpLog.info('New session initialization request');
 
       const server = this.gateway.makeInstanceAdapterMcpServer(mode);
@@ -85,12 +88,15 @@ export class HttpTransport {
         enableJsonResponse: true,
         onsessioninitialized: (sessionId): void => {
           this.streamable[sessionId] = { transport, server, owner: sessionOwnerFromAuth(auth) };
+          // Bound to the creating token, the session cannot outlive it; evict at
+          // the token's expiry so refreshed-out sessions do not accumulate.
+          this.scheduleExpiry(sessionId, auth.expiresAt);
         },
       });
 
       transport.onclose = (): void => {
         if (transport.sessionId) {
-          delete this.streamable[transport.sessionId];
+          this.deleteSession(transport.sessionId);
         }
       };
 
@@ -104,16 +110,61 @@ export class HttpTransport {
       }
 
       await requestContext.run({ res }, () => transport.handleRequest(req, res, req.body));
-    } else {
-      res.status(400).json({
-        jsonrpc: '2.0',
-        error: {
-          code: -32000,
-          message: 'Bad Request: No valid session ID provided',
-        },
-        id: null,
-      });
       return;
+    }
+
+    res.status(400).json({
+      jsonrpc: '2.0',
+      error: {
+        code: -32000,
+        message: 'Bad Request: No valid session ID provided',
+      },
+      id: null,
+    });
+  }
+
+  /**
+   * Schedules eviction of a session when its credential token expires. API-key
+   * tokens carry no expiry, so those sessions live until the transport closes.
+   */
+  private scheduleExpiry(sessionId: string, expiresAt?: number): void {
+    if (expiresAt === undefined) {
+      return;
+    }
+    const session = this.streamable[sessionId];
+    if (!session) {
+      return;
+    }
+    const delayMs = Math.max(0, expiresAt * 1000 - Date.now());
+    const timer = setTimeout(() => {
+      httpLog.info(`Session ${sessionId} reached token expiry; closing`);
+      void this.closeSession(sessionId);
+    }, delayMs);
+    // Do not keep the process alive solely to fire this timer.
+    timer.unref?.();
+    session.expiryTimer = timer;
+  }
+
+  /** Removes a session from the map and clears its expiry timer. */
+  private deleteSession(sessionId: string): void {
+    const session = this.streamable[sessionId];
+    if (session?.expiryTimer) {
+      clearTimeout(session.expiryTimer);
+    }
+    delete this.streamable[sessionId];
+  }
+
+  /** Closes a session's transport, which triggers cleanup via onclose. */
+  private async closeSession(sessionId: string): Promise<void> {
+    const session = this.streamable[sessionId];
+    if (!session) {
+      return;
+    }
+    try {
+      await session.transport.close();
+    } catch (error) {
+      httpLog.error(`Error closing transport streamable for session ${sessionId}:`, error);
+      this.deleteSession(sessionId);
     }
   }
 
@@ -134,19 +185,20 @@ export class HttpTransport {
       return;
     }
     const sessionId = req.headers[HeaderKey.MCP_SESSION_ID] as string | undefined;
-    if (!sessionId || !this.streamable[sessionId]) {
+    if (!sessionId) {
       res.status(400).send('Invalid or missing session ID');
       return;
     }
 
-    const { transport, owner } = this.streamable[sessionId];
-    if (!authMatchesSessionOwner(auth, owner)) {
-      httpLog.warn('Rejecting session request: request principal does not own the session');
-      rejectUnauthorized(res);
+    // Unknown id and non-matching token are treated alike (see postSessionRequest).
+    const session = this.streamable[sessionId];
+    if (!session || !authMatchesSessionOwner(auth, session.owner)) {
+      httpLog.warn('Rejecting session request: unknown session id or non-matching token');
+      rejectSessionNotFound(res);
       return;
     }
 
-    await transport.handleRequest(req, res);
+    await session.transport.handleRequest(req, res);
   }
 
   async closeAllSessions(): Promise<void> {
@@ -154,7 +206,7 @@ export class HttpTransport {
       try {
         httpLog.info(`Closing transport for session ${sessionId}`);
         const session = this.streamable[sessionId];
-        delete this.streamable[sessionId];
+        this.deleteSession(sessionId);
         await session.transport.close();
       } catch (error) {
         httpLog.error(`Error closing transport streamable for session ${sessionId}:`, error);

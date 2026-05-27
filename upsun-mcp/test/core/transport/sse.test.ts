@@ -29,13 +29,13 @@ describe('SseTransport', () => {
     expect(typeof sseTransport.postSessionRequest).toBe('function');
   });
 
-  it('should call setCurrentBearerToken and handlePostMessage if sessionId and bearer', async () => {
-    const setCurrentBearerToken = jest.fn();
+  it('should dispatch the message when the same token is presented', async () => {
     const handlePostMessage = jest.fn();
+    const owner = sessionOwnerFromAuth({ token: 'token', clientId: 'user-1', scopes: [] } as any);
     sseTransport.sse['sess2'] = {
       transport: { handlePostMessage, sessionId: 'sess2' },
-      server: { setCurrentBearerToken },
-      owner: { authType: 'bearer' },
+      server: {},
+      owner,
     } as any;
     const req = {
       query: { sessionId: 'sess2' },
@@ -45,70 +45,43 @@ describe('SseTransport', () => {
     } as any;
     const res = {} as any;
     await sseTransport.postSessionRequest(req, res);
-    expect(setCurrentBearerToken).toHaveBeenCalledWith('token');
     expect(handlePostMessage).toHaveBeenCalled();
   });
 
-  it('should not call setCurrentBearerToken for API key auth', async () => {
-    const setCurrentBearerToken = jest.fn();
+  it('should reject a message with a different token as 404', async () => {
     const handlePostMessage = jest.fn();
-    sseTransport.sse['sess3'] = {
-      transport: { handlePostMessage, sessionId: 'sess3' },
-      server: { setCurrentBearerToken },
-      owner: sessionOwnerFromAuth({
-        token: 'my-key',
-        clientId: API_KEY_CLIENT_ID,
-        scopes: [],
-      } as any),
-    } as any;
-    const req = {
-      query: { sessionId: 'sess3' },
-      headers: {},
-      ip: '127.0.0.1',
-      auth: { token: 'my-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
-    } as any;
-    const res = {} as any;
-    await sseTransport.postSessionRequest(req, res);
-    expect(setCurrentBearerToken).not.toHaveBeenCalled();
-    expect(handlePostMessage).toHaveBeenCalled();
-  });
-
-  it('should reject reuse of a bearer session when an API key header is presented', async () => {
-    const setCurrentBearerToken = jest.fn();
-    const handlePostMessage = jest.fn();
+    const owner = sessionOwnerFromAuth({
+      token: 'owner-token',
+      clientId: 'user-1',
+      scopes: [],
+    } as any);
     sseTransport.sse['sess-cross'] = {
       transport: { handlePostMessage, sessionId: 'sess-cross' },
-      server: { setCurrentBearerToken },
-      owner: { authType: 'bearer' },
+      server: {},
+      owner,
     } as any;
     const req = {
       query: { sessionId: 'sess-cross' },
       headers: {},
       ip: '127.0.0.1',
-      auth: { token: 'attacker-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
+      auth: { token: 'attacker-token', clientId: API_KEY_CLIENT_ID, scopes: [] },
     } as any;
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      set: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    } as any;
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
     await sseTransport.postSessionRequest(req, res);
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(setCurrentBearerToken).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(404);
     expect(handlePostMessage).not.toHaveBeenCalled();
   });
 
-  it('should return 400 if postSessionRequest called with unknown sessionId', async () => {
+  it('should return 404 if postSessionRequest called with unknown sessionId', async () => {
     const req = {
       query: { sessionId: 'notfound' },
       headers: {},
       ip: '127.0.0.1',
       auth: { token: 'tok', clientId: 'user-1', scopes: [] },
     } as any;
-    const res = { status: jest.fn().mockReturnThis(), send: jest.fn() } as any;
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
     await sseTransport.postSessionRequest(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith('No transport found for sessionId');
+    expect(res.status).toHaveBeenCalledWith(404);
   });
 
   it('should handle successful SSE connection creation with bearer', async () => {
@@ -116,7 +89,6 @@ describe('SseTransport', () => {
     const fakeAdapter = {
       connectWithBearer,
       connectWithApiKey: jest.fn(),
-      setCurrentBearerToken: jest.fn(),
       server: {},
       client: {},
       isMode: jest.fn(),
@@ -146,7 +118,6 @@ describe('SseTransport', () => {
     const fakeAdapter = {
       connectWithApiKey,
       connectWithBearer: jest.fn(),
-      setCurrentBearerToken: jest.fn(),
       server: {},
       client: {},
       isMode: jest.fn(),
@@ -175,7 +146,6 @@ describe('SseTransport', () => {
     const fakeAdapter = {
       connectWithBearer,
       connectWithApiKey: jest.fn(),
-      setCurrentBearerToken: jest.fn(),
       server: {},
       client: {},
       isMode: jest.fn(),
@@ -202,7 +172,6 @@ describe('SseTransport', () => {
     const fakeAdapter = {
       connectWithBearer,
       connectWithApiKey: jest.fn(),
-      setCurrentBearerToken: jest.fn(),
       server: {},
       client: {},
       isMode: jest.fn(),

@@ -8,7 +8,7 @@ import {
   API_KEY_CLIENT_ID,
   sessionOwnerFromAuth,
   authMatchesSessionOwner,
-  rejectUnauthorized,
+  rejectSessionNotFound,
 } from '../authentication.js';
 import type { AuthInfo, SessionOwner } from '../authentication.js';
 
@@ -60,28 +60,17 @@ export class SseTransport {
     const sessionId = req.query.sessionId as string;
     const transportSession = this.sse[sessionId];
 
-    if (transportSession) {
-      const { transport, server, owner } = transportSession;
-
-      // The session is bound to its creator; a request reusing it must
-      // authenticate as the same principal.
-      if (!authMatchesSessionOwner(auth, owner)) {
-        sseLog.warn(`Rejecting message from ${ip}: request principal does not own the session`);
-        rejectUnauthorized(res);
-        return;
-      }
-
-      // Rebind the upstream client to the token presented on this request so a
-      // call never executes against a stored credential.
-      if (auth.clientId !== API_KEY_CLIENT_ID) {
-        server.setCurrentBearerToken(auth.token);
-      }
-
-      sseLog.info(`Message call from ${ip} with ID: ${transport.sessionId}`);
-      await transport.handlePostMessage(req, res, req.body);
-    } else {
-      res.status(400).send('No transport found for sessionId');
+    // The session is bound to the token that created it. An unknown id and a
+    // non-matching token are treated alike, so neither reveals a live session.
+    if (!transportSession || !authMatchesSessionOwner(auth, transportSession.owner)) {
+      sseLog.warn(`Rejecting message from ${ip}: unknown session id or non-matching token`);
+      rejectSessionNotFound(res);
+      return;
     }
+
+    const { transport } = transportSession;
+    sseLog.info(`Message call from ${ip} with ID: ${transport.sessionId}`);
+    await transport.handlePostMessage(req, res, req.body);
   }
 
   async getSessionRequest(req: express.Request, res: express.Response): Promise<void> {

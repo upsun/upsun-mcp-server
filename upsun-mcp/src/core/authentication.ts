@@ -206,64 +206,53 @@ export function requireMcpAuth(
 }
 
 /**
- * Identity of the principal that created an MCP session.
+ * Identity of the principal that created an MCP session: a hex SHA-256 of the
+ * credential token presented at creation (an OAuth bearer JWT or an API key).
  *
- * A session is bound to its creator so that later requests reusing the same
- * `mcp-session-id` cannot drive it as a different principal. API-key sessions
- * store a hash of the key (a stable secret) for an exact match; bearer sessions
- * store only the type because the access token rotates on refresh and the
- * presented token is rebound on every request.
+ * A session is bound to the exact token that created it. Binding to the token
+ * rather than to a claim means the guarantee holds without verifying the JWT
+ * signature: someone who learns a session id cannot drive the session without
+ * also presenting the same token, and anyone holding that token already has the
+ * access the session would grant. When an OAuth token is refreshed the new
+ * token no longer matches, so the client transparently starts a new session.
  */
-export type SessionOwner = { authType: 'bearer' } | { authType: 'api-key'; keyHash: string };
+export type SessionOwner = string;
 
-function hashApiKey(key: string): Buffer {
-  return createHash('sha256').update(key).digest();
+function hashToken(token: string): Buffer {
+  return createHash('sha256').update(token).digest();
 }
 
 /**
- * Derives the session owner identity from the authenticated request.
+ * Derives the session owner from the authenticated request.
  */
 export function sessionOwnerFromAuth(auth: AuthInfo): SessionOwner {
-  if (auth.clientId === API_KEY_CLIENT_ID) {
-    return { authType: 'api-key', keyHash: hashApiKey(auth.token).toString('hex') };
-  }
-  return { authType: 'bearer' };
+  return hashToken(auth.token).toString('hex');
 }
 
 /**
- * Reports whether an authenticated request may reuse a session owned by the
- * given principal.
- *
- * The authentication type must match. For API-key sessions the presented key
- * must hash to the same value as the creator's. For bearer sessions any bearer
- * request is allowed because the caller rebinds the upstream client to the
- * presented token before dispatch, so a request never executes against a
- * stored credential; the token itself is validated upstream by the Upsun API.
+ * Reports whether a request presents the same token that created the session,
+ * using a constant-time comparison of the token hashes.
  */
 export function authMatchesSessionOwner(auth: AuthInfo, owner: SessionOwner): boolean {
-  const isApiKey = auth.clientId === API_KEY_CLIENT_ID;
-  if (owner.authType === 'api-key') {
-    if (!isApiKey) {
-      return false;
-    }
-    const presented = hashApiKey(auth.token);
-    const expected = Buffer.from(owner.keyHash, 'hex');
-    return presented.length === expected.length && timingSafeEqual(presented, expected);
-  }
-  return !isApiKey;
+  const presented = hashToken(auth.token);
+  const expected = Buffer.from(owner, 'hex');
+  return presented.length === expected.length && timingSafeEqual(presented, expected);
 }
 
 /**
- * Sends a 401 response for a request that authenticates successfully but is not
- * permitted to act on the targeted session. The `WWW-Authenticate` header lets
- * an OAuth client re-authenticate. The message is intentionally generic and
- * does not confirm whether the session exists.
+ * Sends the "session not found" response (HTTP 404) used when a request targets
+ * a session that does not exist or whose binding token does not match. The two
+ * cases are deliberately indistinguishable so a session id cannot be used to
+ * probe for live sessions. A compliant MCP client responds by starting a new
+ * session with a fresh `initialize` request, which covers the legitimate case
+ * of an OAuth access token having been refreshed.
  */
-export function rejectUnauthorized(res: express.Response): void {
-  res
-    .status(401)
-    .set('WWW-Authenticate', 'Bearer error="invalid_token"')
-    .json({ error: 'invalid_token', message: 'Unauthorized' });
+export function rejectSessionNotFound(res: express.Response): void {
+  res.status(404).json({
+    jsonrpc: '2.0',
+    error: { code: -32001, message: 'Session not found' },
+    id: null,
+  });
 }
 
 /**
