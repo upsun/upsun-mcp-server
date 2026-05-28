@@ -163,11 +163,13 @@ export class GatewayServer<A extends McpAdapter> {
    *
    * Endpoints configured:
    * - POST /mcp: Client-to-server communication and session initialization
-   * - GET /mcp: Server-to-client notifications via streaming
-   * - DELETE /mcp: Session termination
+   * - GET /mcp: Server-to-client notifications via streaming for stateful API-key sessions
+   * - DELETE /mcp: Session termination for stateful API-key sessions
    *
-   * Sessions are managed via the 'mcp-session-id' header, with automatic cleanup
-   * when connections are closed.
+   * API-key sessions are managed via the 'mcp-session-id' header, with automatic
+   * cleanup when connections are closed. Bearer-token requests use stateless
+   * Streamable HTTP because refreshed OAuth access tokens cannot safely reuse
+   * exact-token-bound server sessions before JWT verification is available.
    *
    * @private
    */

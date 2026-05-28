@@ -12,7 +12,7 @@ import { createLogger } from '../logger.js';
 import {
   extractMode,
   HeaderKey,
-  API_KEY_CLIENT_ID,
+  isApiKeyAuth,
   sessionOwnerFromAuth,
   authMatchesSessionOwner,
   rejectSessionNotFound,
@@ -24,7 +24,7 @@ import { requestContext } from '../requestContext.js';
 const httpLog = createLogger('Web:HTTP');
 
 export class HttpTransport {
-  /** Active streamable HTTP server transports (protocol version 2025-03-26) */
+  /** Active API-key Streamable HTTP server transports (protocol version 2025-03-26). */
   readonly streamable = {} as Record<
     string,
     {
@@ -55,11 +55,18 @@ export class HttpTransport {
       return;
     }
     const sessionId = req.headers[HeaderKey.MCP_SESSION_ID] as string | undefined;
+    const mode = extractMode(req);
+    const isApiKey = isApiKeyAuth(auth);
+
+    if (!isApiKey) {
+      await this.handleStatelessBearerRequest(req, res, auth, mode);
+      return;
+    }
 
     if (sessionId) {
-      // The session is bound to the token that created it. A request that does
-      // not present that token is treated as if the session does not exist, so
-      // an unknown id and a wrong token are indistinguishable to the caller.
+      // API-key sessions are bound to the token that created them. A request
+      // that does not present that token is treated as if the session does not
+      // exist, so an unknown id and a wrong token are indistinguishable.
       const session = this.streamable[sessionId];
       if (!session || !authMatchesSessionOwner(auth, session.owner)) {
         httpLog.warn('Rejecting session reuse: unknown session id or non-matching token');
@@ -76,8 +83,6 @@ export class HttpTransport {
     if (isInitializeRequest(req.body)) {
       httpLog.info('New session initialization request');
 
-      const mode = extractMode(req);
-      const isApiKey = auth.clientId === API_KEY_CLIENT_ID;
       const server = this.gateway.makeInstanceAdapterMcpServer(mode);
 
       // enableJsonResponse defers writing HTTP headers until the handler completes,
@@ -88,8 +93,7 @@ export class HttpTransport {
         enableJsonResponse: true,
         onsessioninitialized: (sessionId): void => {
           this.streamable[sessionId] = { transport, server, owner: sessionOwnerFromAuth(auth) };
-          // Bound to the creating token, the session cannot outlive it; evict at
-          // the token's expiry so refreshed-out sessions do not accumulate.
+          // Bound to the creating token, the session cannot outlive it.
           this.scheduleExpiry(sessionId, auth.expiresAt);
         },
       });
@@ -100,14 +104,8 @@ export class HttpTransport {
         }
       };
 
-      // Connect server using appropriate authentication method.
-      if (isApiKey) {
-        httpLog.info('API key found for initialization, creating new session');
-        await server.connectWithApiKey(transport, auth.token);
-      } else {
-        httpLog.info('Bearer token found for initialization, creating new session');
-        await server.connectWithBearer(transport, auth.token);
-      }
+      httpLog.info('API key found for initialization, creating new session');
+      await server.connectWithApiKey(transport, auth.token);
 
       await requestContext.run({ res }, () => transport.handleRequest(req, res, req.body));
       return;
@@ -123,9 +121,34 @@ export class HttpTransport {
     });
   }
 
+  private async handleStatelessBearerRequest(
+    req: express.Request,
+    res: express.Response,
+    auth: AuthInfo,
+    mode: ReturnType<typeof extractMode>
+  ): Promise<void> {
+    httpLog.info('Handling bearer request with stateless Streamable transport');
+
+    const server = this.gateway.makeInstanceAdapterMcpServer(mode);
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+      enableJsonResponse: true,
+    });
+
+    try {
+      await server.connectWithBearer(transport, auth.token);
+      await requestContext.run({ res }, () => transport.handleRequest(req, res, req.body));
+    } finally {
+      try {
+        await transport.close();
+      } catch (error) {
+        httpLog.error('Error closing stateless bearer transport:', error);
+      }
+    }
+  }
+
   /**
-   * Schedules eviction of a session when its credential token expires. API-key
-   * tokens carry no expiry, so those sessions live until the transport closes.
+   * Schedules eviction of a session when its credential token expires.
    */
   private scheduleExpiry(sessionId: string, expiresAt?: number): void {
     if (expiresAt === undefined) {
@@ -185,12 +208,27 @@ export class HttpTransport {
       return;
     }
     const sessionId = req.headers[HeaderKey.MCP_SESSION_ID] as string | undefined;
+    if (!isApiKeyAuth(auth)) {
+      res
+        .status(405)
+        .set('Allow', 'POST')
+        .json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32000,
+            message: 'Method not allowed for stateless bearer transport.',
+          },
+          id: null,
+        });
+      return;
+    }
+
     if (!sessionId) {
       res.status(400).send('Invalid or missing session ID');
       return;
     }
 
-    // Unknown id and non-matching token are treated alike (see postSessionRequest).
+    // Unknown id and non-matching API-key tokens are treated alike.
     const session = this.streamable[sessionId];
     if (!session || !authMatchesSessionOwner(auth, session.owner)) {
       httpLog.warn('Rejecting session request: unknown session id or non-matching token');
