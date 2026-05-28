@@ -5,7 +5,7 @@ import { GatewayServer } from '../gateway.js';
 import { createLogger } from '../logger.js';
 import {
   extractMode,
-  API_KEY_CLIENT_ID,
+  isApiKeyAuth,
   sessionOwnerFromAuth,
   authMatchesSessionOwner,
   rejectSessionNotFound,
@@ -85,7 +85,7 @@ export class SseTransport {
       return;
     }
     const mode = extractMode(req);
-    const isApiKey = auth.clientId === API_KEY_CLIENT_ID;
+    const isApiKey = isApiKeyAuth(auth);
 
     // Create SSE transport for legacy clients.
     const transport = new SSEServerTransport(HTTP_MSG_PATH, res);
@@ -103,6 +103,7 @@ export class SseTransport {
         this.sseConnections.delete(transport.sessionId);
       }
     }, KEEP_ALIVE_INTERVAL_MS);
+    intervalId.unref?.();
 
     this.sseConnections.set(transport.sessionId, { res, intervalId });
     sseLog.info(`Client connected: ${transport.sessionId}, starting keep-alive.`);

@@ -12,7 +12,7 @@ import { createLogger } from '../logger.js';
 import {
   extractMode,
   HeaderKey,
-  API_KEY_CLIENT_ID,
+  isApiKeyAuth,
   sessionOwnerFromAuth,
   authMatchesSessionOwner,
   rejectSessionNotFound,
@@ -56,7 +56,7 @@ export class HttpTransport {
     }
     const sessionId = req.headers[HeaderKey.MCP_SESSION_ID] as string | undefined;
     const mode = extractMode(req);
-    const isApiKey = auth.clientId === API_KEY_CLIENT_ID;
+    const isApiKey = isApiKeyAuth(auth);
 
     if (!isApiKey) {
       await this.handleStatelessBearerRequest(req, res, auth, mode);
@@ -208,7 +208,7 @@ export class HttpTransport {
       return;
     }
     const sessionId = req.headers[HeaderKey.MCP_SESSION_ID] as string | undefined;
-    if (auth.clientId !== API_KEY_CLIENT_ID) {
+    if (!isApiKeyAuth(auth)) {
       res
         .status(405)
         .set('Allow', 'POST')

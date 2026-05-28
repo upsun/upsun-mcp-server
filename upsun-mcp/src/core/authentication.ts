@@ -13,6 +13,14 @@ export { WritableMode, HeaderKey, API_KEY_CLIENT_ID } from './types.js';
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
 export type { AuthInfo };
 
+export const AuthType = {
+  ApiKey: 'api-key',
+  Bearer: 'bearer',
+} as const;
+
+export type AuthType = (typeof AuthType)[keyof typeof AuthType];
+export type McpAuthInfo = AuthInfo & { authType: AuthType };
+
 // Create logger instance
 const log = createLogger('Auth');
 
@@ -193,7 +201,12 @@ export function requireMcpAuth(
     const raw = req.headers[HeaderKey.API_KEY];
     const apiKey = typeof raw === 'string' ? raw : undefined;
     if (apiKey && !isUnsubstitutedPlaceholder(apiKey)) {
-      req.auth = { token: apiKey, clientId: API_KEY_CLIENT_ID, scopes: [] };
+      req.auth = {
+        token: apiKey,
+        clientId: API_KEY_CLIENT_ID,
+        scopes: [],
+        authType: AuthType.ApiKey,
+      } as McpAuthInfo;
       return next();
     }
     if (apiKey && isUnsubstitutedPlaceholder(apiKey)) {
@@ -201,8 +214,20 @@ export function requireMcpAuth(
         `Ignoring ${HeaderKey.API_KEY} header with unsubstituted placeholder value; falling back to bearer auth`
       );
     }
-    bearerAuth(req, res, next);
+    bearerAuth(req, res, error => {
+      if (error) {
+        return next(error);
+      }
+      if (req.auth) {
+        req.auth = { ...req.auth, authType: AuthType.Bearer } as McpAuthInfo;
+      }
+      return next();
+    });
   };
+}
+
+export function isApiKeyAuth(auth: AuthInfo): auth is McpAuthInfo {
+  return (auth as Partial<McpAuthInfo>).authType === AuthType.ApiKey;
 }
 
 /**

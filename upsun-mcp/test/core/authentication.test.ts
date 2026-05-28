@@ -10,6 +10,7 @@ import {
   JwtTokenVerifier,
   requireMcpAuth,
   API_KEY_CLIENT_ID,
+  AuthType,
   sessionOwnerFromAuth,
   authMatchesSessionOwner,
 } from '../../src/core/authentication';
@@ -209,7 +210,12 @@ describe('Authentication Module', () => {
       middleware(req, res, mockNext);
 
       expect(mockNext).toHaveBeenCalled();
-      expect(req.auth).toEqual({ token: 'my-key', clientId: API_KEY_CLIENT_ID, scopes: [] });
+      expect(req.auth).toEqual({
+        token: 'my-key',
+        clientId: API_KEY_CLIENT_ID,
+        scopes: [],
+        authType: AuthType.ApiKey,
+      });
     });
 
     it('should authenticate valid JWT bearer token and populate req.auth', async () => {
@@ -240,6 +246,7 @@ describe('Authentication Module', () => {
         clientId: 'user-42',
         scopes: ['offline_access'],
         expiresAt: 9999999999 - 30,
+        authType: AuthType.Bearer,
       });
     });
 

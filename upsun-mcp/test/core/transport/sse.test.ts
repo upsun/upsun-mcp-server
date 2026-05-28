@@ -1,7 +1,25 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { GatewayServer } from '../../../src/core/gateway';
 import { SseTransport } from '../../../src/core/transport/sse';
-import { API_KEY_CLIENT_ID, sessionOwnerFromAuth } from '../../../src/core/authentication';
+import {
+  API_KEY_CLIENT_ID,
+  AuthType,
+  sessionOwnerFromAuth,
+} from '../../../src/core/authentication';
+
+const apiKeyAuth = (token: string) => ({
+  token,
+  clientId: API_KEY_CLIENT_ID,
+  scopes: [],
+  authType: AuthType.ApiKey,
+});
+
+const bearerAuth = (token: string, clientId = 'user-1') => ({
+  token,
+  clientId,
+  scopes: [],
+  authType: AuthType.Bearer,
+});
 
 describe('SseTransport', () => {
   let gateway: GatewayServer<any>;
@@ -31,7 +49,7 @@ describe('SseTransport', () => {
 
   it('should dispatch the message when the same token is presented', async () => {
     const handlePostMessage = jest.fn();
-    const owner = sessionOwnerFromAuth({ token: 'token', clientId: 'user-1', scopes: [] } as any);
+    const owner = sessionOwnerFromAuth(bearerAuth('token'));
     sseTransport.sse['sess2'] = {
       transport: { handlePostMessage, sessionId: 'sess2' },
       server: {},
@@ -41,7 +59,7 @@ describe('SseTransport', () => {
       query: { sessionId: 'sess2' },
       headers: {},
       ip: '127.0.0.1',
-      auth: { token: 'token', clientId: 'user-1', scopes: [] },
+      auth: bearerAuth('token'),
     } as any;
     const res = {} as any;
     await sseTransport.postSessionRequest(req, res);
@@ -50,11 +68,7 @@ describe('SseTransport', () => {
 
   it('should reject a message with a different token as 404', async () => {
     const handlePostMessage = jest.fn();
-    const owner = sessionOwnerFromAuth({
-      token: 'owner-token',
-      clientId: 'user-1',
-      scopes: [],
-    } as any);
+    const owner = sessionOwnerFromAuth(bearerAuth('owner-token'));
     sseTransport.sse['sess-cross'] = {
       transport: { handlePostMessage, sessionId: 'sess-cross' },
       server: {},
@@ -64,7 +78,7 @@ describe('SseTransport', () => {
       query: { sessionId: 'sess-cross' },
       headers: {},
       ip: '127.0.0.1',
-      auth: { token: 'attacker-token', clientId: API_KEY_CLIENT_ID, scopes: [] },
+      auth: apiKeyAuth('attacker-token'),
     } as any;
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
     await sseTransport.postSessionRequest(req, res);
@@ -77,7 +91,7 @@ describe('SseTransport', () => {
       query: { sessionId: 'notfound' },
       headers: {},
       ip: '127.0.0.1',
-      auth: { token: 'tok', clientId: 'user-1', scopes: [] },
+      auth: bearerAuth('tok'),
     } as any;
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
     await sseTransport.postSessionRequest(req, res);
@@ -99,7 +113,7 @@ describe('SseTransport', () => {
     const req = {
       headers: {},
       ip: '127.0.0.1',
-      auth: { token: 'valid-token', clientId: 'user-1', scopes: [] },
+      auth: bearerAuth('valid-token', API_KEY_CLIENT_ID),
     } as any;
     const res = {
       writableEnded: false,
@@ -128,7 +142,7 @@ describe('SseTransport', () => {
     const req = {
       headers: {},
       ip: '127.0.0.1',
-      auth: { token: 'my-api-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
+      auth: apiKeyAuth('my-api-key'),
     } as any;
     const res = {
       writableEnded: false,
@@ -154,7 +168,7 @@ describe('SseTransport', () => {
     const req = {
       headers: {},
       ip: '127.0.0.1',
-      auth: { token: 'token', clientId: 'user-1', scopes: [] },
+      auth: bearerAuth('token'),
     } as any;
     const res = {
       writableEnded: false,
@@ -187,7 +201,7 @@ describe('SseTransport', () => {
     const req = {
       headers: {},
       ip: '127.0.0.1',
-      auth: { token: 'token', clientId: 'user-1', scopes: [] },
+      auth: bearerAuth('token'),
     } as any;
     await sseTransport.getSessionRequest(req, res);
     expect(Object.keys(sseTransport.sse)).toHaveLength(0);
@@ -208,7 +222,7 @@ describe('SseTransport', () => {
     const req = {
       headers: {},
       ip: '127.0.0.1',
-      auth: { token: 'token', clientId: 'user-1', scopes: [] },
+      auth: bearerAuth('token'),
     } as any;
     const res = {
       writableEnded: false,

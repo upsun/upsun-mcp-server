@@ -1,7 +1,25 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { GatewayServer } from '../../../src/core/gateway';
 import { HttpTransport } from '../../../src/core/transport/http';
-import { API_KEY_CLIENT_ID, sessionOwnerFromAuth } from '../../../src/core/authentication';
+import {
+  API_KEY_CLIENT_ID,
+  AuthType,
+  sessionOwnerFromAuth,
+} from '../../../src/core/authentication';
+
+const apiKeyAuth = (token: string) => ({
+  token,
+  clientId: API_KEY_CLIENT_ID,
+  scopes: [],
+  authType: AuthType.ApiKey,
+});
+
+const bearerAuth = (token: string, clientId = 'user-1') => ({
+  token,
+  clientId,
+  scopes: [],
+  authType: AuthType.Bearer,
+});
 
 describe('HttpTransport', () => {
   let gateway: GatewayServer<any>;
@@ -35,11 +53,7 @@ describe('HttpTransport', () => {
 
   it('should dispatch API key requests to the session when the same token is presented', async () => {
     const handleRequest = jest.fn();
-    const owner = sessionOwnerFromAuth({
-      token: 'token',
-      clientId: API_KEY_CLIENT_ID,
-      scopes: [],
-    } as any);
+    const owner = sessionOwnerFromAuth(apiKeyAuth('token'));
     httpTransport.streamable['sess2'] = {
       transport: { handleRequest },
       server: {},
@@ -48,7 +62,7 @@ describe('HttpTransport', () => {
     const req = {
       headers: { 'mcp-session-id': 'sess2' },
       body: {},
-      auth: { token: 'token', clientId: API_KEY_CLIENT_ID, scopes: [] },
+      auth: apiKeyAuth('token'),
     } as any;
     const res = {} as any;
     await httpTransport.postSessionRequest(req, res);
@@ -57,11 +71,7 @@ describe('HttpTransport', () => {
 
   it('should reject API key reuse with a different token as 404 Session not found', async () => {
     const handleRequest = jest.fn();
-    const owner = sessionOwnerFromAuth({
-      token: 'victim-token',
-      clientId: API_KEY_CLIENT_ID,
-      scopes: [],
-    } as any);
+    const owner = sessionOwnerFromAuth(apiKeyAuth('victim-token'));
     httpTransport.streamable['sess3'] = {
       transport: { handleRequest },
       server: {},
@@ -70,7 +80,7 @@ describe('HttpTransport', () => {
     const req = {
       headers: { 'mcp-session-id': 'sess3' },
       body: {},
-      auth: { token: 'attacker-token', clientId: API_KEY_CLIENT_ID, scopes: [] },
+      auth: apiKeyAuth('attacker-token'),
     } as any;
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
     await httpTransport.postSessionRequest(req, res);
@@ -82,7 +92,7 @@ describe('HttpTransport', () => {
     const req = {
       headers: { 'mcp-session-id': 'does-not-exist' },
       body: {},
-      auth: { token: 'token', clientId: API_KEY_CLIENT_ID, scopes: [] },
+      auth: apiKeyAuth('token'),
     } as any;
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
     await httpTransport.postSessionRequest(req, res);
@@ -110,7 +120,7 @@ describe('HttpTransport', () => {
     const req = {
       headers: {},
       body: { jsonrpc: '2.0', method: 'initialize', id: 1, params: {} },
-      auth: { token: 'test-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
+      auth: apiKeyAuth('test-key'),
     } as any;
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
 
@@ -143,7 +153,7 @@ describe('HttpTransport', () => {
     const req = {
       headers: {},
       body: { jsonrpc: '2.0', method: 'initialize', id: 1, params: {} },
-      auth: { token: 'bearer-token', clientId: 'user-1', scopes: [] },
+      auth: bearerAuth('bearer-token', API_KEY_CLIENT_ID),
     } as any;
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
     const mod = await import('@modelcontextprotocol/sdk/server/streamableHttp.js');
@@ -174,7 +184,7 @@ describe('HttpTransport', () => {
     const req = {
       headers: {},
       body: { jsonrpc: '2.0', method: 'tools/list', id: 2 },
-      auth: { token: 'bearer-token', clientId: 'user-1', scopes: [] },
+      auth: bearerAuth('bearer-token'),
     } as any;
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
 
@@ -203,11 +213,7 @@ describe('HttpTransport', () => {
 
     httpTransport.gateway.makeInstanceAdapterMcpServer = jest.fn(() => fakeAdapter);
 
-    const owner = sessionOwnerFromAuth({
-      token: 'old-bearer-token',
-      clientId: 'user-1',
-      scopes: [],
-    } as any);
+    const owner = sessionOwnerFromAuth(bearerAuth('old-bearer-token'));
     httpTransport.streamable['stale-sess'] = {
       transport: { handleRequest: jest.fn() },
       server: {},
@@ -217,7 +223,7 @@ describe('HttpTransport', () => {
     const req = {
       headers: { 'mcp-session-id': 'stale-sess' },
       body: { jsonrpc: '2.0', method: 'tools/list', id: 2 },
-      auth: { token: 'refreshed-bearer-token', clientId: 'user-1', scopes: [] },
+      auth: bearerAuth('refreshed-bearer-token'),
     } as any;
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
 
@@ -249,7 +255,7 @@ describe('HttpTransport', () => {
     const req = {
       headers: {},
       body: { jsonrpc: '2.0', method: 'initialize', id: 1, params: {} },
-      auth: { token: 'test-api-key', clientId: API_KEY_CLIENT_ID, scopes: [] },
+      auth: apiKeyAuth('test-api-key'),
     } as any;
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
 
@@ -268,7 +274,7 @@ describe('HttpTransport', () => {
     const req = {
       headers: {},
       body: {},
-      auth: { token: 'tok', clientId: API_KEY_CLIENT_ID, scopes: [] },
+      auth: apiKeyAuth('tok'),
     } as any;
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
     await httpTransport.postSessionRequest(req, res);
@@ -279,7 +285,7 @@ describe('HttpTransport', () => {
   it('should call handleSessionRequest and return 400 if API key sessionId is missing', async () => {
     const req = {
       headers: {},
-      auth: { token: 'tok', clientId: API_KEY_CLIENT_ID, scopes: [] },
+      auth: apiKeyAuth('tok'),
     } as any;
     const res = { status: jest.fn().mockReturnThis(), send: jest.fn() } as any;
     await httpTransport.handleSessionRequest(req, res);
@@ -288,7 +294,10 @@ describe('HttpTransport', () => {
   });
 
   it('should return 405 for bearer GET/DELETE streamable requests', async () => {
-    const req = { headers: {}, auth: { token: 'tok', clientId: 'user-1', scopes: [] } } as any;
+    const req = {
+      headers: {},
+      auth: bearerAuth('tok', API_KEY_CLIENT_ID),
+    } as any;
     const res = {
       status: jest.fn().mockReturnThis(),
       set: jest.fn().mockReturnThis(),
@@ -308,11 +317,7 @@ describe('HttpTransport', () => {
 
   it('should handle handleSessionRequest with valid API key sessionId and matching token', async () => {
     const handleRequest = jest.fn(async () => {});
-    const owner = sessionOwnerFromAuth({
-      token: 'tok',
-      clientId: API_KEY_CLIENT_ID,
-      scopes: [],
-    } as any);
+    const owner = sessionOwnerFromAuth(apiKeyAuth('tok'));
     httpTransport.streamable['valid-sess'] = {
       transport: { handleRequest },
       server: {},
@@ -322,7 +327,7 @@ describe('HttpTransport', () => {
     const req = {
       headers: { 'mcp-session-id': 'valid-sess' },
       body: {},
-      auth: { token: 'tok', clientId: API_KEY_CLIENT_ID, scopes: [] },
+      auth: apiKeyAuth('tok'),
     } as any;
     const res = {} as any;
 
@@ -332,11 +337,7 @@ describe('HttpTransport', () => {
 
   it('should reject handleSessionRequest presenting a different API key token as 404', async () => {
     const handleRequest = jest.fn(async () => {});
-    const owner = sessionOwnerFromAuth({
-      token: 'owner-tok',
-      clientId: API_KEY_CLIENT_ID,
-      scopes: [],
-    } as any);
+    const owner = sessionOwnerFromAuth(apiKeyAuth('owner-tok'));
     httpTransport.streamable['owned-sess'] = {
       transport: { handleRequest },
       server: {},
@@ -346,7 +347,7 @@ describe('HttpTransport', () => {
     const req = {
       headers: { 'mcp-session-id': 'owned-sess' },
       body: {},
-      auth: { token: 'attacker-token', clientId: API_KEY_CLIENT_ID, scopes: [] },
+      auth: apiKeyAuth('attacker-token'),
     } as any;
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
 
