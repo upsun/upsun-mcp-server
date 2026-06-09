@@ -248,11 +248,12 @@ describe('Environment Command Module', () => {
       registerEnvironment(mockAdapter);
     });
 
-    it('should get environment info successfully', async () => {
+    it('should return the full raw payload with full:true', async () => {
       const callback = toolCallbacks['info-environment'];
       const params = {
         project_id: 'test-project-13',
         environment_name: 'main',
+        full: true,
       };
 
       const result = await callback(params);
@@ -287,10 +288,11 @@ describe('Environment Command Module', () => {
       registerEnvironment(mockAdapter);
     });
 
-    it('should list environments successfully', async () => {
+    it('should return the full raw list with full:true', async () => {
       const callback = toolCallbacks['list-environment'];
       const params = {
         project_id: 'test-project-13',
+        full: true,
       };
 
       const result = await callback(params);

@@ -10,6 +10,7 @@ import { SubscriptionStatusEnum } from 'upsun-sdk-node/dist/model/index.js';
 import { z } from 'zod';
 import { McpAdapter } from '../core/adapter.js';
 import { Response, Schema, ToolWrapper, toSdkPagination } from '../core/helper.js';
+import { lean } from '../core/lean.js';
 import { createLogger } from '../core/logger.js';
 
 const log = createLogger('MCP:Tool:project-commands');
@@ -128,13 +129,14 @@ export function registerProject(adapter: McpAdapter): void {
       description: 'Get information of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),
+        full: Schema.full(),
       },
     },
-    ToolWrapper.trace('info-project', async ({ project_id }) => {
+    ToolWrapper.trace('info-project', async ({ project_id, full }) => {
       log.debug(`Get Information of Project: ${project_id}`);
       const result = await adapter.client.projects.info(project_id);
 
-      return Response.json(result);
+      return Response.json(full ? result : lean(result));
     })
   );
 
@@ -156,18 +158,19 @@ export function registerProject(adapter: McpAdapter): void {
       inputSchema: {
         organization_id: Schema.organizationId(),
         ...Schema.pagination(),
+        full: Schema.full(),
       },
     },
     ToolWrapper.traceWithMetrics(
       'list-project',
-      async ({ organization_id, page_size, page_link }) => {
+      async ({ organization_id, page_size, page_link, full }) => {
         log.debug(`List all my projects in Organization: ${organization_id}`);
         const result = await adapter.client.projects.list(
           organization_id,
           toSdkPagination({ page_size, page_link })
         );
 
-        return Response.json(result);
+        return Response.json(full ? result : lean(result, { itemsKey: 'items' }));
       },
       result => ({
         'result.has_content': !!result,

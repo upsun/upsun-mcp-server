@@ -220,11 +220,12 @@ describe('Activity Command Module', () => {
       registerActivity(mockAdapter);
     });
 
-    it('should get activity details successfully', async () => {
+    it('should return the full raw activity with full:true', async () => {
       const callback = toolCallbacks['get-activity'];
       const params = {
         project_id: 'test-project-13',
         activity_id: 'test-activity-123',
+        full: true,
       };
 
       const result = await callback(params);
@@ -263,10 +264,11 @@ describe('Activity Command Module', () => {
       registerActivity(mockAdapter);
     });
 
-    it('should list activities successfully', async () => {
+    it('should return the full raw list with full:true', async () => {
       const callback = toolCallbacks['list-activity'];
       const params = {
         project_id: 'test-project-13',
+        full: true,
       };
 
       const result = await callback(params);
@@ -433,6 +435,7 @@ describe('Activity Command Module', () => {
       const params = {
         project_id: 'test-project-13',
         activity_id: 'test-activity-123',
+        full: true,
       };
 
       const result = await callback(params);
