@@ -774,7 +774,14 @@ npm run build
 
 ### Local Development Environment
 
-Create a `.env` file in the `upsun-mcp` directory:
+Copy the template and fill in your values. `.env` is gitignored, so your token never gets committed:
+
+```bash
+cd upsun-mcp
+cp .env.example .env
+```
+
+Then edit `upsun-mcp/.env` and set at least your API token:
 
 ```env
 # Required: Your Upsun API token
