@@ -13,6 +13,7 @@ import { createLogger } from '../core/logger.js';
 // Create logger for activity operations
 const log = createLogger('MCP:Tool:activity-commands');
 import { Response, Schema, ToolWrapper } from '../core/helper.js';
+import { lean } from '../core/lean.js';
 
 /**
  * Registers activity management tools with the MCP server.
@@ -82,12 +83,13 @@ export function registerActivity(adapter: McpAdapter): void {
       inputSchema: {
         project_id: Schema.projectId(),
         activity_id: Schema.activityId(),
+        full: Schema.full(),
       },
     },
-    ToolWrapper.trace('get-activity', async ({ project_id, activity_id }) => {
+    ToolWrapper.trace('get-activity', async ({ project_id, activity_id, full }) => {
       log.debug(`Get Activity ${activity_id} in Project ${project_id}`);
       const result = await adapter.client.activities.get(project_id, activity_id);
-      return Response.json(result);
+      return Response.json(full ? result : lean(result));
     })
   );
 
@@ -108,12 +110,13 @@ export function registerActivity(adapter: McpAdapter): void {
       description: 'List all activities of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),
+        full: Schema.full(),
       },
     },
-    ToolWrapper.trace('list-activity', async ({ project_id }) => {
+    ToolWrapper.trace('list-activity', async ({ project_id, full }) => {
       log.debug(`List Activities in Project ${project_id}`);
       const result = await adapter.client.activities.list(project_id);
-      return Response.json(result);
+      return Response.json(full ? result : lean(result));
     })
   );
 

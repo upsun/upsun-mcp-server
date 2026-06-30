@@ -120,6 +120,22 @@ export class Schema {
   }
 
   /**
+   * Creates a Zod boolean schema for the lean-output opt-out flag. Read tools
+   * return a projected, token-lean payload by default; passing `full: true`
+   * returns the raw API response (full HAL, all fields).
+   *
+   * @returns An optional Zod boolean schema for the `full` flag.
+   */
+  static full(): z.ZodOptional<z.ZodBoolean> {
+    return z
+      .boolean()
+      .optional()
+      .describe(
+        'Return the full raw API response instead of the lean projected output. Defaults to false (lean).'
+      );
+  }
+
+  /**
    * Returns the Zod schema fields for pagination parameters supported by the
    * Upsun API. To follow a next/previous page, pass `links.next.href` or
    * `links.previous.href` from the previous response as `page_link`.

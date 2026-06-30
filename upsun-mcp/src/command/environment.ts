@@ -9,6 +9,7 @@
 
 import { McpAdapter } from '../core/adapter.js';
 import { Response, Schema, ToolWrapper } from '../core/helper.js';
+import { lean } from '../core/lean.js';
 import { createLogger } from '../core/logger.js';
 
 // Create logger for environment operations
@@ -115,13 +116,14 @@ export function registerEnvironment(adapter: McpAdapter): void {
       inputSchema: {
         project_id: Schema.projectId(),
         environment_name: Schema.environmentName(),
+        full: Schema.full(),
       },
     },
-    ToolWrapper.trace('info-environment', async ({ project_id, environment_name }) => {
+    ToolWrapper.trace('info-environment', async ({ project_id, environment_name, full }) => {
       log.debug(`Get Info of Environment ${environment_name} in Project ${project_id}`);
       const result = await adapter.client.environments.info(project_id, environment_name);
 
-      return Response.json(result);
+      return Response.json(full ? result : lean(result));
     })
   );
 
@@ -141,13 +143,14 @@ export function registerEnvironment(adapter: McpAdapter): void {
       description: 'List all environments of upsun project',
       inputSchema: {
         project_id: Schema.projectId(),
+        full: Schema.full(),
       },
     },
-    ToolWrapper.trace('list-environment', async ({ project_id }) => {
+    ToolWrapper.trace('list-environment', async ({ project_id, full }) => {
       log.debug(`List Environments in Project ${project_id}`);
       const result = await adapter.client.environments.list(project_id);
 
-      return Response.json(result);
+      return Response.json(full ? result : lean(result));
     })
   );
 
@@ -326,13 +329,14 @@ export function registerEnvironment(adapter: McpAdapter): void {
       inputSchema: {
         project_id: Schema.projectId(),
         environment_name: Schema.environmentName(),
+        full: Schema.full(),
       },
     },
-    ToolWrapper.trace('urls-environment', async ({ project_id, environment_name }) => {
+    ToolWrapper.trace('urls-environment', async ({ project_id, environment_name, full }) => {
       log.debug(`Get URLs of Environment ${environment_name} in Project ${project_id}`);
       const result = await adapter.client.routes.list(project_id, environment_name);
 
-      return Response.json(result);
+      return Response.json(full ? result : lean(result));
     })
   );
 }
