@@ -1,412 +1,125 @@
-# Upsun MCP Server - Development Guide
-
-This document provides technical information for **local development** and maintenance of the Upsun MCP Server.
-
-**Note**: The Upsun MCP server is hosted and available at https://mcp.upsun.com/mcp. This guide is for developers who want to contribute to, customize, or run the server locally for development purposes.
-
-## Hosted vs. Local Development
-
-### Using the Hosted Service (Recommended for Users)
-- **URL**: https://mcp.upsun.com/mcp
-- **Purpose**: Production-ready MCP server for end users
-- **Setup**: Configure your MCP client to connect to the hosted service
-- **Maintenance**: Managed by the Upsun team
-
-### Local Development (For Contributors)
-- **Purpose**: Development, testing, and contribution to the codebase
-- **Setup**: Clone repository, install dependencies, run locally
-- **Use cases**: Adding features, fixing bugs, customizing behavior
-
-## Quick Reference
-
-### Essential Development Commands
-
-```bash
-# Development workflow
-npm run build          # Compile TypeScript
-npm run watch          # Watch mode for development
-npm run test           # Run test suite
-npm run test:watch     # Run tests in watch mode
-npm run lint           # Check code quality
-npm run prettier       # Format code
-```
-
-### Key Environment Variables
-
-```bash
-# Required
-UPSUN_API_KEY=your-api-token
-
-# Write Operations (Beta Safety)
-enable-write=true  # Enable write ops via header
-
-# Server Configuration
-TYPE_ENV=local         # stdio mode
-TYPE_ENV=remote        # HTTP/SSE mode (default)
-PORT=3000             # Server port (remote mode)
-
-# Debugging
-LOG_LEVEL=DEBUG       # DEBUG, INFO, WARN, ERROR, NONE
-NODE_ENV=development  # development, production, test
-```
-
-## Write Operations Control
-
-**Critical**: This beta release defaults to read-only mode. Write operations are controlled by the `enable-write` header:
-
-- **Default**: Read-only operations only
-- **Write enabled**: Set `enable-write: true` header in MCP client configuration
-
-Example header configuration:
-```json
-{
-  "headers": {
-    "upsun-api-token": "your-api-token",
-    "enable-write": "true"
-  }
-}
-```
-
-## Project Structure
-
-```
-upsun-mcp/
-├── src/
-│   ├── core/           # Core MCP and infrastructure
-│   │   ├── adapter.ts  # MCP adapter interface
-│   │   ├── gateway.ts  # HTTP/SSE server
-│   │   ├── authentication.ts # Bearer token & authentication handling
-│   │   ├── logger.ts   # Structured logging
-│   │   ├── requestContext.ts # AsyncLocalStorage for Express res
-│   │   └── helper.ts   # Common utilities
-│   ├── command/        # MCP tool implementations
-│   │   ├── index.ts    # Command exports
-│   │   ├── project.ts  # Project management
-│   │   ├── environment.ts # Environment operations
-│   │   ├── organization.ts # Organization tools
-│   │   ├── activity.ts # Activity monitoring
-│   │   ├── ssh.ts      # SSH key management
-│   │   ├── domain.ts   # Domain configuration
-│   │   ├── route.ts    # Route management
-│   │   ├── certificate.ts # SSL certificates
-│   │   └── backup.ts   # Backup operations
-│   ├── task/           # MCP prompt implementations
-│   │   ├── index.ts    # Task exports
-│   │   └── config.ts   # Config generation prompts
-│   ├── index.ts        # Main entry point
-│   └── mcpUpsun.ts     # Primary MCP server class
-├── test/               # Test suites (mirrors src/)
-├── build/              # Compiled JavaScript output
-├── package.json        # Dependencies & scripts
-├── tsconfig.json       # TypeScript configuration
-├── jest.config.ts      # Test configuration
-└── .env               # Local environment variables
-```
-
-## Architecture Overview
-
-### Core Classes
-
-- **`UpsunMcpServer`**: Main MCP server implementation
-- **`McpAdapter`**: Interface defining MCP server contract
-- **`GatewayServer`**: HTTP/SSE transport with authentication handling
-- **`LocalServer`**: stdio transport for development
-
-### Transport Modes
-
-1. **Local (stdio)**: Direct communication via stdin/stdout
-   ```bash
-   TYPE_ENV=local npm run run
-   ```
-
-2. **Remote (HTTP/SSE)**: Web server with HTTP authentication support
-   ```bash
-   TYPE_ENV=remote PORT=3000 npm run run
-   ```
-
-### Authentication Flow
-
-1. **API Key**: Direct authentication via `upsun-api-token` header
-2. **Bearer Token**: Alternative authentication via `Authorization: Bearer` header
-3. **Write Control**: Write operations controlled via `enable-write` header
-4. **Session token binding**: Stateful sessions are bound to the exact credential token
-   that created them. The session stores a SHA-256 hash of that token
-   (`sessionOwnerFromAuth` in `core/authentication.ts`), and every request that reuses an
-   existing `mcp-session-id` must present a token with the same hash
-   (`authMatchesSessionOwner`, constant-time compared). Because the binding is to the
-   token rather than to a claim, it holds without verifying the JWT signature: a leaked
-   `mcp-session-id` is useless without the token, and anyone holding the token already has
-   the access the session would grant. A request whose token does not match — including an
-   unknown session id — receives `404 Session not found` (the two are indistinguishable,
-   so the id cannot be used to probe for live sessions). Streamable HTTP bearer requests
-   are stateless and use a fresh transport for each POST, so refreshed OAuth access tokens
-   do not depend on client-side 404 session reinitialization. Bearer GET/DELETE requests
-   return `405` with `Allow: POST` because there is no stateful session or standalone SSE
-   stream to attach to. Exact-token session binding still applies to API-key Streamable
-   HTTP sessions and legacy SSE sessions.
-5. **Upstream 401 forwarding**: When the Upsun API returns 401 (expired/revoked token),
-   the HTTP transport forwards the 401 status and `WWW-Authenticate` header directly to
-   the MCP client so it can trigger OAuth2 token refresh. This only works on the
-   Streamable HTTP transport (`enableJsonResponse: true`); SSE commits 200 headers
-   immediately so 401 forwarding is not possible there.
-
-## Development Workflow
-
-### 1. Setup
-
-```bash
-cd upsun-mcp
-npm install
-cp .env.example .env  # Configure your API token
-```
-
-### 2. Development Mode
-
-```bash
-# Terminal 1: Watch compilation
-npm run watch
-
-# Terminal 2: Run server in stdio mode
-TYPE_ENV=local npm run run
-
-# Terminal 3: Run tests in watch mode
-npm run test:watch
-```
-
-### 3. Testing
-
-```bash
-# Full test suite
-npm test
-
-# With coverage
-npm run test:coverage
-
-# Coverage verification
-npm run coverage:check
-```
-
-### 4. Code Quality
-
-```bash
-# Linting
-npm run lint
-npm run lint:fix
-
-# Formatting
-npm run prettier
-npm run prettier:check
-```
-
-## Adding New Commands
-
-### 1. Create Command Module
-
-Create `src/command/newfeature.ts`:
-
-```typescript
-import { McpAdapter } from '../core/adapter.js';
-import { Response, Schema } from '../core/helper.js';
-import { createLogger } from '../core/logger.js';
-import { z } from 'zod';
-
-const log = createLogger('MCP:Tool:newfeature-commands');
-
-export function registerNewFeature(adapter: McpAdapter): void {
-  log.info('Register NewFeature Handlers');
-
-  adapter.server.registerTool(
-    'action-newfeature',
-    {
-      description: 'Description of the action',
-      inputSchema: {
-        param1: z.string(),
-        param2: Schema.projectId().optional(),
-      },
-    },
-    async ({ param1, param2 }) => {
-      log.debug(`Action: ${param1}`);
-      const result = await adapter.client.newfeature.action(param1, param2);
-      return Response.json(result);
-    }
-  );
-}
-```
-
-### 2. Export from Index
-
-Add to `src/command/index.ts`:
-
-```typescript
-export * from './newfeature.js';
-```
-
-### 3. Register in Main Server
-
-Add to `src/mcpUpsun.ts` constructor:
-
-```typescript
-import { registerNewFeature } from './command/index.js';
-
-constructor() {
-  // ... existing registrations
-  registerNewFeature(this);
-}
-```
-
-### 4. Add Tests
-
-Create `test/command/newfeature.test.ts`:
-
-```typescript
-import { registerNewFeature } from '../../src/command/newfeature.js';
-// ... test implementation
-```
-
-## Testing Strategy
-
-### Unit Tests
-- Each command module has corresponding tests
-- Mock Upsun SDK client responses
-- Test parameter validation and error handling
-
-### Integration Tests
-- Test full MCP server initialization
-- Test transport layer functionality
-- Test authentication flows
-
-### Coverage Requirements
-- Minimum 80% line coverage
-- All command modules must be tested
-- Critical paths require 100% coverage
-
-## Debugging
-
-### Logging Levels
-
-```bash
-LOG_LEVEL=DEBUG    # Verbose debugging information
-LOG_LEVEL=INFO     # General operational info (default)
-LOG_LEVEL=WARN     # Warning conditions
-LOG_LEVEL=ERROR    # Error conditions only
-LOG_LEVEL=NONE     # No logging
-```
-
-### Common Debug Scenarios
-
-1. **Authentication Issues**:
-   ```bash
-   LOG_LEVEL=DEBUG npm run run
-   # Check token extraction and validation logs
-   ```
-
-2. **Transport Problems**:
-   ```bash
-   # Test stdio mode
-   TYPE_ENV=local LOG_LEVEL=DEBUG npm run run
-
-   # Test HTTP mode
-   TYPE_ENV=remote LOG_LEVEL=DEBUG npm run run
-   ```
-
-3. **SDK Integration**:
-   ```bash
-   # Enable SDK debug logging in test environment
-   ```
-
-## Security Considerations
-
-### API Token Handling
-- Never log full API tokens (automatically masked)
-- Store tokens in environment variables, never in code
-- Use separate tokens for development/production
-
-### Header-based Security
-- Validate all authentication tokens
-- Implement proper header validation
-- Control write operations via explicit headers
-
-### Write Operations
-- Default to read-only in beta
-- Require explicit `enable-write: true` header for writes
-- Log all write operations for audit trail
-
-## Local Build Process
-
-### Development Build
-
-```bash
-npm run clean      # Remove old build artifacts
-npm run build      # Compile TypeScript to JavaScript
-```
-
-### Build Output
-- Compiled to `build/` directory
-- Main entry: `build/index.js` (executable)
-- Source maps included for debugging
-
-### Running Your Local Build
-
-For development and testing purposes:
-
-```bash
-# Local development mode (stdio)
-TYPE_ENV=local npm run run
-
-# Local server mode (HTTP/SSE)
-TYPE_ENV=remote PORT=3000 npm run run
-```
-
-**Note**: For production usage, users should connect to the hosted service at https://mcp.upsun.com/mcp rather than running their own instance.
-
-## Troubleshooting
-
-### Common Development Issues
-
-1. **"Cannot find module" errors**: Run `npm run build`
-2. **Test failures**: Check mock configurations in test files
-3. **TypeScript errors**: Verify SDK version compatibility
-4. **Authentication failures**: Check API token validity
-
-### Performance Considerations
-
-- Use connection pooling for high-throughput scenarios
-- Implement request caching for repeated operations
-- Monitor memory usage with long-running processes
-
-### Dependencies
-
-Key dependencies and their purposes:
-- `@modelcontextprotocol/sdk`: Core MCP functionality
-- `upsun-sdk-node`: Upsun API client
-- `express`: HTTP server for remote mode
-- `pino`: High-performance logging
-- `zod`: Runtime type validation
-- `dotenv`: Environment variable loading
-
-## Contributing Guidelines
-
-1. **Branch naming**: `feature/description` or `fix/description`
-2. **Commit messages**: Use conventional commits format
-3. **Code style**: Follow existing TypeScript/ESLint configuration
-4. **Testing**: All new features require tests
-5. **Documentation**: Update README.md and CLAUDE.md as needed
-
-### Pull Request Checklist
-
-- [ ] Code builds without errors (`npm run build`)
-- [ ] All tests pass (`npm test`)
-- [ ] Linting passes (`npm run lint`)
-- [ ] Code is formatted (`npm run prettier`)
-- [ ] Coverage requirements met (`npm run coverage:check`)
-- [ ] Documentation updated if needed
+# Upsun MCP Server — Contributor Guide
+
+This file holds what you **cannot** infer from the code or the README: the
+non-obvious invariants, the conventions, and the few traps that break things
+silently when violated.
+
+- **Usage, hosted setup, client config, tool list** → [README.md](./README.md). Not repeated here.
+- **Commands** → [`upsun-mcp/package.json`](./upsun-mcp/package.json) scripts. Not repeated here.
+- **The npm project lives in `upsun-mcp/`**, not the repo root. `cd upsun-mcp` before `npm` anything.
 
 ---
 
-## Important Notes
+## Where the code lives
 
-- **For End Users**: Use the hosted MCP server at https://mcp.upsun.com/mcp
-- **For Developers**: This guide covers local development and contribution workflows
-- **Beta Software**: Always test thoroughly in development environments
+```
+upsun-mcp/src/
+├── index.ts          # Entry point. Picks transport from appConfig.typeEnv (McpType.LOCAL → stdio, else HTTP).
+├── mcpUpsun.ts        # UpsunMcpServer. Constructor registers every command + task module.
+├── core/
+│   ├── adapter.ts     # McpAdapter interface — the contract command modules register against.
+│   ├── gateway.ts     # LocalServer (stdio) and GatewayServer (HTTP) bootstrap classes.
+│   ├── transport/
+│   │   ├── http.ts    # Streamable HTTP + session handling. Sets enableJsonResponse.
+│   │   └── sse.ts     # Legacy SSE transport.
+│   ├── authentication.ts # Token extraction, write gating, session-token binding.
+│   ├── config.ts      # appConfig, apiConfig, oauth2Config, otelConfig, storageConfig.
+│   ├── lean.ts        # HAL-envelope stripping for read tools (see Invariants).
+│   ├── helper.ts      # Schema, Response, Assert, ToolWrapper, forwardUpstream401.
+│   ├── telemetry.ts   # OpenTelemetry. See OPENTELEMETRY.md.
+│   ├── requestContext.ts # AsyncLocalStorage holding the Express response.
+│   ├── types.ts       # McpType and shared types.
+│   └── logger.ts      # pino. createLogger('MCP:Tool:<name>').
+├── command/           # One module per resource. register<X>(adapter) each.
+└── task/              # MCP prompts. config.ts → registerConfig.
+```
 
-**Remember**: The hosted service is maintained and optimized by the Upsun team. Local development is intended for contributors and customization needs only.
+> Keep this tree honest. If you add a file under `core/`, add the line here in the same PR.
+
+---
+
+## Non-obvious invariants
+
+Violate one of these and the server still compiles, still passes a smoke test,
+and breaks in production. Read before touching auth, transport, or read tools.
+
+### Session binding is to the token, not the session id
+A stateful session stores a SHA-256 hash of the credential token that created
+it (`sessionOwnerFromAuth` in `authentication.ts`). Every reuse of an
+`mcp-session-id` must present a token with the same hash
+(`authMatchesSessionOwner`, constant-time compared). A mismatch — including an
+unknown id — returns `404 Session not found`. The two are indistinguishable on
+purpose, so the id cannot probe for live sessions. Binding to the token (not a
+JWT claim) means it holds without verifying the signature: a leaked id is
+useless without the token.
+
+### 401 forwarding only works on Streamable HTTP
+When the Upsun API returns `401`, `forwardUpstream401` (`helper.ts`) pulls the
+Express response out of `requestContext` and writes the status plus the
+`WWW-Authenticate` header, so the client can refresh its OAuth2 token. That
+write is only possible because `transport/http.ts` sets
+`enableJsonResponse: true`, which defers the headers until the handler returns.
+**SSE commits `200` headers immediately, so 401 forwarding is impossible
+there.** Bearer Streamable HTTP requests are stateless (fresh transport per
+POST); GET/DELETE return `405 Allow: POST`.
+
+### Read tools strip the HAL envelope — but never from the list wrapper
+`lean.ts` removes `_links` and `_embedded` from every resource object (~68%
+payload cut on an environment list). It is a **denylist**: new API fields pass
+through automatically. The list *envelope* is exempt, because pagination
+cursors (`links.next.href`) live there and tools instruct the agent to follow
+them. Callers opt back into raw HAL with `full: true`.
+
+### `list()` and `info()`/`get()` return different shapes
+The Upsun SDK's `list()` returns raw snake_case HAL. `info()`/`get()`
+deserialize to camelCase objects. The `.d.ts` types claim otherwise — don't
+trust them; check the runtime shape.
+
+### Two API-key env vars, by transport
+- stdio / `LocalServer` reads **`UPSUN_API_KEY`** (required).
+- HTTP / remote reads the token from headers; `config.ts` also exposes
+  `UPSUN_API_TOKEN` (`apiToken`) and `UPSUN_API_KEY` (`apiKey`).
+
+---
+
+## Conventions
+
+### Adding a command
+Three edits, always in this order:
+
+1. **`src/command/<feature>.ts`** — export `register<Feature>(adapter: McpAdapter)`.
+   Inside, call `adapter.server.registerTool(...)` with a `zod` input schema
+   (use `Schema.projectId()` etc. from `helper.ts`), and return `Response.json(result)`.
+   Logger: `const log = createLogger('MCP:Tool:<feature>-commands')`.
+2. **`src/command/index.ts`** — `export * from './<feature>.js'`.
+3. **`src/mcpUpsun.ts`** — import `register<Feature>` and call it in the constructor.
+
+**A read tool takes two more steps**, or it silently ships the HAL envelope:
+add `full: Schema.full()` to the input schema, and return
+`Response.json(full ? result : lean(result))`. For an enveloped list, pass the
+array key — `lean(result, { itemsKey: 'items' })` — so the envelope's
+pagination cursors survive.
+
+Write operations are gated by `WritableMode` — `READONLY` / `NON_DESTRUCTIVE` /
+`WRITABLE`, resolved from the `MODE` env var (`config.ts`) and the `enable-write`
+header (`authentication.ts`). Default is `READONLY`.
+
+### Tests
+- Mirror `src/` under `test/`. Mock the Upsun SDK client; assert param
+  validation and error handling.
+- Coverage gate: `npm run coverage:check`. Thresholds — global plus per-folder
+  overrides — live in `jest.config.ts`, not in the script. Don't merge below them.
+
+---
+
+## Quick loop
+
+```bash
+cd upsun-mcp
+npm run build && TYPE_ENV=local npm run run  # stdio mode from compiled output (needs UPSUN_API_KEY)
+npm run test:watch
+```
+
+Everything else (lint, prettier, coverage, build) is a script in `package.json`.
+`npm run watch` restarts the server on source changes — HTTP mode by default;
+set `TYPE_ENV=local` for stdio.
