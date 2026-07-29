@@ -12,7 +12,7 @@
     "clean": "rm -rf build",
     "run": "node build/index.js",
     "build": "tsc --noEmit && tsc -p tsconfig.json",
-    "watch": "tsx watch index.ts",
+    "watch": "tsx watch src/index.ts",
     "inspector": "npx @modelcontextprotocol/inspector http://localhost:3000 --header 'upsun-api-token: xxxx'",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -24,8 +24,7 @@
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:ci": "NODE_OPTIONS=--experimental-vm-modules jest --ci --watchAll=false --passWithNoTests",
     "coverage:report": "NODE_OPTIONS=--experimental-vm-modules jest --coverage --coverageReporters=text-lcov | coveralls",
-    "coverage:check": "NODE_OPTIONS=--experimental-vm-modules jest --coverage --passWithNoTests",
-    "coverage:verify": "./scripts/check-coverage.sh"
+    "coverage:check": "NODE_OPTIONS=--experimental-vm-modules jest --coverage --passWithNoTests"
   },
   "files": [
     "build"
