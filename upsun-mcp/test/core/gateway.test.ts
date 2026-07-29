@@ -63,8 +63,19 @@ describe('GatewayServer', () => {
   let gatewayServer: GatewayServer<McpAdapter>;
   let mockAdapterFactory: jest.MockedClass<typeof McpAdapter>;
 
+  /** Process events listen() attaches to. Tracked so tests can restore them. */
+  const CRASH_EVENTS = ['uncaughtException', 'unhandledRejection'] as const;
+  let listenersBefore: Record<string, ((...args: any[]) => void)[]>;
+
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // listen() registers process-level handlers. Snapshot them so afterEach can
+    // detach the ones this test added; leaking an exit(1) handler would kill the
+    // Jest worker on any later stray rejection.
+    listenersBefore = Object.fromEntries(
+      CRASH_EVENTS.map(event => [event, process.listeners(event)])
+    );
 
     // Mock the adapter factory
     mockAdapterFactory = jest.fn().mockImplementation(() => ({
@@ -75,6 +86,23 @@ describe('GatewayServer', () => {
     // Create server instance
     gatewayServer = new GatewayServer(mockAdapterFactory);
   });
+
+  afterEach(() => {
+    for (const event of CRASH_EVENTS) {
+      for (const listener of process.listeners(event)) {
+        if (!listenersBefore[event].includes(listener)) {
+          process.off(event, listener);
+        }
+      }
+    }
+  });
+
+  /** Runs listen() with a stubbed http server and returns the handlers it added. */
+  const listenAndCollect = (event: string): ((...args: any[]) => void)[] => {
+    gatewayServer.app.listen = jest.fn().mockReturnValue({ close: jest.fn() });
+    gatewayServer.listen();
+    return process.listeners(event).filter(l => !listenersBefore[event].includes(l));
+  };
 
   describe('constructor', () => {
     it('should initialize the Express app and transports', () => {
@@ -128,6 +156,39 @@ describe('GatewayServer', () => {
       gatewayServer.listen(8080);
 
       expect(mockListen).toHaveBeenCalledWith(8080, '0.0.0.0', expect.any(Function));
+    });
+  });
+
+  describe('shutdown method', () => {
+    it('should close sessions on both transports', async () => {
+      gatewayServer.sseTransport.closeAllSessions = jest.fn().mockResolvedValue(undefined);
+      gatewayServer.httpTransport.closeAllSessions = jest.fn().mockResolvedValue(undefined);
+
+      await gatewayServer.shutdown();
+
+      expect(gatewayServer.sseTransport.closeAllSessions).toHaveBeenCalled();
+      expect(gatewayServer.httpTransport.closeAllSessions).toHaveBeenCalled();
+    });
+
+    it('should not register signal handlers of its own', () => {
+      const before = process.listenerCount('SIGTERM') + process.listenerCount('SIGINT');
+
+      listenAndCollect('uncaughtException');
+
+      expect(process.listenerCount('SIGTERM') + process.listenerCount('SIGINT')).toBe(before);
+    });
+  });
+
+  describe('crash handlers', () => {
+    it.each(CRASH_EVENTS)('should exit 1 on %s', event => {
+      const exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      const handlers = listenAndCollect(event);
+      expect(handlers).toHaveLength(1);
+      handlers[0](new Error('boom'), Promise.resolve());
+
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      exitSpy.mockRestore();
     });
   });
 

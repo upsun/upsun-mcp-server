@@ -15,10 +15,26 @@ await initTelemetry();
 log.info('Starting Upsun MCP Server...');
 log.debug(getConfigSummary());
 
-// Handle graceful shutdown
+// Set below in remote mode. Holds the transport sessions the shutdown path drains.
+let gateway: GatewayServer<UpsunMcpServer> | undefined;
+
+// Handle graceful shutdown. Upsun sends SIGTERM on deploy and on stop; SIGINT
+// comes from a local Ctrl-C. Both run this one path, so sessions close before
+// telemetry flushes and the process exits once.
+// Each step is guarded on its own: a throw must not skip the next step or the exit.
 const cleanup = async (): Promise<void> => {
   log.info('Shutting down gracefully...');
-  await shutdownTelemetry();
+  try {
+    await gateway?.shutdown();
+  } catch (error) {
+    log.error('Failed to close transport sessions:', error);
+  }
+  try {
+    await shutdownTelemetry();
+  } catch (error) {
+    log.error('Failed to shut down telemetry:', error);
+  }
+  log.info('Shutdown complete');
   process.exit(0);
 };
 
@@ -34,7 +50,7 @@ if (appConfig.typeEnv === McpType.LOCAL) {
 } else {
   // SSE & Streamable
   const PORT = appConfig.port;
-  const srv = new GatewayServer(UpsunMcpServer);
-  await srv.listen(PORT);
+  gateway = new GatewayServer(UpsunMcpServer);
+  await gateway.listen(PORT);
   log.info(`Gateway server started on port ${PORT}`);
 }
