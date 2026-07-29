@@ -283,12 +283,17 @@ SUPPORTED TRANSPORT OPTIONS:
 `);
     });
 
+    // Both handlers exit. Registering a listener for either event overrides Node's
+    // default crash, which left the server running on corrupted state. Upsun's
+    // supervisor restarts the process, so exiting is the shorter outage.
     process.on('uncaughtException', error => {
       coreLog.error('Uncaught Exception:', error);
+      process.exit(1);
     });
 
     process.on('unhandledRejection', (reason, promise) => {
       coreLog.error('Unhandled Rejection at:', promise, 'reason:', reason);
+      process.exit(1);
     });
   }
 
