@@ -121,7 +121,5 @@ npm run test:watch
 ```
 
 Everything else (lint, prettier, coverage, build) is a script in `package.json`.
-
-Two scripts there are broken — don't burn time on them:
-`watch` points at `index.ts`, which does not exist (the entry is `src/index.ts`),
-and `coverage:verify` calls a missing `scripts/check-coverage.sh`.
+`npm run watch` restarts the server on source changes — HTTP mode by default;
+set `TYPE_ENV=local` for stdio.
