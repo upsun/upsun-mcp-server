@@ -131,6 +131,27 @@ describe('GatewayServer', () => {
     });
   });
 
+  describe('shutdown method', () => {
+    it('should close sessions on both transports', async () => {
+      gatewayServer.sseTransport.closeAllSessions = jest.fn().mockResolvedValue(undefined);
+      gatewayServer.httpTransport.closeAllSessions = jest.fn().mockResolvedValue(undefined);
+
+      await gatewayServer.shutdown();
+
+      expect(gatewayServer.sseTransport.closeAllSessions).toHaveBeenCalled();
+      expect(gatewayServer.httpTransport.closeAllSessions).toHaveBeenCalled();
+    });
+
+    it('should not register signal handlers of its own', () => {
+      const before = process.listenerCount('SIGTERM') + process.listenerCount('SIGINT');
+
+      gatewayServer.app.listen = jest.fn().mockReturnValue({ close: jest.fn() });
+      gatewayServer.listen();
+
+      expect(process.listenerCount('SIGTERM') + process.listenerCount('SIGINT')).toBe(before);
+    });
+  });
+
   describe('error handling', () => {
     it('should be properly initialized without throwing errors', () => {
       // The constructor sets up error handlers and runs without throwing

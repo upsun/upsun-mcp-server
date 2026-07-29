@@ -243,8 +243,8 @@ export class GatewayServer<A extends McpAdapter> {
    * Starts the HTTP server and begins listening for connections.
    *
    * Binds the server to all available network interfaces (0.0.0.0) and displays
-   * configuration information for both transport types. Sets up proper shutdown
-   * handling to clean up active transport sessions.
+   * configuration information for both transport types. Session cleanup lives in
+   * {@link GatewayServer.shutdown}, which the signal handlers in `index.ts` call.
    *
    * @param port - Port number to listen on (default: 3000)
    *
@@ -283,18 +283,6 @@ SUPPORTED TRANSPORT OPTIONS:
 `);
     });
 
-    // Handle server shutdown
-    process.on('SIGINT', async () => {
-      coreLog.info('Shutting down server...');
-
-      // Close all active transports to properly clean up resources
-      await this.sseTransport.closeAllSessions();
-      await this.httpTransport.closeAllSessions();
-
-      coreLog.info('Server shutdown complete');
-      process.exit(0);
-    });
-
     process.on('uncaughtException', error => {
       coreLog.error('Uncaught Exception:', error);
     });
@@ -302,5 +290,20 @@ SUPPORTED TRANSPORT OPTIONS:
     process.on('unhandledRejection', (reason, promise) => {
       coreLog.error('Unhandled Rejection at:', promise, 'reason:', reason);
     });
+  }
+
+  /**
+   * Closes every active session on both transports.
+   *
+   * Does not exit the process — the signal handlers in `index.ts` own that, so
+   * SIGTERM and SIGINT run the same shutdown steps in the same order.
+   *
+   * @returns Promise that resolves once both transports are drained
+   */
+  public async shutdown(): Promise<void> {
+    coreLog.info('Closing active transport sessions...');
+    await this.sseTransport.closeAllSessions();
+    await this.httpTransport.closeAllSessions();
+    coreLog.info('Transport sessions closed');
   }
 }
