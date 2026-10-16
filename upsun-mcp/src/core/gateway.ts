@@ -1,5 +1,6 @@
 import * as core from 'express-serve-static-core';
 import express from 'express';
+import type { Server } from 'node:http';
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
@@ -93,6 +94,7 @@ export class LocalServer<A extends McpAdapter> {
 export class GatewayServer<A extends McpAdapter> {
   readonly httpTransport = new HttpTransport(this);
   readonly sseTransport = new SseTransport(this);
+  private httpServer?: Server;
 
   /**
    * Creates a new GatewayServer instance.
@@ -243,8 +245,8 @@ export class GatewayServer<A extends McpAdapter> {
    * Starts the HTTP server and begins listening for connections.
    *
    * Binds the server to all available network interfaces (0.0.0.0) and displays
-   * configuration information for both transport types. Sets up proper shutdown
-   * handling to clean up active transport sessions.
+   * configuration information for both transport types. Session cleanup lives in
+   * {@link GatewayServer.shutdown}, which the signal handlers in `index.ts` call.
    *
    * @param port - Port number to listen on (default: 3000)
    *
@@ -257,7 +259,7 @@ export class GatewayServer<A extends McpAdapter> {
   public listen(port: number = 3000): void {
     coreLog.debug('Starting Server listen process...');
 
-    this.app.listen(port, '0.0.0.0', () => {
+    this.httpServer = this.app.listen(port, '0.0.0.0', () => {
       coreLog.info(`Backwards compatible MCP server listening on port ${port}`);
       coreLog.info(`  - Configure with http://localhost:${port}/sse`);
       coreLog.info(`  - Configure with http://localhost:${port}/mcp`);
@@ -283,24 +285,34 @@ SUPPORTED TRANSPORT OPTIONS:
 `);
     });
 
-    // Handle server shutdown
-    process.on('SIGINT', async () => {
-      coreLog.info('Shutting down server...');
-
-      // Close all active transports to properly clean up resources
-      await this.sseTransport.closeAllSessions();
-      await this.httpTransport.closeAllSessions();
-
-      coreLog.info('Server shutdown complete');
-      process.exit(0);
-    });
-
+    // Both handlers exit. Registering a listener for either event overrides Node's
+    // default crash, which left the server running on corrupted state. Upsun's
+    // supervisor restarts the process, so exiting is the shorter outage.
     process.on('uncaughtException', error => {
       coreLog.error('Uncaught Exception:', error);
+      process.exit(1);
     });
 
     process.on('unhandledRejection', (reason, promise) => {
       coreLog.error('Unhandled Rejection at:', promise, 'reason:', reason);
+      process.exit(1);
     });
+  }
+
+  /**
+   * Closes every active session on both transports.
+   *
+   * Does not exit the process — the signal handlers in `index.ts` own that, so
+   * SIGTERM and SIGINT run the same shutdown steps in the same order.
+   *
+   * @returns Promise that resolves once both transports are drained
+   */
+  public async shutdown(): Promise<void> {
+    // Stop accepting connections. Not awaited: long-lived SSE streams keep it pending.
+    this.httpServer?.close();
+    coreLog.info('Closing active transport sessions...');
+    await this.sseTransport.closeAllSessions();
+    await this.httpTransport.closeAllSessions();
+    coreLog.info('Transport sessions closed');
   }
 }
