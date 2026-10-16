@@ -121,6 +121,17 @@ describe('Project Command Module', () => {
       expect(result).toHaveProperty('content');
       globalThis.setTimeout = origSetTimeout;
     });
+    it('throws when the created subscription has no ID', async () => {
+      mockClient.projects.create.mockResolvedValue({});
+      await expect(
+        toolCallbacks['create-project']({
+          organization_id: 'org-123',
+          name: 'Test Project',
+          region_host: 'eu-5.platform.sh',
+        })
+      ).rejects.toThrow('Subscription ID is missing');
+      expect(mockGetOrgSubscription).not.toHaveBeenCalled();
+    });
     it('creates a project with custom default branch', async () => {
       const result = await toolCallbacks['create-project']({
         organization_id: 'org-123',

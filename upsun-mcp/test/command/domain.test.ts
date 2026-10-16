@@ -515,6 +515,7 @@ describe('Domain Command Module', () => {
           params: {
             project_id: 'proj',
             domain_name: 'test.com',
+            is_default: false,
           },
         },
       ];
@@ -591,6 +592,7 @@ describe('Domain Command Module', () => {
       const params = {
         project_id: 'test-project-13',
         domain_name: 'api.v1.staging.app.example.com',
+        is_default: false,
       };
 
       const result = await callback(params);

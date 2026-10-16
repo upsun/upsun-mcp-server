@@ -67,13 +67,15 @@ export function registerProject(adapter: McpAdapter): void {
             defaultBranch: default_branch,
           });
 
+          const subscriptionId = subCreated.id;
+          if (!subscriptionId) {
+            throw new Error('Subscription ID is missing from the create response');
+          }
+
           // The SDK only looks up subscriptions by project ID, which is unset until provisioned.
           const subApi = new SubscriptionsApi(adapter.client.apiConfig);
           const getSubscription = (): Promise<Subscription> =>
-            subApi.getOrgSubscription({
-              organizationId: organization_id,
-              subscriptionId: subCreated.id || '',
-            });
+            subApi.getOrgSubscription({ organizationId: organization_id, subscriptionId });
 
           let prjCreated = await getSubscription();
           while (prjCreated.status !== SubscriptionStatusEnum.ACTIVE) {
