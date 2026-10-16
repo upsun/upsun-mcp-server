@@ -16,6 +16,8 @@ Read tools add `full: Schema.full()` to the schema and return
 
 ## Gotchas
 
+- Write tools are off by default. Over HTTP only the `enable-write` header
+  enables them; on stdio only the `MODE` env var does.
 - The Upsun SDK's `list()` returns snake_case HAL; `info()`/`get()` return
   camelCase objects. The `.d.ts` types don't reflect this.
 - Forwarding an upstream 401 (`forwardUpstream401`) relies on
