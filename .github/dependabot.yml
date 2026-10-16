@@ -16,7 +16,9 @@ updates:
     multi-ecosystem-group: "weekly-dependencies"
 
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directories:
+      - "/"
+      - "/.github/actions/*"
     patterns:
       - "*"
     multi-ecosystem-group: "weekly-dependencies"
