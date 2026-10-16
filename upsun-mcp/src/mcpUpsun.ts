@@ -90,7 +90,7 @@ export class UpsunMcpServer implements McpAdapter {
    *
    * This method initializes the Upsun client with the provided Bearer token and
    * connects the MCP server to the specified transport. The transport handles
-   * the actual communication protocol (stdio, HTTP, SSE, etc.).
+   * the actual communication protocol (stdio or HTTP).
    *
    * @param transport - The transport layer for MCP communication
    * @param bearerToken - The Bearer token for authentication

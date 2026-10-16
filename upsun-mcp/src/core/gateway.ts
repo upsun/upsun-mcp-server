@@ -13,13 +13,10 @@ import {
 import { oauth2Config, appConfig } from './config.js';
 import { createLogger } from './logger.js';
 import { HttpTransport } from './transport/http.js';
-import { HTTP_MSG_PATH, SseTransport } from './transport/sse.js';
 import { withSpanAsync, addSpanAttribute, addSpanEvent } from './telemetry.js';
 
 /** HTTP path for MCP streamable transport endpoint */
 const HTTP_MCP_PATH = '/mcp';
-/** HTTP path for legacy SSE transport endpoint */
-const HTTP_SSE_PATH = '/sse';
 
 // Create specialized loggers but use 'log' as variable name for consistency
 const coreLog = createLogger('Core');
@@ -80,25 +77,19 @@ export class LocalServer<A extends McpAdapter> {
 /**
  * HTTP gateway server for MCP communication.
  *
- * This class serves as a gateway for handling HTTP requests and managing
- * transport sessions for the Model Context Protocol (MCP). It supports both
- * the newer streamable HTTP transport (protocol version 2025-03-26) and the
- * legacy HTTP+SSE transport (protocol version 2024-11-05) for backwards compatibility.
- *
- * The server manages multiple concurrent sessions and provides proper cleanup
- * of resources when sessions terminate.
+ * Serves the Model Context Protocol (MCP) over stateless Streamable HTTP:
+ * each POST is handled by a fresh MCP server instance, with no sessions.
  *
  * @template A - The type of McpAdapter implementation
  */
 export class GatewayServer<A extends McpAdapter> {
   readonly httpTransport = new HttpTransport(this);
-  readonly sseTransport = new SseTransport(this);
 
   /**
    * Creates a new GatewayServer instance.
    *
    * Initializes the Express application and sets up routes for handling MCP requests
-   * via both streamable HTTP and legacy SSE transports.
+   * via the Streamable HTTP transport.
    *
    * @param mcpAdapterServerFactory - Factory function to create MCP adapter instances
    * @param app - Optional Express application instance (creates new one if not provided)
@@ -128,17 +119,18 @@ export class GatewayServer<A extends McpAdapter> {
     ).href;
     const authMiddleware = requireMcpAuth(verifier, resourceMetadataUrl);
 
-    // Load all transports (passing auth middleware).
     this.setupStreamableTransport(authMiddleware);
-    this.setupSseTransport(authMiddleware);
+    this.app.get('/health', (_req, res) => {
+      res.status(200).json({ status: 'healthy' });
+    });
     coreLog.info('Gateway server instance initialized!');
   }
 
   /**
    * Creates a new instance of the MCP adapter implementation.
    *
-   * This factory method creates fresh instances of the MCP adapter for each
-   * transport session, ensuring proper isolation between different client connections.
+   * A fresh instance is created for each request, so no state is shared
+   * between requests.
    *
    * @returns A new MCP adapter instance
    * @private
@@ -151,100 +143,34 @@ export class GatewayServer<A extends McpAdapter> {
     return adapter;
   }
 
-  //=============================================================================
-  // STREAMABLE HTTP TRANSPORT (PROTOCOL VERSION 2025-03-26)
-  //=============================================================================
-
   /**
-   * Sets up the Streamable HTTP transport for modern MCP clients.
-   *
-   * This transport supports the latest MCP protocol version (2025-03-26) and provides
-   * efficient bidirectional communication using HTTP with streaming capabilities.
+   * Sets up the stateless Streamable HTTP transport.
    *
    * Endpoints configured:
-   * - POST /mcp: Client-to-server communication and session initialization
-   * - GET /mcp: Server-to-client notifications via streaming for stateful API-key sessions
-   * - DELETE /mcp: Session termination for stateful API-key sessions
-   *
-   * API-key sessions are managed via the 'mcp-session-id' header, with automatic
-   * cleanup when connections are closed. Bearer-token requests use stateless
-   * Streamable HTTP because refreshed OAuth access tokens cannot safely reuse
-   * exact-token-bound server sessions before JWT verification is available.
+   * - POST /mcp: All client-to-server messages
+   * - GET, DELETE /mcp: 405, as there is no session to stream from or terminate
    *
    * @private
    */
   private setupStreamableTransport(authMiddleware: express.RequestHandler): void {
     coreLog.debug('Setting up Streamable HTTP transport...');
 
-    // Handle POST requests for client-to-server communication
     this.app.post(
       HTTP_MCP_PATH,
       authMiddleware,
-      this.httpTransport.postSessionRequest.bind(this.httpTransport)
+      this.httpTransport.handlePost.bind(this.httpTransport)
     );
 
-    // Handle GET requests for server-to-client notifications via streaming
-    this.app.get(
-      HTTP_MCP_PATH,
-      authMiddleware,
-      this.httpTransport.handleSessionRequest.bind(this.httpTransport)
-    );
-
-    // Handle DELETE requests for session termination
-    this.app.delete(
-      HTTP_MCP_PATH,
-      authMiddleware,
-      this.httpTransport.handleSessionRequest.bind(this.httpTransport)
-    );
-  }
-
-  //=============================================================================
-  // DEPRECATED HTTP+SSE TRANSPORT (PROTOCOL VERSION 2024-11-05)
-  //=============================================================================
-
-  /**
-   * Sets up the legacy Server-Sent Events (SSE) transport for backwards compatibility.
-   *
-   * This transport supports the older MCP protocol version (2024-11-05) using
-   * Server-Sent Events for server-to-client communication and regular HTTP POST
-   * for client-to-server messages.
-   *
-   * Endpoints configured:
-   * - GET /sse: Establishes SSE connection for server-to-client notifications
-   * - POST /messages: Client-to-server communication with session ID query parameter
-   * - GET /health: Health check endpoint
-   *
-   * Includes keep-alive mechanism to maintain SSE connections and proper cleanup
-   * when clients disconnect.
-   *
-   * @private
-   */
-  private setupSseTransport(authMiddleware: express.RequestHandler): void {
-    coreLog.debug('Setting up legacy SSE transport...');
-
-    // Legacy SSE endpoint for older clients
-    this.app.get(
-      HTTP_SSE_PATH,
-      authMiddleware,
-      this.sseTransport.getSessionRequest.bind(this.sseTransport)
-    );
-
-    // Legacy message endpoint for older clients
-    this.app.post(
-      HTTP_MSG_PATH,
-      authMiddleware,
-      this.sseTransport.postSessionRequest.bind(this.sseTransport)
-    );
-
-    this.app.get('/health', this.sseTransport.healthSessionRequest.bind(this.sseTransport));
+    const methodNotAllowed = this.httpTransport.handleMethodNotAllowed.bind(this.httpTransport);
+    this.app.get(HTTP_MCP_PATH, authMiddleware, methodNotAllowed);
+    this.app.delete(HTTP_MCP_PATH, authMiddleware, methodNotAllowed);
   }
 
   /**
    * Starts the HTTP server and begins listening for connections.
    *
    * Binds the server to all available network interfaces (0.0.0.0) and displays
-   * configuration information for both transport types. Sets up proper shutdown
-   * handling to clean up active transport sessions.
+   * the endpoint.
    *
    * @param port - Port number to listen on (default: 3000)
    *
@@ -258,41 +184,8 @@ export class GatewayServer<A extends McpAdapter> {
     coreLog.debug('Starting Server listen process...');
 
     this.app.listen(port, '0.0.0.0', () => {
-      coreLog.info(`Backwards compatible MCP server listening on port ${port}`);
-      coreLog.info(`  - Configure with http://localhost:${port}/sse`);
-      coreLog.info(`  - Configure with http://localhost:${port}/mcp`);
-      coreLog.info(`
-==============================================
-SUPPORTED TRANSPORT OPTIONS:
-
-1. Streamable Http(Protocol version: 2025-03-26)
-   Endpoint: /mcp
-   Methods: GET, POST, DELETE
-   Usage: 
-     - Initialize with POST to /mcp
-     - Establish SSE stream with GET to /mcp
-     - Send requests with POST to /mcp
-     - Terminate session with DELETE to /mcp
-
-2. Http + SSE (Protocol version: 2024-11-05)
-   Endpoints: /sse (GET) and /messages (POST)
-   Usage:
-     - Establish SSE stream with GET to /sse
-     - Send requests with POST to /messages?sessionId=<id>
-==============================================
-`);
-    });
-
-    // Handle server shutdown
-    process.on('SIGINT', async () => {
-      coreLog.info('Shutting down server...');
-
-      // Close all active transports to properly clean up resources
-      await this.sseTransport.closeAllSessions();
-      await this.httpTransport.closeAllSessions();
-
-      coreLog.info('Server shutdown complete');
-      process.exit(0);
+      coreLog.info(`MCP server listening on port ${port}`);
+      coreLog.info(`  - Configure with http://localhost:${port}${HTTP_MCP_PATH}`);
     });
 
     process.on('uncaughtException', error => {
