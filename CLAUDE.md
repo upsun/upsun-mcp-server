@@ -70,8 +70,7 @@ through automatically. The list *envelope* is exempt, because pagination
 cursors (`links.next.href`) live there and tools instruct the agent to follow
 them. Callers opt back into raw HAL with `full: true`.
 
-Only the `project`, `environment`, `activity` and `backup` modules use `lean()`
-so far. Read tools in the other modules still return raw HAL. New read tools
+Only the `project`, `environment` and `activity` modules use `lean()` so far. Read tools in the other modules still return raw HAL. New read tools
 must use it (see "Adding a command").
 
 ### `list()` and `info()`/`get()` return different shapes
@@ -105,9 +104,14 @@ add `full: Schema.full()` to the input schema, and return
 array key — `lean(result, { itemsKey: 'items' })` — so the envelope's
 pagination cursors survive.
 
-Write operations are gated by `WritableMode` — `READONLY` / `NON_DESTRUCTIVE` /
-`WRITABLE`, resolved from the `MODE` env var (`config.ts`) and the `enable-write`
-header (`authentication.ts`). Default is `READONLY`.
+Write operations are gated by `WritableMode`. Default is `READONLY`. Each
+transport reads one source only:
+- stdio / `LocalServer`: the `MODE` env var (`config.ts`).
+- HTTP and SSE: the `enable-write` header (`extractMode` in `authentication.ts`),
+  which yields only `WRITABLE` or `READONLY`. `MODE` has no effect here.
+
+`NON_DESTRUCTIVE` is not enforced as its own level: `UpsunMcpServer.isMode()`
+treats anything but `READONLY` as writable.
 
 ### Tests
 - Mirror `src/` under `test/`. Mock the Upsun SDK client; assert param
