@@ -22,7 +22,7 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Setup Project
       uses: ./.github/actions/setup-node-project
@@ -50,7 +50,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Setup Node.js Project
       uses: ./.github/actions/setup-node-project
@@ -69,7 +69,7 @@ jobs:
         
     - name: Upload coverage reports to Codecov
       if: false && matrix.node-version == env.PRIMARY_NODE_VERSION
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v7
       with:
         file: ./upsun-mcp/coverage/lcov.info
         directory: ./upsun-mcp/coverage/
@@ -91,14 +91,14 @@ jobs:
         
     - name: Comment PR with coverage
       if: matrix.node-version == env.PRIMARY_NODE_VERSION && github.event_name == 'pull_request'
-      uses: romeovs/lcov-reporter-action@v0.3.1
+      uses: romeovs/lcov-reporter-action@v0.4.0
       with:
         lcov-file: ./upsun-mcp/coverage/lcov.info
         github-token: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Archive coverage artifacts
       if: matrix.node-version == env.PRIMARY_NODE_VERSION
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: coverage-report
         path: |
@@ -113,7 +113,7 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Setup Project
       uses: ./.github/actions/setup-node-project
@@ -122,7 +122,7 @@ jobs:
       
     - name: Download coverage artifacts
       if: false
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: coverage-report
         path: upsun-mcp/coverage/
@@ -154,7 +154,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       
     - name: Setup Project
       uses: ./.github/actions/setup-node-project
@@ -167,7 +167,7 @@ jobs:
         npm run build
         
     - name: Archive build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: build-files
         path: upsun-mcp/build/
