@@ -26,9 +26,7 @@ describe('SseTransport', () => {
   let sseTransport: SseTransport;
 
   beforeEach(() => {
-    gateway = {
-      /* minimal mock */
-    } as any;
+    gateway = {/* minimal mock */} as any;
     sseTransport = new SseTransport(gateway);
   });
 

@@ -14,6 +14,10 @@ updates:
     patterns:
       - "*"
     multi-ecosystem-group: "weekly-dependencies"
+    ignore:
+      # ts-jest 29 requires typescript <7.
+      - dependency-name: "typescript"
+        versions: [">=7"]
 
   - package-ecosystem: "github-actions"
     directories:

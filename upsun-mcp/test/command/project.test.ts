@@ -2,6 +2,7 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
 import { McpAdapter } from '../../src/core/adapter';
 import { registerProject } from '../../src/command/project';
 import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
+import { SubscriptionsApi } from 'upsun-sdk-node';
 
 // Mock the logger module
 const mockLogger = {
@@ -20,7 +21,6 @@ const mockProjectsApi = {
   delete: jest.fn(),
   info: jest.fn(),
   list: jest.fn(),
-  getSubscription: jest.fn(),
 };
 
 const mockClient: any = {
@@ -49,6 +49,7 @@ const mockCreateResult = { id: 'sub-123', status: 'active' };
 const mockDeleteResult = { success: true, message: 'Project deleted successfully' };
 
 let toolCallbacks: Record<string, any> = {};
+let mockGetOrgSubscription: jest.SpiedFunction<any>;
 
 describe('Project Command Module', () => {
   const originalEnv = process.env;
@@ -69,7 +70,9 @@ describe('Project Command Module', () => {
     mockClient.projects.delete.mockResolvedValue(mockDeleteResult);
     mockClient.projects.info.mockResolvedValue(mockProject);
     mockClient.projects.list.mockResolvedValue(mockProjectList);
-    mockClient.projects.getSubscription.mockResolvedValue({ ...mockProject, status: 'active' });
+    mockGetOrgSubscription = jest
+      .spyOn(SubscriptionsApi.prototype, 'getOrgSubscription')
+      .mockResolvedValue({ ...mockProject, status: 'active' });
   });
   afterEach(() => {
     teardownTestEnvironment(originalEnv);
@@ -92,7 +95,7 @@ describe('Project Command Module', () => {
     it('creates a project and waits for active', async () => {
       // Simulate project not active at first
       mockClient.projects.create.mockResolvedValue({ id: 'sub-123' });
-      mockClient.projects.getSubscription
+      mockGetOrgSubscription
         .mockResolvedValueOnce({ ...mockProject, status: 'pending' })
         .mockResolvedValueOnce({ ...mockProject, status: 'active' });
       // Patch setTimeout to run instantly
@@ -110,7 +113,11 @@ describe('Project Command Module', () => {
         projectTitle: 'Test Project',
         defaultBranch: undefined,
       });
-      expect(mockClient.projects.getSubscription).toHaveBeenCalledTimes(2);
+      expect(mockGetOrgSubscription).toHaveBeenCalledTimes(2);
+      expect(mockGetOrgSubscription).toHaveBeenCalledWith({
+        organizationId: 'org-123',
+        subscriptionId: 'sub-123',
+      });
       expect(result).toHaveProperty('content');
       globalThis.setTimeout = origSetTimeout;
     });

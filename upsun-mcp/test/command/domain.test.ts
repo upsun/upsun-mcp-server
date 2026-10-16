@@ -450,53 +450,21 @@ describe('Domain Command Module', () => {
       registerDomain(mockAdapter);
     });
 
-    it('should return TODO for update domain', async () => {
+    it('should pass is_default as the domain patch', async () => {
       const callback = toolCallbacks['update-domain'];
       const params = {
         project_id: 'test-project-13',
         domain_name: 'example.com',
+        is_default: true,
       };
 
       const result = await callback(params);
 
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('domain-updated', null, 2),
-          },
-        ],
-      });
-    });
-
-    it('should handle SSL configuration updates', async () => {
-      const callback = toolCallbacks['update-domain'];
-      const params = {
-        project_id: 'test-project-13',
-        domain_name: 'ssl-update.example.com',
-      };
-
-      const result = await callback(params);
-
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify('domain-updated', null, 2),
-          },
-        ],
-      });
-    });
-
-    it('should handle routing rule updates', async () => {
-      const callback = toolCallbacks['update-domain'];
-      const params = {
-        project_id: 'test-project-13',
-        domain_name: 'routing.example.com',
-      };
-
-      const result = await callback(params);
-
+      expect(mockAdapter.client.domains.update).toHaveBeenCalledWith(
+        'test-project-13',
+        'example.com',
+        { isDefault: true }
+      );
       expect(result).toEqual({
         content: [
           {
