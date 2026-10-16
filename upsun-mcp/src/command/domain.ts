@@ -154,11 +154,11 @@ export function registerDomain(adapter: McpAdapter): void {
    * Tool: update-domain
    * Updates configuration for an existing domain.
    *
-   * This can be used to modify SSL settings, routing rules,
-   * or other domain-specific configurations.
+   * Sets whether the domain is the project's default domain.
    *
    * @param project_id - The project ID containing the domain
    * @param domain_name - The domain name to update
+   * @param is_default - Whether the domain is the default
    */
   if (adapter.isMode()) {
     adapter.server.registerTool(
@@ -169,11 +169,14 @@ export function registerDomain(adapter: McpAdapter): void {
         inputSchema: {
           project_id: Schema.projectId(),
           domain_name: Schema.domainName(),
+          is_default: z.boolean().describe('Whether this is the default domain of the project'),
         },
       },
-      ToolWrapper.trace('update-domain', async ({ project_id, domain_name }) => {
+      ToolWrapper.trace('update-domain', async ({ project_id, domain_name, is_default }) => {
         log.debug(`Update Domain ${domain_name} in Project ${project_id}`);
-        const result = await adapter.client.domains.update(project_id, domain_name);
+        const result = await adapter.client.domains.update(project_id, domain_name, {
+          isDefault: is_default,
+        });
 
         return Response.json(result);
       })

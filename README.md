@@ -49,7 +49,7 @@ You don't need to install or run anything locally unless you're developing or cu
 - **delete-domain**: Remove domains
 - **info-domain**: Get domain configuration details
 - **list-domain**: List all domains
-- **update-domain**: Modify domain settings
+- **update-domain**: Set whether a domain is the project default
 
 ### 🛣️ Routing
 - **info-route**: Get route configuration details

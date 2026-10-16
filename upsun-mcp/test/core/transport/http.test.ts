@@ -28,9 +28,7 @@ describe('HttpTransport', () => {
   let closeSpy: jest.SpiedFunction<any> | undefined;
 
   beforeEach(() => {
-    gateway = {
-      /* minimal mock */
-    } as any;
+    gateway = {/* minimal mock */} as any;
     httpTransport = new HttpTransport(gateway);
   });
 

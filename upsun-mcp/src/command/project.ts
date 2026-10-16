@@ -6,6 +6,7 @@
  * top-level containers for applications and environments in the Upsun platform.
  */
 
+import { Subscription, SubscriptionsApi } from 'upsun-sdk-node';
 import { SubscriptionStatusEnum } from 'upsun-sdk-node/dist/model/index.js';
 import { z } from 'zod';
 import { McpAdapter } from '../core/adapter.js';
@@ -66,17 +67,21 @@ export function registerProject(adapter: McpAdapter): void {
             defaultBranch: default_branch,
           });
 
-          let prjCreated = await adapter.client.projects.getSubscription(
-            organization_id,
-            subCreated.id || ''
-          );
+          const subscriptionId = subCreated.id;
+          if (!subscriptionId) {
+            throw new Error('Subscription ID is missing from the create response');
+          }
+
+          // The SDK only looks up subscriptions by project ID, which is unset until provisioned.
+          const subApi = new SubscriptionsApi(adapter.client.apiConfig);
+          const getSubscription = (): Promise<Subscription> =>
+            subApi.getOrgSubscription({ organizationId: organization_id, subscriptionId });
+
+          let prjCreated = await getSubscription();
           while (prjCreated.status !== SubscriptionStatusEnum.ACTIVE) {
             log.info('Waiting for project to be active...');
             await delay(10000);
-            prjCreated = await adapter.client.projects.getSubscription(
-              organization_id,
-              subCreated.id || ''
-            );
+            prjCreated = await getSubscription();
           }
 
           return Response.json(prjCreated);
