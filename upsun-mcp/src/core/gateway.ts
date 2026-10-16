@@ -1,5 +1,6 @@
 import * as core from 'express-serve-static-core';
 import express from 'express';
+import type { Server } from 'node:http';
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
@@ -93,6 +94,7 @@ export class LocalServer<A extends McpAdapter> {
 export class GatewayServer<A extends McpAdapter> {
   readonly httpTransport = new HttpTransport(this);
   readonly sseTransport = new SseTransport(this);
+  private httpServer?: Server;
 
   /**
    * Creates a new GatewayServer instance.
@@ -257,7 +259,7 @@ export class GatewayServer<A extends McpAdapter> {
   public listen(port: number = 3000): void {
     coreLog.debug('Starting Server listen process...');
 
-    this.app.listen(port, '0.0.0.0', () => {
+    this.httpServer = this.app.listen(port, '0.0.0.0', () => {
       coreLog.info(`Backwards compatible MCP server listening on port ${port}`);
       coreLog.info(`  - Configure with http://localhost:${port}/sse`);
       coreLog.info(`  - Configure with http://localhost:${port}/mcp`);
@@ -306,6 +308,8 @@ SUPPORTED TRANSPORT OPTIONS:
    * @returns Promise that resolves once both transports are drained
    */
   public async shutdown(): Promise<void> {
+    // Stop accepting connections. Not awaited: long-lived SSE streams keep it pending.
+    this.httpServer?.close();
     coreLog.info('Closing active transport sessions...');
     await this.sseTransport.closeAllSessions();
     await this.httpTransport.closeAllSessions();

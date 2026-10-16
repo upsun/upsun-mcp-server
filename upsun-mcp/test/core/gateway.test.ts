@@ -157,6 +157,14 @@ describe('GatewayServer', () => {
 
       expect(mockListen).toHaveBeenCalledWith(8080, '0.0.0.0', expect.any(Function));
     });
+
+    it('should not register signal handlers of its own', () => {
+      const before = process.listenerCount('SIGTERM') + process.listenerCount('SIGINT');
+
+      listenAndCollect('uncaughtException');
+
+      expect(process.listenerCount('SIGTERM') + process.listenerCount('SIGINT')).toBe(before);
+    });
   });
 
   describe('shutdown method', () => {
@@ -170,12 +178,21 @@ describe('GatewayServer', () => {
       expect(gatewayServer.httpTransport.closeAllSessions).toHaveBeenCalled();
     });
 
-    it('should not register signal handlers of its own', () => {
-      const before = process.listenerCount('SIGTERM') + process.listenerCount('SIGINT');
+    it('should stop accepting connections before closing sessions', async () => {
+      const order: string[] = [];
+      const mockServer = { close: jest.fn(() => order.push('close')) };
+      gatewayServer.app.listen = jest.fn().mockReturnValue(mockServer) as any;
+      gatewayServer.sseTransport.closeAllSessions = jest.fn(async () => {
+        order.push('sse');
+      });
+      gatewayServer.httpTransport.closeAllSessions = jest.fn(async () => {
+        order.push('http');
+      });
+      gatewayServer.listen();
 
-      listenAndCollect('uncaughtException');
+      await gatewayServer.shutdown();
 
-      expect(process.listenerCount('SIGTERM') + process.listenerCount('SIGINT')).toBe(before);
+      expect(order).toEqual(['close', 'sse', 'http']);
     });
   });
 

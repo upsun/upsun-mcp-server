@@ -22,7 +22,11 @@ let gateway: GatewayServer<UpsunMcpServer> | undefined;
 // comes from a local Ctrl-C. Both run this one path, so sessions close before
 // telemetry flushes and the process exits once.
 // Each step is guarded on its own: a throw must not skip the next step or the exit.
+let shuttingDown = false;
 const cleanup = async (): Promise<void> => {
+  // A second signal while draining must not start a second shutdown.
+  if (shuttingDown) return;
+  shuttingDown = true;
   log.info('Shutting down gracefully...');
   try {
     await gateway?.shutdown();
