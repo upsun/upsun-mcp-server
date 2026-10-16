@@ -21,7 +21,9 @@ Read tools add `full: Schema.full()` to the schema and return
 - The Upsun SDK's `list()` returns snake_case HAL; `info()`/`get()` return
   camelCase objects. The `.d.ts` types don't reflect this.
 - HTTP is stateless (MCP spec 2026-07-28): each POST to `/mcp` gets a fresh
-  `UpsunMcpServer` and transport, so state can't persist between requests.
+  `UpsunMcpServer` and transport, so state can't persist between requests. The
+  one exception: API-key `UpsunClient`s (and their access tokens) are cached
+  in `mcpUpsun.ts`, keyed by a hash of the key.
 - Forwarding an upstream 401 (`forwardUpstream401`) relies on
   `enableJsonResponse: true` in `transport/http.ts`, which delays the headers.
 - Coverage thresholds are in `jest.config.ts`; check with `npm run coverage:check`.

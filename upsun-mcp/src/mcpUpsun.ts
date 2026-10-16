@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { DEFAULT_UPSUN_CONFIG, UpsunClient, UpsunConfig } from 'upsun-sdk-node';
@@ -7,9 +8,14 @@ import { McpAdapter } from './core/adapter.js';
 import { createLogger } from './core/logger.js';
 import { withSpanAsync, addSpanAttribute, addSpanEvent } from './core/telemetry.js';
 import { apiConfig, oauth2Config } from './core/config.js';
+import { LruCache } from './core/lruCache.js';
 
 // Create logger for MCP operations
 const log = createLogger('mcp-server');
+
+// HTTP requests are stateless, so API-key clients are cached to reuse their
+// exchanged access tokens. Keyed by a SHA-256 of the API key.
+const apiKeyClients = new LruCache<UpsunClient>(1000, 60 * 60 * 1000);
 
 import {
   registerActivity,
@@ -150,7 +156,13 @@ export class UpsunMcpServer implements McpAdapter {
       addSpanAttribute('auth.type', 'apikey');
       addSpanEvent('client.initializing');
 
-      this.client = new UpsunClient({ apiKey, ...config } as UpsunConfig);
+      const cacheKey = createHash('sha256').update(apiKey).digest('hex');
+      let client = apiKeyClients.get(cacheKey);
+      if (!client) {
+        client = new UpsunClient({ apiKey, ...config } as UpsunConfig);
+        apiKeyClients.set(cacheKey, client);
+      }
+      this.client = client;
 
       addSpanEvent('server.connecting');
       await this.server.connect(transport);
