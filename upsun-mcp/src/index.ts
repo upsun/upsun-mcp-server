@@ -32,7 +32,7 @@ if (appConfig.typeEnv === McpType.LOCAL) {
   await local.listen();
   log.info('Local server (stdio) started successfully');
 } else {
-  // SSE & Streamable
+  // Streamable HTTP
   const PORT = appConfig.port;
   const srv = new GatewayServer(UpsunMcpServer);
   await srv.listen(PORT);

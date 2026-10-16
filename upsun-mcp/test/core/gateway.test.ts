@@ -8,7 +8,6 @@ jest.mock('express');
 
 // Mock MCP SDK transports
 jest.mock('@modelcontextprotocol/sdk/server/streamableHttp');
-jest.mock('@modelcontextprotocol/sdk/server/sse');
 jest.mock('@modelcontextprotocol/sdk/server/stdio');
 
 // Mock authentication module
@@ -81,7 +80,6 @@ describe('GatewayServer', () => {
       expect(gatewayServer).toBeDefined();
       expect(gatewayServer.app).toBeDefined();
       expect(gatewayServer.httpTransport).toBeDefined();
-      expect(gatewayServer.sseTransport).toBeDefined();
     });
   });
 
@@ -100,7 +98,7 @@ describe('GatewayServer', () => {
 
   describe('transport management', () => {
     // Transport management tests are now in dedicated files
-    it('should not test transport internals here (see http.test.ts, sse.test.ts)', () => {
+    it('should not test transport internals here (see http.test.ts)', () => {
       expect(true).toBe(true);
     });
   });

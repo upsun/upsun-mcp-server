@@ -34,7 +34,6 @@ export enum WritableMode {
  * Header keys used in requests
  */
 export enum HeaderKey {
-  MCP_SESSION_ID = 'mcp-session-id',
   API_KEY = 'upsun-api-token',
   ENABLE_WRITE = 'enable-write',
 }
