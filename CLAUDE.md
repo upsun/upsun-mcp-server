@@ -42,7 +42,7 @@ enable-write=true  # Enable write ops via header
 
 # Server Configuration
 TYPE_ENV=local         # stdio mode
-TYPE_ENV=remote        # HTTP/SSE mode (default)
+TYPE_ENV=remote        # Streamable HTTP mode (default)
 PORT=3000             # Server port (remote mode)
 
 # Debugging
@@ -74,7 +74,7 @@ upsun-mcp/
 ├── src/
 │   ├── core/           # Core MCP and infrastructure
 │   │   ├── adapter.ts  # MCP adapter interface
-│   │   ├── gateway.ts  # HTTP/SSE server
+│   │   ├── gateway.ts  # Streamable HTTP server
 │   │   ├── authentication.ts # Bearer token & authentication handling
 │   │   ├── logger.ts   # Structured logging
 │   │   ├── requestContext.ts # AsyncLocalStorage for Express res
@@ -109,7 +109,7 @@ upsun-mcp/
 
 - **`UpsunMcpServer`**: Main MCP server implementation
 - **`McpAdapter`**: Interface defining MCP server contract
-- **`GatewayServer`**: HTTP/SSE transport with authentication handling
+- **`GatewayServer`**: Stateless Streamable HTTP transport with authentication handling
 - **`LocalServer`**: stdio transport for development
 
 ### Transport Modes
@@ -119,7 +119,7 @@ upsun-mcp/
    TYPE_ENV=local npm run run
    ```
 
-2. **Remote (HTTP/SSE)**: Web server with HTTP authentication support
+2. **Remote (Streamable HTTP)**: Stateless web server with HTTP authentication support
    ```bash
    TYPE_ENV=remote PORT=3000 npm run run
    ```
@@ -129,26 +129,14 @@ upsun-mcp/
 1. **API Key**: Direct authentication via `upsun-api-token` header
 2. **Bearer Token**: Alternative authentication via `Authorization: Bearer` header
 3. **Write Control**: Write operations controlled via `enable-write` header
-4. **Session token binding**: Stateful sessions are bound to the exact credential token
-   that created them. The session stores a SHA-256 hash of that token
-   (`sessionOwnerFromAuth` in `core/authentication.ts`), and every request that reuses an
-   existing `mcp-session-id` must present a token with the same hash
-   (`authMatchesSessionOwner`, constant-time compared). Because the binding is to the
-   token rather than to a claim, it holds without verifying the JWT signature: a leaked
-   `mcp-session-id` is useless without the token, and anyone holding the token already has
-   the access the session would grant. A request whose token does not match — including an
-   unknown session id — receives `404 Session not found` (the two are indistinguishable,
-   so the id cannot be used to probe for live sessions). Streamable HTTP bearer requests
-   are stateless and use a fresh transport for each POST, so refreshed OAuth access tokens
-   do not depend on client-side 404 session reinitialization. Bearer GET/DELETE requests
-   return `405` with `Allow: POST` because there is no stateful session or standalone SSE
-   stream to attach to. Exact-token session binding still applies to API-key Streamable
-   HTTP sessions and legacy SSE sessions.
+4. **Stateless**: Every POST to `/mcp` gets a fresh MCP server and transport
+   (`sessionIdGenerator: undefined`). No `mcp-session-id` is issued, and a client-supplied
+   one is ignored. GET and DELETE return `405` with `Allow: POST`. The legacy HTTP+SSE
+   transport (`/sse`, `/messages`) is not supported.
 5. **Upstream 401 forwarding**: When the Upsun API returns 401 (expired/revoked token),
    the HTTP transport forwards the 401 status and `WWW-Authenticate` header directly to
-   the MCP client so it can trigger OAuth2 token refresh. This only works on the
-   Streamable HTTP transport (`enableJsonResponse: true`); SSE commits 200 headers
-   immediately so 401 forwarding is not possible there.
+   the MCP client so it can trigger OAuth2 token refresh. This relies on
+   `enableJsonResponse: true`, which defers writing headers until the handler completes.
 
 ## Development Workflow
 
@@ -353,7 +341,7 @@ For development and testing purposes:
 # Local development mode (stdio)
 TYPE_ENV=local npm run run
 
-# Local server mode (HTTP/SSE)
+# Local server mode (Streamable HTTP)
 TYPE_ENV=remote PORT=3000 npm run run
 ```
 

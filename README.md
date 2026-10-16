@@ -808,7 +808,7 @@ export TYPE_ENV=local
 npm run build && npm run run
 ```
 
-#### Remote Server (HTTP/SSE)
+#### Remote Server (Streamable HTTP)
 
 ```bash
 # Default remote mode
@@ -890,7 +890,7 @@ LOG_LEVEL=DEBUG  # DEBUG, INFO, WARN, ERROR, NONE
 
 - **`McpAdapter`**: Main adapter interface for MCP integration
 - **`UpsunMcpServer`**: Primary server implementation
-- **`GatewayServer`**: HTTP/SSE transport handler
+- **`GatewayServer`**: Stateless Streamable HTTP transport handler
 - **`LocalServer`**: stdio transport for development
 
 ### Command Modules
