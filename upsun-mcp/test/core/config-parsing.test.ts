@@ -338,16 +338,24 @@ describe('Configuration Parsing', () => {
       expect(otelConfig.serviceName).toBe('from-env-specific');
     });
 
-    it('should allow .env.<env> to reference shared values from .env', async () => {
-      // Shared base variables.
-      writeFileSync(baseEnvFile, 'PORT=4321\n');
-      // Environment-specific variable referencing the shared base variable.
-      writeFileSync(envFile, 'OAUTH_BASE_URL=http://127.0.0.1:${PORT}/\n');
+    it('should leave ${VAR} references in dotenv files unexpanded', async () => {
+      writeFileSync(baseEnvFile, 'OTEL_SERVICE_NAME=svc-${HOME}-$(echo hi)\n');
 
       // Enable dotenv loading.
       delete process.env.SKIP_DOTENV_LOAD;
       process.env.NODE_ENV = envSuffix;
-      // Ensure values come from dotenv files rather than OS environment.
+      delete process.env.OTEL_SERVICE_NAME;
+
+      const { otelConfig } = await import('../../src/core/config.js');
+      expect(otelConfig.serviceName).toBe('svc-${HOME}-$(echo hi)');
+    });
+
+    it('should derive the OAUTH_BASE_URL default from PORT', async () => {
+      writeFileSync(envFile, 'PORT=4321\n');
+
+      // Enable dotenv loading.
+      delete process.env.SKIP_DOTENV_LOAD;
+      process.env.NODE_ENV = envSuffix;
       delete process.env.PORT;
       delete process.env.OAUTH_BASE_URL;
 

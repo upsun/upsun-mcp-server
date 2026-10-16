@@ -11,7 +11,6 @@
  */
 
 import dotenv from 'dotenv';
-import dotenvExpand from 'dotenv-expand';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync, readFileSync } from 'fs';
@@ -26,9 +25,8 @@ const projectRoot = join(__dirname, '..', '..');
 // Skip loading .env files during tests to allow tests to control environment.
 // Tests will set SKIP_DOTENV_LOAD=true to prevent .env loading.
 if (process.env.SKIP_DOTENV_LOAD !== 'true') {
-  // Merge dotenv files first, then expand once to support references across
-  // files. This allows .env.<env> to reference shared variables from .env.
-  // Precedence remains: OS env > .env.<env> > .env.
+  // Merge dotenv files without variable expansion.
+  // Precedence: OS env > .env.<env> > .env.
   // NODE_ENV must be set via OS/platform env to select a non-default file;
   // a value inside .env cannot influence which .env.<env> is loaded.
   const typeEnv = getNodeEnvironment();
@@ -45,25 +43,9 @@ if (process.env.SKIP_DOTENV_LOAD !== 'true') {
     Object.assign(mergedDotenv, dotenv.parse(readFileSync(specificEnvPath)));
   }
 
-  if (Object.keys(mergedDotenv).length > 0) {
-    const processEnvForExpansion: Record<string, string> = {};
-    for (const [key, value] of Object.entries(process.env)) {
-      if (value !== undefined) {
-        processEnvForExpansion[key] = value;
-      }
-    }
-
-    const expanded = dotenvExpand.expand({
-      parsed: mergedDotenv,
-      // Use a copy to avoid dotenv-expand mutating process.env directly.
-      processEnv: processEnvForExpansion,
-    });
-
-    const resolvedDotenv = expanded.parsed ?? mergedDotenv;
-    for (const [key, value] of Object.entries(resolvedDotenv)) {
-      if (!Object.prototype.hasOwnProperty.call(process.env, key)) {
-        process.env[key] = value;
-      }
+  for (const [key, value] of Object.entries(mergedDotenv)) {
+    if (!Object.prototype.hasOwnProperty.call(process.env, key)) {
+      process.env[key] = value;
     }
   }
 }
@@ -171,6 +153,8 @@ function getNodeEnvironment(): string {
   return process.env.NODE_ENV || 'development';
 }
 
+const port = parseNumber(process.env.PORT, 3000);
+
 /**
  * API configuration
  */
@@ -190,7 +174,7 @@ export const oauth2Config = {
   enabled: parseBoolean(process.env.OAUTH_ENABLED, true),
 
   /** Base URL for the local OAuth2 proxy server */
-  resourceUrl: process.env.OAUTH_BASE_URL || 'http://127.0.0.1:3000/',
+  resourceUrl: process.env.OAUTH_BASE_URL || `http://127.0.0.1:${port}/`,
 
   /** Base URL for the Upsun OAuth2 authorization server */
   authUrl: getOAuth2Base(),
@@ -293,7 +277,7 @@ export const appConfig = {
   typeEnv: parseMcpType(process.env.TYPE_ENV, McpType.REMOTE),
 
   /** HTTP server port */
-  port: parseNumber(process.env.PORT, 3000),
+  port,
 
   /** API operation mode (READONLY, NON_DESTRUCTIVE, WRITABLE) */
   mode: parseWritableMode(process.env.MODE, WritableMode.READONLY),
