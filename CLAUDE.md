@@ -70,15 +70,20 @@ through automatically. The list *envelope* is exempt, because pagination
 cursors (`links.next.href`) live there and tools instruct the agent to follow
 them. Callers opt back into raw HAL with `full: true`.
 
+Only the `project`, `environment`, `activity` and `backup` modules use `lean()`
+so far. Read tools in the other modules still return raw HAL. New read tools
+must use it (see "Adding a command").
+
 ### `list()` and `info()`/`get()` return different shapes
 The Upsun SDK's `list()` returns raw snake_case HAL. `info()`/`get()`
 deserialize to camelCase objects. The `.d.ts` types claim otherwise — don't
 trust them; check the runtime shape.
 
-### Two API-key env vars, by transport
+### API credentials, by transport
 - stdio / `LocalServer` reads **`UPSUN_API_KEY`** (required).
-- HTTP / remote reads the token from headers; `config.ts` also exposes
-  `UPSUN_API_TOKEN` (`apiToken`) and `UPSUN_API_KEY` (`apiKey`).
+- HTTP / remote reads the token from request headers only.
+- `UPSUN_API_TOKEN` (`apiConfig.apiToken`) is parsed but unused, apart from
+  the startup config summary. Don't build on it.
 
 ---
 
