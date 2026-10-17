@@ -62,8 +62,18 @@ describe('GatewayServer', () => {
   let gatewayServer: GatewayServer<McpAdapter>;
   let mockAdapterFactory: jest.MockedClass<typeof McpAdapter>;
 
+  /** Process events listen() attaches to. Tracked so tests can restore them. */
+  const CRASH_EVENTS = ['uncaughtException', 'unhandledRejection'] as const;
+  let listenersBefore: Record<string, ((...args: any[]) => void)[]>;
+
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Snapshot process handlers so afterEach can detach the ones listen() adds;
+    // a leaked exit(1) handler would kill the Jest worker on a stray rejection.
+    listenersBefore = Object.fromEntries(
+      CRASH_EVENTS.map(event => [event, process.listeners(event)])
+    );
 
     // Mock the adapter factory
     mockAdapterFactory = jest.fn().mockImplementation(() => ({
@@ -73,6 +83,16 @@ describe('GatewayServer', () => {
 
     // Create server instance
     gatewayServer = new GatewayServer(mockAdapterFactory);
+  });
+
+  afterEach(() => {
+    for (const event of CRASH_EVENTS) {
+      for (const listener of process.listeners(event)) {
+        if (!listenersBefore[event].includes(listener)) {
+          process.off(event, listener);
+        }
+      }
+    }
   });
 
   describe('constructor', () => {
@@ -126,6 +146,23 @@ describe('GatewayServer', () => {
       gatewayServer.listen(8080);
 
       expect(mockListen).toHaveBeenCalledWith(8080, '0.0.0.0', expect.any(Function));
+    });
+  });
+
+  describe('crash handlers', () => {
+    it.each(CRASH_EVENTS)('should exit 1 on %s', event => {
+      const exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+      gatewayServer.app.listen = jest.fn().mockReturnValue({ close: jest.fn() }) as any;
+      gatewayServer.listen();
+
+      const handlers = process
+        .listeners(event)
+        .filter(l => !listenersBefore[event].includes(l as any));
+      expect(handlers).toHaveLength(1);
+      (handlers[0] as (...args: any[]) => void)(new Error('boom'), Promise.resolve());
+
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      exitSpy.mockRestore();
     });
   });
 
