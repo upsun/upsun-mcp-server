@@ -18,8 +18,11 @@ log.debug(getConfigSummary());
 // Handle graceful shutdown. Upsun sends SIGTERM on deploy and stop; SIGINT is a local Ctrl-C.
 let shuttingDown = false;
 const cleanup = async (): Promise<void> => {
-  // A second signal while flushing must not start a second shutdown.
-  if (shuttingDown) return;
+  // A second signal forces exit, so a stalled flush can still be interrupted.
+  if (shuttingDown) {
+    log.warn('Forced exit');
+    process.exit(1);
+  }
   shuttingDown = true;
   log.info('Shutting down gracefully...');
   // shutdownTelemetry() rethrows; without this the rejection skips the exit.
