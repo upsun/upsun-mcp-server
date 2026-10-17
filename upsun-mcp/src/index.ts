@@ -15,10 +15,19 @@ await initTelemetry();
 log.info('Starting Upsun MCP Server...');
 log.debug(getConfigSummary());
 
-// Handle graceful shutdown
+// Handle graceful shutdown. Upsun sends SIGTERM on deploy and stop; SIGINT is a local Ctrl-C.
+let shuttingDown = false;
 const cleanup = async (): Promise<void> => {
+  // A second signal while flushing must not start a second shutdown.
+  if (shuttingDown) return;
+  shuttingDown = true;
   log.info('Shutting down gracefully...');
-  await shutdownTelemetry();
+  // shutdownTelemetry() rethrows; without this the rejection skips the exit.
+  try {
+    await shutdownTelemetry();
+  } catch (error) {
+    log.error('Failed to shut down telemetry:', error);
+  }
   process.exit(0);
 };
 
