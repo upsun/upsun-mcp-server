@@ -16,14 +16,17 @@ log.info('Starting Upsun MCP Server...');
 log.debug(getConfigSummary());
 
 // Handle graceful shutdown. Upsun sends SIGTERM on deploy and stop; SIGINT is a local Ctrl-C.
+const SHUTDOWN_TIMEOUT_MS = 5000;
 let shuttingDown = false;
 const cleanup = async (): Promise<void> => {
-  // A second signal forces exit, so a stalled flush can still be interrupted.
-  if (shuttingDown) {
-    log.warn('Forced exit');
-    process.exit(1);
-  }
+  // Repeated signals are ignored: one Ctrl-C under npm/npx can deliver SIGINT twice.
+  if (shuttingDown) return;
   shuttingDown = true;
+  // Bound the flush so a stalled exporter cannot hold the process until SIGKILL.
+  setTimeout(() => {
+    log.warn('Shutdown timed out, forcing exit');
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT_MS).unref();
   log.info('Shutting down gracefully...');
   // shutdownTelemetry() rethrows; without this the rejection skips the exit.
   try {
