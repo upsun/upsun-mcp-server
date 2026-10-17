@@ -188,12 +188,16 @@ export class GatewayServer<A extends McpAdapter> {
       coreLog.info(`  - Configure with http://localhost:${port}${HTTP_MCP_PATH}`);
     });
 
+    // Registering these overrides Node's default crash, so exit explicitly rather
+    // than keep serving on corrupted state. Upsun's supervisor restarts the process.
     process.on('uncaughtException', error => {
       coreLog.error('Uncaught Exception:', error);
+      process.exit(1);
     });
 
     process.on('unhandledRejection', (reason, promise) => {
       coreLog.error('Unhandled Rejection at:', promise, 'reason:', reason);
+      process.exit(1);
     });
   }
 }

@@ -4,6 +4,7 @@ import { initTelemetry, shutdownTelemetry } from './core/telemetry.js';
 import { getConfigSummary, appConfig } from './core/config.js';
 import { createLogger } from './core/logger.js';
 import { McpType } from './core/types.js';
+import { createShutdownHandler } from './core/shutdown.js';
 
 const log = createLogger('main');
 
@@ -15,12 +16,8 @@ await initTelemetry();
 log.info('Starting Upsun MCP Server...');
 log.debug(getConfigSummary());
 
-// Handle graceful shutdown
-const cleanup = async (): Promise<void> => {
-  log.info('Shutting down gracefully...');
-  await shutdownTelemetry();
-  process.exit(0);
-};
+// Handle graceful shutdown.
+const cleanup = createShutdownHandler(shutdownTelemetry);
 
 process.on('SIGTERM', cleanup);
 process.on('SIGINT', cleanup);
