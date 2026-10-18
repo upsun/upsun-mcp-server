@@ -738,7 +738,7 @@ describe('Helper Module', () => {
       expect(endFn).toHaveBeenCalledWith('{"error":"unauthorized"}');
     });
 
-    it('should return null when no requestContext store (stdio mode)', async () => {
+    it('should return null when no requestContext store', async () => {
       const err = makeResponseError(401, 'unauthorized');
       const result = await forwardUpstream401(err);
       expect(result).toBeNull();

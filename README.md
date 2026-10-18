@@ -774,22 +774,18 @@ npm run build
 
 ### Local Development Environment
 
-Copy the template and fill in your values. `.env` is gitignored, so your token never gets committed:
+Copy the template and fill in your values (`.env` is gitignored):
 
 ```bash
 cd upsun-mcp
 cp .env.example .env
 ```
 
-Then edit `upsun-mcp/.env` and set at least your API token:
+Then edit `upsun-mcp/.env`:
 
 ```env
-# Required: Your Upsun API token
-UPSUN_API_TOKEN=your-api-token-here
-
 # Optional: Server configuration
 PORT=3000
-TYPE_ENV=remote
 
 # Optional: Logging
 LOG_LEVEL=INFO
@@ -798,20 +794,9 @@ NODE_ENV=production
 
 ### Running Locally
 
-#### Local Development (stdio)
+#### Streamable HTTP Server
 
 ```bash
-# Set environment for local stdio mode
-export TYPE_ENV=local
-
-# Run the server
-npm run build && npm run run
-```
-
-#### Remote Server (Streamable HTTP)
-
-```bash
-# Default remote mode
 npm run build && npm run run
 
 # Or specify port
@@ -820,21 +805,11 @@ PORT=4000 npm run build && npm run run
 
 #### Local MCP Client Configuration
 
-For local development, configure your MCP client to use the local server:
+Point your MCP client at the local server, passing your API token in the
+`upsun-api-token` header:
 
-```json
-{
-  "servers": {
-    "upsun-local": {
-      "command": "node",
-      "args": ["/path/to/upsun-mcp-server/upsun-mcp/build/index.js"],
-      "env": {
-        "UPSUN_API_TOKEN": "your-api-token-here",
-        "TYPE_ENV": "local"
-      }
-    }
-  }
-}
+```bash
+claude mcp add --transport http upsun-local http://localhost:3000/mcp --header "upsun-api-token: YOUR_API_TOKEN"
 ```
 
 ### Development Scripts
@@ -891,7 +866,6 @@ LOG_LEVEL=DEBUG  # DEBUG, INFO, WARN, ERROR, NONE
 - **`McpAdapter`**: Main adapter interface for MCP integration
 - **`UpsunMcpServer`**: Primary server implementation
 - **`GatewayServer`**: Stateless Streamable HTTP transport handler
-- **`LocalServer`**: stdio transport for development
 
 ### Command Modules
 

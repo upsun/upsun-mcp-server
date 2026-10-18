@@ -16,8 +16,7 @@ Read tools add `full: Schema.full()` to the schema and return
 
 ## Gotchas
 
-- Write tools are off by default. Over HTTP only the `enable-write` header
-  enables them; on stdio only the `MODE` env var does.
+- Write tools are off by default; only the `enable-write` header enables them.
 - The Upsun SDK's `list()` returns snake_case HAL; `info()`/`get()` return
   camelCase objects. The `.d.ts` types don't reflect this.
 - HTTP is stateless (MCP spec 2026-07-28): each POST to `/mcp` gets a fresh

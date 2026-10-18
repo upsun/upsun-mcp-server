@@ -30,7 +30,7 @@ export interface McpAdapter {
    * This method initializes the MCP server with the provided transport and
    * configures the Upsun client with the Bearer token for authentication.
    *
-   * @param transport - The transport layer for MCP communication (stdio, HTTP, etc.)
+   * @param transport - The transport layer for MCP communication (e.g. Streamable HTTP)
    * @param bearerToken - The Bearer token for authenticating with Upsun platform
    * @returns A Promise that resolves when the connection is established
    * @throws May throw errors if connection fails or Bearer token is invalid
@@ -44,7 +44,7 @@ export interface McpAdapter {
    * configures the Upsun client with the API key for authentication. The API key
    * will be processed differently than Bearer tokens (e.g., exchanged for a token).
    *
-   * @param transport - The transport layer for MCP communication (stdio, HTTP, etc.)
+   * @param transport - The transport layer for MCP communication (e.g. Streamable HTTP)
    * @param apiKey - The API key for authenticating with Upsun platform
    * @returns A Promise that resolves when the connection is established
    * @throws May throw errors if connection fails or API key is invalid

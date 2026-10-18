@@ -14,14 +14,6 @@ export enum LogLevel {
 }
 
 /**
- * MCP type enumeration
- */
-export enum McpType {
-  REMOTE = 'remote',
-  LOCAL = 'local',
-}
-
-/**
  * Writable mode enumeration (by priority)
  */
 export enum WritableMode {

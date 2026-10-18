@@ -1,8 +1,6 @@
 import * as core from 'express-serve-static-core';
 import express from 'express';
 
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-
 import { McpAdapter } from './adapter.js';
 import {
   setupOAuth2Direct,
@@ -20,59 +18,6 @@ const HTTP_MCP_PATH = '/mcp';
 
 // Create specialized loggers but use 'log' as variable name for consistency
 const coreLog = createLogger('Core');
-
-/**
- * Local server implementation for stdio-based MCP communication.
- *
- * This class provides a simple server that communicates via standard input/output,
- * typically used for local development or command-line integration.
- *
- * @template A - The type of McpAdapter implementation
- */
-export class LocalServer<A extends McpAdapter> {
-  /** The MCP adapter server instance */
-  public readonly server: A;
-
-  /** The stdio transport for local communication */
-  private readonly transport: StdioServerTransport;
-
-  /**
-   * Creates a new LocalServer instance.
-   *
-   * @param mcpAdapterServerFactory - Factory function to create MCP adapter instances
-   */
-  constructor(private readonly mcpAdapterServerFactory: new (mode: WritableMode) => A) {
-    coreLog.info('Initializing local server instance...');
-    this.transport = new StdioServerTransport();
-    this.server = new this.mcpAdapterServerFactory(appConfig.mode as WritableMode);
-    coreLog.info('Local server instance initialized!');
-  }
-
-  /**
-   * Starts listening for stdio-based MCP communication.
-   *
-   * Uses the UPSUN_API_KEY environment variable for authentication.
-   *
-   * @returns Promise that resolves when the server is ready
-   * @throws Error if connection fails or API key is missing
-   */
-  async listen(): Promise<void> {
-    return withSpanAsync('gateway', 'local-server.listen', async () => {
-      addSpanAttribute('server.type', 'local');
-      addSpanAttribute('transport', 'stdio');
-
-      const apiKey = appConfig.apiKey;
-      if (!apiKey) {
-        addSpanEvent('authentication.failed', { reason: 'missing_api_key' });
-        throw new Error('UPSUN_API_KEY environment variable is required for LocalServer');
-      }
-
-      addSpanEvent('server.connecting');
-      await this.server.connectWithApiKey(this.transport, apiKey);
-      addSpanEvent('server.connected');
-    });
-  }
-}
 
 /**
  * HTTP gateway server for MCP communication.
