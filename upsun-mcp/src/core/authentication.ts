@@ -1,6 +1,7 @@
 import express, { RequestHandler } from 'express';
-import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
-import { InvalidTokenError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
+import { requireBearerAuth } from '@modelcontextprotocol/express';
+import { OAuthError, OAuthErrorCode } from '@modelcontextprotocol/server';
+import type { AuthInfo } from '@modelcontextprotocol/server';
 import { createLogger } from './logger.js';
 import { oauth2Config as appAuthConfig } from './config.js';
 import { WritableMode, HeaderKey, API_KEY_CLIENT_ID } from './types.js';
@@ -9,7 +10,6 @@ import { WritableMode, HeaderKey, API_KEY_CLIENT_ID } from './types.js';
 export { WritableMode, HeaderKey, API_KEY_CLIENT_ID } from './types.js';
 
 // Re-export SDK types used by consumers.
-import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
 export type { AuthInfo };
 
 export const AuthType = {
@@ -149,17 +149,17 @@ export class JwtTokenVerifier {
   async verifyAccessToken(token: string): Promise<AuthInfo> {
     const parts = token.split('.');
     if (parts.length !== 3) {
-      throw new InvalidTokenError('Not a valid JWT');
+      throw new OAuthError(OAuthErrorCode.InvalidToken, 'Not a valid JWT');
     }
     let payload: Record<string, unknown>;
     try {
       payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
     } catch {
-      throw new InvalidTokenError('Malformed JWT payload');
+      throw new OAuthError(OAuthErrorCode.InvalidToken, 'Malformed JWT payload');
     }
     const rawExp = typeof payload.exp === 'number' ? payload.exp : undefined;
     if (rawExp === undefined) {
-      throw new InvalidTokenError('JWT missing exp claim');
+      throw new OAuthError(OAuthErrorCode.InvalidToken, 'JWT missing exp claim');
     }
     // Subtract the clock-skew buffer so the SDK middleware rejects tokens
     // that are about to expire, before the transport writes 200 headers.
@@ -213,7 +213,7 @@ export function requireMcpAuth(
         `Ignoring ${HeaderKey.API_KEY} header with unsubstituted placeholder value; falling back to bearer auth`
       );
     }
-    bearerAuth(req, res, error => {
+    return bearerAuth(req, res, (error?: unknown) => {
       if (error) {
         return next(error);
       }
@@ -288,21 +288,19 @@ export function setupOAuth2Direct(
 /**
  * Extracts writable mode from request headers
  *
- * @param req - Express request object
+ * @param headers - Request headers
  * @param headerName - Name of the header containing the mode
  * @returns WritableMode enum value
  */
 export function extractMode(
-  req: express.Request,
+  headers: Headers,
   headerName: string = HeaderKey.ENABLE_WRITE
 ): WritableMode {
-  const mode = req.headers[headerName];
+  const mode = headers.get(headerName);
   log.debug(`Extracted mode from ${headerName}:`, mode);
 
-  if (typeof mode === 'string') {
-    if (mode === 'true' || mode === WritableMode.WRITABLE) {
-      return WritableMode.WRITABLE;
-    }
+  if (mode === 'true' || mode === WritableMode.WRITABLE) {
+    return WritableMode.WRITABLE;
   }
   return WritableMode.READONLY;
 }

@@ -89,26 +89,15 @@ export class GatewayServer<A extends McpAdapter> {
   }
 
   /**
-   * Sets up the stateless Streamable HTTP transport.
-   *
-   * Endpoints configured:
-   * - POST /mcp: All client-to-server messages
-   * - GET, DELETE /mcp: 405, as there is no session to stream from or terminate
+   * Sets up the stateless Streamable HTTP transport on the MCP endpoint. The
+   * SDK handler answers every method, e.g. 405 for legacy GET and DELETE.
    *
    * @private
    */
   private setupStreamableTransport(authMiddleware: express.RequestHandler): void {
     coreLog.debug('Setting up Streamable HTTP transport...');
 
-    this.app.post(
-      HTTP_MCP_PATH,
-      authMiddleware,
-      this.httpTransport.handlePost.bind(this.httpTransport)
-    );
-
-    const methodNotAllowed = this.httpTransport.handleMethodNotAllowed.bind(this.httpTransport);
-    this.app.get(HTTP_MCP_PATH, authMiddleware, methodNotAllowed);
-    this.app.delete(HTTP_MCP_PATH, authMiddleware, methodNotAllowed);
+    this.app.all(HTTP_MCP_PATH, authMiddleware, this.httpTransport.handle.bind(this.httpTransport));
   }
 
   /**

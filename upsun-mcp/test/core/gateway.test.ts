@@ -6,9 +6,6 @@ import { McpAdapter } from '../../src/core/adapter';
 // Mock Express application
 jest.mock('express');
 
-// Mock MCP SDK transport
-jest.mock('@modelcontextprotocol/sdk/server/streamableHttp');
-
 // Mock authentication module
 jest.mock('../../src/core/authentication');
 
@@ -31,8 +28,8 @@ describe('GatewayServer', () => {
 
     // Mock the adapter factory
     mockAdapterFactory = jest.fn().mockImplementation(() => ({
-      connectWithApiKey: jest.fn().mockResolvedValue(undefined),
-      connectWithBearer: jest.fn().mockResolvedValue(undefined),
+      useApiKey: jest.fn(),
+      useBearerToken: jest.fn(),
     })) as any;
 
     // Create server instance
