@@ -14,7 +14,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync, readFileSync } from 'fs';
-import { WritableMode, LogLevel, McpType } from './types.js';
+import { LogLevel } from './types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -116,35 +116,6 @@ function parseLogLevel(
   }
 }
 
-function parseWritableMode(mode: string | undefined, defaultMode: WritableMode): WritableMode {
-  if (!mode) return defaultMode;
-
-  switch (mode.toUpperCase()) {
-    case 'READONLY':
-      return WritableMode.READONLY;
-    case 'NON-DESTRUCTIVE':
-    case 'NO-DESTRUCTIVE':
-      return WritableMode.NON_DESTRUCTIVE;
-    case 'WRITABLE':
-      return WritableMode.WRITABLE;
-    default:
-      throw new Error(`Invalid mode: ${mode}`);
-  }
-}
-
-function parseMcpType(type: string | undefined, defaultType: McpType): McpType {
-  if (!type) return defaultType;
-
-  switch (type.toLowerCase()) {
-    case 'local':
-      return McpType.LOCAL;
-    case 'remote':
-      return McpType.REMOTE;
-    default:
-      throw new Error(`Invalid MCP type: ${type}`);
-  }
-}
-
 function getOAuth2Base(): string {
   return process.env.OAUTH_URL || 'https://auth.upsun.com';
 }
@@ -161,9 +132,6 @@ const port = parseNumber(process.env.PORT, 3000);
 export const apiConfig = {
   /** Base URL for the Upsun REST API */
   baseUrl: process.env.API_URL || 'https://api.upsun.com',
-
-  /** API token for accessing Upsun API in stdio mode (legacy) */
-  apiToken: process.env.UPSUN_API_TOKEN || undefined,
 } as const;
 
 /**
@@ -273,17 +241,8 @@ export const appConfig = {
   /** Logging level (DEBUG, INFO, WARN, ERROR, NONE) */
   logLevel: parseLogLevel(process.env.LOG_LEVEL, undefined) as LogLevel | undefined,
 
-  /** Upsun MCP type (remote, local) */
-  typeEnv: parseMcpType(process.env.TYPE_ENV, McpType.REMOTE),
-
   /** HTTP server port */
   port,
-
-  /** API operation mode (READONLY, NON_DESTRUCTIVE, WRITABLE) */
-  mode: parseWritableMode(process.env.MODE, WritableMode.READONLY),
-
-  /** Upsun API key for platform authentication */
-  apiKey: process.env.UPSUN_API_KEY || '',
 } as const;
 
 /**
@@ -297,7 +256,6 @@ export function getConfigSummary(): string {
 Configuration:
   API:
     - API URL: ${apiConfig.baseUrl}
-    - API Token: ${apiConfig.apiToken ? 'configured' : 'not set'}
   
   OAuth2:
     - Enabled: ${oauth2Config.enabled}
@@ -331,9 +289,6 @@ Configuration:
   
   Application:
     - Environment: ${appConfig.nodeEnv}
-    - Type: ${appConfig.typeEnv}
     - Port: ${appConfig.port}
-    - Mode: ${appConfig.mode}
-    - API Key: ${appConfig.apiKey ? 'configured' : 'not set'}
   `.trim();
 }

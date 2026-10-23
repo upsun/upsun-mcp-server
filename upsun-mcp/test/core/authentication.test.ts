@@ -246,7 +246,7 @@ describe('Authentication Module', () => {
       });
     });
 
-    it('should delegate to bearer auth when no API key is present', () => {
+    it('should delegate to bearer auth when no API key is present', async () => {
       const verifier = new JwtTokenVerifier();
       const middleware = requireMcpAuth(verifier);
 
@@ -258,14 +258,14 @@ describe('Authentication Module', () => {
         setHeader: jest.fn() as any,
       } as unknown as express.Response;
 
-      middleware(req, res, mockNext);
+      await middleware(req, res, mockNext);
 
       // Without a bearer token, the SDK middleware returns 401.
       expect(mockNext).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
     });
 
-    it('should ignore an API key header with an unsubstituted placeholder value', () => {
+    it('should ignore an API key header with an unsubstituted placeholder value', async () => {
       const verifier = new JwtTokenVerifier();
       const middleware = requireMcpAuth(verifier);
 
@@ -279,12 +279,32 @@ describe('Authentication Module', () => {
         setHeader: jest.fn() as any,
       } as unknown as express.Response;
 
-      middleware(req, res, mockNext);
+      await middleware(req, res, mockNext);
 
       // Placeholder is ignored; bearer middleware runs and rejects unauthenticated requests.
       expect(mockNext).not.toHaveBeenCalled();
       expect(req.auth).toBeUndefined();
       expect(res.status).toHaveBeenCalledWith(401);
+    });
+
+    it('should answer 401, not 500, for a token the verifier rejects', async () => {
+      const middleware = requireMcpAuth(new JwtTokenVerifier());
+
+      const req = { headers: { authorization: 'Bearer not-a-jwt' } } as unknown as express.Request;
+      const res = {
+        status: jest.fn().mockReturnThis() as any,
+        json: jest.fn() as any,
+        set: jest.fn() as any,
+        setHeader: jest.fn() as any,
+      } as unknown as express.Response;
+
+      await middleware(req, res, mockNext);
+
+      expect(mockNext).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: 'invalid_token', error_description: 'Not a valid JWT' })
+      );
     });
   });
 

@@ -1,12 +1,11 @@
 import { createHash } from 'crypto';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import { McpServer } from '@modelcontextprotocol/server';
 import { DEFAULT_UPSUN_CONFIG, UpsunClient, UpsunConfig } from 'upsun-sdk-node';
 
 import * as pjson from '../package.json' with { type: 'json' };
 import { McpAdapter } from './core/adapter.js';
 import { createLogger } from './core/logger.js';
-import { withSpanAsync, addSpanAttribute, addSpanEvent } from './core/telemetry.js';
+import { withSpan, addSpanAttribute } from './core/telemetry.js';
 import { apiConfig, oauth2Config } from './core/config.js';
 import { LruCache } from './core/lruCache.js';
 
@@ -48,7 +47,7 @@ export class UpsunMcpServer implements McpAdapter {
   /**
    * The Upsun SDK client instance.
    *
-   * This client is initialized during the connect() method and provides
+   * This client is set by useBearerToken() or useApiKey() and provides
    * access to all Upsun platform APIs. It's used by the registered command
    * modules to perform operations on behalf of MCP clients.
    */
@@ -66,7 +65,7 @@ export class UpsunMcpServer implements McpAdapter {
    * @example
    * ```typescript
    * const mcpServer = new UpsunMcpServer();
-   * await mcpServer.connect(transport, "your-api-key");
+   * mcpServer.useApiKey("your-api-key");
    * ```
    */
   constructor(
@@ -91,82 +90,26 @@ export class UpsunMcpServer implements McpAdapter {
     registerConfig(this);
   }
 
-  /**
-   * Establishes connection between the MCP server and transport layer using a Bearer token.
-   *
-   * This method initializes the Upsun client with the provided Bearer token and
-   * connects the MCP server to the specified transport. The transport handles
-   * the actual communication protocol (stdio or HTTP).
-   *
-   * @param transport - The transport layer for MCP communication
-   * @param bearerToken - The Bearer token for authentication
-   * @returns Promise that resolves when connection is established
-   *
-   * @throws Will throw an error if the Bearer token is invalid or connection fails
-   *
-   * @example
-   * ```typescript
-   * const transport = new StdioServerTransport();
-   * await server.connectWithBearer(transport, 'bearer-token-123');
-   * ```
-   */
-  connectWithBearer(transport: Transport, bearerToken: string): Promise<void> {
-    return withSpanAsync('mcp-server', 'connect.bearer', async () => {
-      log.info('Connecting with Bearer token authentication');
-
-      const config = this.createConfig();
-
+  /** Sets the Upsun client to authenticate with a Bearer token. */
+  useBearerToken(bearerToken: string): void {
+    withSpan('mcp-server', 'auth.bearer', () => {
       addSpanAttribute('auth.type', 'bearer');
-      addSpanEvent('client.initializing');
-
-      this.client = new UpsunClient(config);
+      this.client = new UpsunClient(this.createConfig());
       this.client.setBearerToken(bearerToken);
-
-      addSpanEvent('server.connecting');
-      await this.server.connect(transport);
-      addSpanEvent('server.connected');
     });
   }
 
-  /**
-   * Establishes connection between the MCP server and transport layer using an API key.
-   *
-   * This method initializes the Upsun client with the provided API key and
-   * connects the MCP server to the specified transport. The API key will be
-   * processed differently than Bearer tokens within the Upsun client library.
-   *
-   * @param transport - The transport layer for MCP communication
-   * @param apiKey - The API key for authentication
-   * @returns Promise that resolves when connection is established
-   *
-   * @throws Will throw an error if the API key is invalid or connection fails
-   *
-   * @example
-   * ```typescript
-   * const transport = new StdioServerTransport();
-   * await server.connectWithApiKey(transport, 'api-key-456');
-   * ```
-   */
-  connectWithApiKey(transport: Transport, apiKey: string): Promise<void> {
-    return withSpanAsync('mcp-server', 'connect.apikey', async () => {
-      log.info('Connecting with API key authentication');
-
-      const config = this.createConfig();
-
+  /** Sets the Upsun client to authenticate with an API key, reusing a cached client. */
+  useApiKey(apiKey: string): void {
+    withSpan('mcp-server', 'auth.apikey', () => {
       addSpanAttribute('auth.type', 'apikey');
-      addSpanEvent('client.initializing');
-
       const cacheKey = createHash('sha256').update(apiKey).digest('hex');
       let client = apiKeyClients.get(cacheKey);
       if (!client) {
-        client = new UpsunClient({ apiKey, ...config } as UpsunConfig);
+        client = new UpsunClient({ apiKey, ...this.createConfig() } as UpsunConfig);
         apiKeyClients.set(cacheKey, client);
       }
       this.client = client;
-
-      addSpanEvent('server.connecting');
-      await this.server.connect(transport);
-      addSpanEvent('server.connected');
     });
   }
 
