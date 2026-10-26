@@ -51,7 +51,7 @@
     "@types/node": "^26.6.5",
     "@types/pino": "^7.0",
     "@types/supertest": "^7.2.1",
-    "eslint": "10.12",
+    "eslint": "10.13",
     "jest": "^30.5",
     "prettier": "^3.9",
     "supertest": "^7.3.1",
