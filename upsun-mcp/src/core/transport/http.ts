@@ -99,7 +99,8 @@ export class HttpTransport {
     try {
       return await transport.handleRequest(request, options);
     } finally {
-      await server.close();
+      // A cleanup failure must not replace the request's outcome.
+      await server.close().catch(error => httpLog.error('Error closing legacy server:', error));
     }
   }
 

@@ -4,13 +4,9 @@ import { DEFAULT_UPSUN_CONFIG, UpsunClient, UpsunConfig } from 'upsun-sdk-node';
 
 import * as pjson from '../package.json' with { type: 'json' };
 import { McpAdapter } from './core/adapter.js';
-import { createLogger } from './core/logger.js';
 import { withSpan, addSpanAttribute } from './core/telemetry.js';
 import { apiConfig, oauth2Config } from './core/config.js';
 import { LruCache } from './core/lruCache.js';
-
-// Create logger for MCP operations
-const log = createLogger('mcp-server');
 
 // HTTP requests are stateless, so API-key clients are cached to reuse their
 // exchanged access tokens. Keyed by a SHA-256 of the API key.

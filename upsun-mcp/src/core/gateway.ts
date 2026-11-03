@@ -8,10 +8,10 @@ import {
   requireMcpAuth,
   WritableMode,
 } from './authentication.js';
-import { oauth2Config, appConfig } from './config.js';
+import { oauth2Config } from './config.js';
 import { createLogger } from './logger.js';
 import { HttpTransport } from './transport/http.js';
-import { withSpanAsync, addSpanAttribute, addSpanEvent } from './telemetry.js';
+import { addSpanEvent } from './telemetry.js';
 
 /** HTTP path for MCP streamable transport endpoint */
 const HTTP_MCP_PATH = '/mcp';

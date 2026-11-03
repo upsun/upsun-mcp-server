@@ -164,6 +164,21 @@ describe('HttpTransport', () => {
     );
   });
 
+  it('should keep a legacy response when server cleanup fails', async () => {
+    const closeSpy = jest
+      .spyOn(McpServer.prototype, 'close')
+      .mockRejectedValue(new Error('cleanup failed'));
+    try {
+      const res = await post({ 'upsun-api-token': 'the-key' }, initialize);
+
+      expect(closeSpy).toHaveBeenCalled();
+      expect(res.status).toBe(200);
+      expect(res.body.result.protocolVersion).toBe('2025-06-18');
+    } finally {
+      closeSpy.mockRestore();
+    }
+  });
+
   it('should use a new adapter for every request', async () => {
     const headers = { 'upsun-api-token': 'the-key', 'mcp-session-id': 'stale-sess' };
     await post(headers, initialize);
