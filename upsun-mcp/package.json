@@ -31,7 +31,7 @@
   "dependencies": {
     "@modelcontextprotocol/express": "^2.0",
     "@modelcontextprotocol/node": "^2.1",
-    "@modelcontextprotocol/server": "^2.3",
+    "@modelcontextprotocol/server": "^2.4",
     "@opentelemetry/api": "^1.9",
     "@opentelemetry/auto-instrumentations-node": "^0.81",
     "@opentelemetry/exporter-trace-otlp-http": "^0.223",
