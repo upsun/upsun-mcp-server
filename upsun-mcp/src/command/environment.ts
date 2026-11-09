@@ -56,14 +56,6 @@ function sixKeyReply(result: unknown): Record<string, unknown> {
     }
   }
 
-  if (isPlainObject(out.routes)) {
-    for (const route of Object.values(out.routes)) {
-      if (isPlainObject(route) && isPlainObject(route.httpAccess)) {
-        delete route.httpAccess.basicAuth;
-      }
-    }
-  }
-
   return out;
 }
 

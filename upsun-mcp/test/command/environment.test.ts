@@ -115,7 +115,6 @@ const mockDeployment = {
     'https://main-abc123.upsun.app/': {
       type: 'upstream',
       upstream: 'app:http',
-      httpAccess: { addresses: [], basicAuth: { user: 'pass' } },
     },
     'https://www.main-abc123.upsun.app/': {
       type: 'redirect',
@@ -618,11 +617,7 @@ describe('Environment Command Module', () => {
       expect(reply.services.postgresql.access).toBeUndefined();
       expect(reply.services.postgresql.endpoints.postgresql.password).toBeUndefined();
       expect(reply.services.postgresql.endpoints.postgresql.host).toBe('postgresql.internal');
-      expect(reply.routes['https://main-abc123.upsun.app/'].httpAccess.basicAuth).toBeUndefined();
-      expect(reply.routes['https://main-abc123.upsun.app/'].httpAccess.addresses).toEqual([]);
-      expect(reply.routes['https://www.main-abc123.upsun.app/']).toEqual(
-        mockDeployment.routes['https://www.main-abc123.upsun.app/']
-      );
+      expect(reply.routes).toEqual(mockDeployment.routes);
       expect(reply.tasks).toEqual({});
       expect(reply.restrictRobots).toBe(true);
       expect(result.content[0].text).not.toContain('secret');
@@ -666,9 +661,6 @@ describe('Environment Command Module', () => {
       const reply = JSON.parse(result.content[0].text);
       expect(reply.services.postgresql.endpoints.postgresql.password).toBe('db-password');
       expect(reply.webapps.app.variables).toEqual(mockDeployment.webapps.app.variables);
-      expect(reply.routes['https://main-abc123.upsun.app/'].httpAccess.basicAuth).toEqual({
-        user: 'pass',
-      });
     });
 
     it("should request the 'current' deployment", async () => {
