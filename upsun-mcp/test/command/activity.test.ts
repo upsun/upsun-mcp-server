@@ -161,7 +161,8 @@ describe('Activity Command Module', () => {
         'log-activity',
         {
           annotations: { readOnlyHint: true },
-          description: 'Get log activity of upsun project',
+          description:
+            'Get the log of an activity, such as a deployment. Use it to find why an activity failed.',
           inputSchema: expect.any(Object),
         },
         expect.any(Function),
