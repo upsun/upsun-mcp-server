@@ -25,6 +25,7 @@ You don't need to install or run anything locally unless you're developing or cu
 - **delete-environment**: Permanently delete environments
 - **info-environment**: Get environment details and status
 - **list-environment**: List all environments in a project
+- **logs-environment**: Show the logs of an app in an environment
 - **merge-environment**: Merge environment changes to parent
 - **pause-environment**: Pause active environments
 - **redeploy-environment**: Trigger new deployments
@@ -32,37 +33,42 @@ You don't need to install or run anything locally unless you're developing or cu
 - **urls-environment**: Get all URLs for an environment
 
 ### 🏢 Organization Management
+- **create-organization**: Create an organization
+- **delete-organization**: Delete an organization
 - **info-organization**: Get organization details
 - **list-organization**: List accessible organizations. Supports pagination via `page_size` for the first page and `page_link` with `links.next.href` or `links.previous.href` to follow pages.
 
 ### 📊 Activity & Monitoring
+- **cancel-activity**: Cancel an activity
+- **get-activity**: Get the details of an activity
 - **list-activity**: View deployment activities and logs
-- **info-activity**: Get detailed activity information
+- **log-activity**: Get the log of an activity
 
 ### 🔐 Security & Access
-- **create-ssh**: Create SSH keys
-- **delete-ssh**: Remove SSH keys
-- **list-ssh**: List all SSH keys
+- **add-sshkey**: Add an SSH key to the Upsun account
+- **delete-sshkey**: Delete an SSH key from the Upsun account
 
 ### 🌐 Networking & Domains
 - **add-domain**: Add custom domains
 - **delete-domain**: Remove domains
-- **info-domain**: Get domain configuration details
+- **get-domain**: Get the details of a domain
 - **list-domain**: List all domains
 - **update-domain**: Set whether a domain is the project default
 
 ### 🛣️ Routing
-- **info-route**: Get route configuration details
+- **get-route**: Get the details of a route
 - **list-route**: List all routes for environments
 
 ### 🔒 SSL/TLS Certificates
 - **add-certificate**: Add SSL certificates
 - **delete-certificate**: Remove certificates
-- **info-certificate**: Get certificate details
+- **get-certificate**: Get the details of an SSL/TLS certificate
 - **list-certificate**: List all certificates
 
 ### 💾 Backup Management
 - **create-backup**: Create environment backups
+- **delete-backup**: Delete a backup
+- **get-backup**: Get the details of a backup
 - **list-backup**: List available backups
 - **restore-backup**: Restore from backups
 
