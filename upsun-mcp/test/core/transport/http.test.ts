@@ -188,19 +188,33 @@ describe('HttpTransport', () => {
     expect(StubAdapter.instances[0].server).not.toBe(StubAdapter.instances[1].server);
   });
 
-  it.each([
-    [undefined, WritableMode.READONLY],
-    ['false', WritableMode.READONLY],
-    ['true', WritableMode.WRITABLE],
-  ])('should map enable-write %s to mode %s', async (enableWrite, mode) => {
-    const headers: Record<string, string> = { 'upsun-api-token': 'the-key' };
-    if (enableWrite !== undefined) {
-      headers['enable-write'] = enableWrite;
-    }
+  const eraRequests = {
+    legacy: { headers: {}, body: initialize },
+    modern: {
+      headers: { 'mcp-protocol-version': '2026-07-28', 'mcp-method': 'server/discover' },
+      body: { jsonrpc: '2.0', id: 1, method: 'server/discover', params: { _meta: modernMeta } },
+    },
+  };
 
-    await post(headers, initialize);
+  describe.each(['legacy', 'modern'] as const)('%s requests', era => {
+    it.each([
+      [undefined, WritableMode.READONLY],
+      ['false', WritableMode.READONLY],
+      ['true', WritableMode.WRITABLE],
+    ])('should map enable-write %s to mode %s', async (enableWrite, mode) => {
+      const headers: Record<string, string> = {
+        'upsun-api-token': 'the-key',
+        ...eraRequests[era].headers,
+      };
+      if (enableWrite !== undefined) {
+        headers['enable-write'] = enableWrite;
+      }
 
-    expect(StubAdapter.instances[0].mode).toBe(mode);
+      const res = await post(headers, eraRequests[era].body);
+
+      expect(res.status).toBe(200);
+      expect(StubAdapter.instances[0].mode).toBe(mode);
+    });
   });
 
   it.each(['get', 'delete'] as const)('should answer a legacy %s with 405', async method => {

@@ -64,9 +64,11 @@ export class HttpTransport {
     if (!authInfo) {
       throw new Error('Authentication middleware did not run');
     }
-    const adapter = this.gateway.makeInstanceAdapterMcpServer(
-      extractMode(requestInfo?.headers ?? new Headers())
-    );
+    // Fail rather than fall back to read-only and hide the write tools.
+    if (!requestInfo) {
+      throw new Error('MCP handler did not supply the request');
+    }
+    const adapter = this.gateway.makeInstanceAdapterMcpServer(extractMode(requestInfo.headers));
     if (isApiKeyAuth(authInfo)) {
       adapter.useApiKey(authInfo.token);
     } else {
