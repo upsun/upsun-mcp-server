@@ -16,14 +16,14 @@ Read tools add `full: Schema.full()` to the schema and return
 
 ## Gotchas
 
-- Write tools are off by default. Over HTTP only the `enable-write` header
-  enables them; on stdio only the `MODE` env var does.
+- Write tools are off by default; only the `enable-write` header enables them.
 - The Upsun SDK's `list()` returns snake_case HAL; `info()`/`get()` return
   camelCase objects. The `.d.ts` types don't reflect this.
-- HTTP is stateless (MCP spec 2026-07-28): each POST to `/mcp` gets a fresh
-  `UpsunMcpServer` and transport, so state can't persist between requests. The
-  one exception: API-key `UpsunClient`s (and their access tokens) are cached
-  in `mcpUpsun.ts`, keyed by a hash of the key.
-- Forwarding an upstream 401 (`forwardUpstream401`) relies on
-  `enableJsonResponse: true` in `transport/http.ts`, which delays the headers.
+- HTTP is stateless and serves MCP 2026-07-28 and 2025-era clients: each
+  request to `/mcp` gets a fresh `UpsunMcpServer`, so state can't persist
+  between requests. The one exception: API-key `UpsunClient`s (and their access
+  tokens) are cached in `mcpUpsun.ts`, keyed by a hash of the key.
+- Forwarding an upstream 401 (`forwardUpstream401`) relies on JSON responses in
+  `transport/http.ts`, which settle only after the tool completes. That's why
+  2025-era requests bypass the SDK's legacy leg, which always streams.
 - Coverage thresholds are in `jest.config.ts`; check with `npm run coverage:check`.

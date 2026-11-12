@@ -1,4 +1,4 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer } from '@modelcontextprotocol/server';
 
 describe('UpsunMcpServer', () => {
   it('should use default MCP server if none provided', async () => {
@@ -15,7 +15,6 @@ describe('UpsunMcpServer', () => {
   });
 });
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { setupTestEnvironment, teardownTestEnvironment } from './helpers/test-env.js';
 import { WritableMode } from '../src/core/types.js';
 
@@ -99,9 +98,6 @@ describe('UpsunMcpServer', () => {
   beforeEach(() => {
     setupTestEnvironment(jest, originalEnv);
 
-    // Set up environment variables for testing
-    process.env.UPSUN_API_KEY = 'test-api-key';
-
     // Reset mocks
     jest.clearAllMocks();
 
@@ -122,8 +118,6 @@ describe('UpsunMcpServer', () => {
     });
     // Mock the prompt method if needed
     (realMcpServer as any).prompt = jest.fn(() => realMcpServer);
-    // Mock the connect method if needed
-    (realMcpServer as any).connect = jest.fn(() => Promise.resolve());
     // Explicitly add isMode always true on the server instance
     // (will be used by UpsunMcpServer)
     // Create the server with our real mocked McpServer
@@ -142,8 +136,8 @@ describe('UpsunMcpServer', () => {
     });
 
     it('should have the required methods', () => {
-      expect(typeof server.connectWithApiKey).toBe('function');
-      expect(typeof server.connectWithBearer).toBe('function');
+      expect(typeof server.useApiKey).toBe('function');
+      expect(typeof server.useBearerToken).toBe('function');
     });
 
     it('should have a server property', () => {
@@ -151,34 +145,24 @@ describe('UpsunMcpServer', () => {
     });
   });
 
-  describe('connect method', () => {
-    it('should initialize the Upsun client and connect to transport', async () => {
-      const mockTransport = { start: jest.fn() } as any;
-      jest.spyOn(server.server, 'connect').mockImplementation(async () => {});
-
-      await server.connectWithApiKey(mockTransport, 'test-api-key');
+  describe('authentication', () => {
+    it('should set the Upsun client from an API key', () => {
+      server.useApiKey('test-api-key');
 
       expect(server.client).toBeDefined();
-      expect(server.server.connect).toHaveBeenCalledWith(mockTransport);
     });
 
-    it('should connect with bearer token', async () => {
-      const mockTransport = { start: jest.fn() } as any;
-      const bearerToken = 'test-bearer-token';
-      jest.spyOn(server.server, 'connect').mockImplementation(async () => {});
-
-      await server.connectWithBearer(mockTransport, bearerToken);
+    it('should set the Upsun client from a bearer token', () => {
+      server.useBearerToken('test-bearer-token');
 
       expect(server.client).toBeDefined();
-      expect(server.server.connect).toHaveBeenCalledWith(mockTransport);
     });
   });
 
   describe('registered tools', () => {
-    beforeEach(async () => {
+    beforeEach(() => {
       // Initialize the client for tool tests
-      const mockTransport = { start: jest.fn() } as any;
-      await server.connectWithApiKey(mockTransport, 'test-api-key');
+      server.useApiKey('test-api-key');
     });
 
     describe('project tools', () => {

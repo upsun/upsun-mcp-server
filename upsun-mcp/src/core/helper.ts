@@ -1,4 +1,4 @@
-import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolResult } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { withSpanAsync, addSpanAttribute, addSpanEvent } from './telemetry.js';
 import { ResponseError } from 'upsun-sdk-node/dist/core/runtime.js';
@@ -311,9 +311,9 @@ export class Response {
 }
 
 /**
- * If the error is a ResponseError with status 401 and an Express response is
- * available via AsyncLocalStorage, forward the upstream 401 (body + headers)
- * directly to the MCP client and return a dummy CallToolResult. Otherwise
+ * If the error is a ResponseError with status 401 and a request context is
+ * active, store the upstream 401 (body + headers) for the HTTP layer to send
+ * instead of the MCP result, and return a dummy CallToolResult. Otherwise
  * return null so the caller can throw normally.
  */
 export async function forwardUpstream401<TResult>(error: unknown): Promise<TResult | null> {
@@ -322,11 +322,10 @@ export async function forwardUpstream401<TResult>(error: unknown): Promise<TResu
   }
 
   const store = requestContext.getStore();
-  if (!store || store.res.headersSent) {
+  if (!store || store.upstream401) {
     return null;
   }
 
-  const { res } = store;
   log.info('Forwarding upstream 401 to MCP client');
 
   let body: string;
@@ -337,24 +336,15 @@ export async function forwardUpstream401<TResult>(error: unknown): Promise<TResu
     body = '';
   }
 
-  // Re-check after the async read (another handler could have written meanwhile).
-  if (res.headersSent) {
-    return null;
-  }
-
-  res.status(401);
-
   // Copy relevant headers from the upstream response.
-  const wwwAuth = error.response.headers.get('www-authenticate');
-  if (wwwAuth) {
-    res.setHeader('WWW-Authenticate', wwwAuth);
+  const headers = new Headers();
+  for (const name of ['www-authenticate', 'content-type']) {
+    const value = error.response.headers.get(name);
+    if (value) {
+      headers.set(name, value);
+    }
   }
-  const contentType = error.response.headers.get('content-type');
-  if (contentType) {
-    res.setHeader('Content-Type', contentType);
-  }
-
-  res.end(body);
+  store.upstream401 = new globalThis.Response(body, { status: 401, headers });
 
   // Return a dummy result so the MCP SDK does not invoke createToolError.
   return { content: [], isError: true } as TResult;

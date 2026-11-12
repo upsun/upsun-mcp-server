@@ -1,62 +1,13 @@
 // @ts-nocheck
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { GatewayServer, LocalServer } from '../../src/core/gateway';
+import { GatewayServer } from '../../src/core/gateway';
 import { McpAdapter } from '../../src/core/adapter';
 
 // Mock Express application
 jest.mock('express');
 
-// Mock MCP SDK transports
-jest.mock('@modelcontextprotocol/sdk/server/streamableHttp');
-jest.mock('@modelcontextprotocol/sdk/server/stdio');
-
 // Mock authentication module
 jest.mock('../../src/core/authentication');
-
-describe('LocalServer', () => {
-  let mockAdapterFactory: jest.MockedClass<typeof McpAdapter>;
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-
-    // Mock the adapter factory
-    mockAdapterFactory = jest.fn().mockImplementation(() => ({
-      connectWithApiKey: jest.fn().mockResolvedValue(undefined),
-      connectWithBearer: jest.fn().mockResolvedValue(undefined),
-    })) as any;
-  });
-
-  describe('constructor', () => {
-    it('should create a LocalServer with stdio transport and adapter', () => {
-      const server = new LocalServer(mockAdapterFactory);
-      expect(server).toBeDefined();
-      expect(server.server).toBeDefined();
-    });
-  });
-
-  describe('listen', () => {
-    it('should connect the server with API key from environment', async () => {
-      process.env.UPSUN_API_KEY = 'test-api-key';
-      jest.resetModules();
-      const { LocalServer } = await import('../../src/core/gateway.js');
-      const server = new LocalServer(mockAdapterFactory);
-
-      await server.listen();
-
-      expect(server.server.connectWithApiKey).toHaveBeenCalled();
-      delete process.env.UPSUN_API_KEY;
-    });
-
-    it('should throw error when no API key is set', async () => {
-      delete process.env.UPSUN_API_KEY;
-      const server = new LocalServer(mockAdapterFactory);
-
-      await expect(server.listen()).rejects.toThrow(
-        'UPSUN_API_KEY environment variable is required for LocalServer'
-      );
-    });
-  });
-});
 
 describe('GatewayServer', () => {
   let gatewayServer: GatewayServer<McpAdapter>;
@@ -77,8 +28,8 @@ describe('GatewayServer', () => {
 
     // Mock the adapter factory
     mockAdapterFactory = jest.fn().mockImplementation(() => ({
-      connectWithApiKey: jest.fn().mockResolvedValue(undefined),
-      connectWithBearer: jest.fn().mockResolvedValue(undefined),
+      useApiKey: jest.fn(),
+      useBearerToken: jest.fn(),
     })) as any;
 
     // Create server instance

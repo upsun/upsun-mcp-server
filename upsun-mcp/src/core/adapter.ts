@@ -1,5 +1,4 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { UpsunClient } from 'upsun-sdk-node';
 
 /**
@@ -24,32 +23,11 @@ export interface McpAdapter {
    */
   readonly client: UpsunClient;
 
-  /**
-   * Establishes a connection between the MCP server and transport layer using a Bearer token.
-   *
-   * This method initializes the MCP server with the provided transport and
-   * configures the Upsun client with the Bearer token for authentication.
-   *
-   * @param transport - The transport layer for MCP communication (stdio, HTTP, etc.)
-   * @param bearerToken - The Bearer token for authenticating with Upsun platform
-   * @returns A Promise that resolves when the connection is established
-   * @throws May throw errors if connection fails or Bearer token is invalid
-   */
-  connectWithBearer(transport: Transport, bearerToken: string): Promise<void>;
+  /** Sets the Upsun client to authenticate with a Bearer token. */
+  useBearerToken(bearerToken: string): void;
 
-  /**
-   * Establishes a connection between the MCP server and transport layer using an API key.
-   *
-   * This method initializes the MCP server with the provided transport and
-   * configures the Upsun client with the API key for authentication. The API key
-   * will be processed differently than Bearer tokens (e.g., exchanged for a token).
-   *
-   * @param transport - The transport layer for MCP communication (stdio, HTTP, etc.)
-   * @param apiKey - The API key for authenticating with Upsun platform
-   * @returns A Promise that resolves when the connection is established
-   * @throws May throw errors if connection fails or API key is invalid
-   */
-  connectWithApiKey(transport: Transport, apiKey: string): Promise<void>;
+  /** Sets the Upsun client to authenticate with an API key. */
+  useApiKey(apiKey: string): void;
 
   isMode(): boolean;
 }

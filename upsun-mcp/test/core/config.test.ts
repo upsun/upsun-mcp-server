@@ -4,7 +4,6 @@
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { appConfig, getConfigSummary, otelConfig } from '../../src/core/config.js';
-import { WritableMode } from '../../src/core/types.js';
 
 describe('Configuration Module', () => {
   const originalEnv = process.env;
@@ -63,9 +62,7 @@ describe('Configuration Module', () => {
 
   describe('appConfig', () => {
     it('should have default values', () => {
-      expect(appConfig.typeEnv).toBeDefined();
       expect(appConfig.port).toBeGreaterThan(0);
-      expect(Object.values(WritableMode)).toContain(appConfig.mode);
     });
 
     it('should have valid port number', () => {
@@ -98,9 +95,7 @@ describe('Configuration Module', () => {
     it('should include Application configuration', () => {
       const summary = getConfigSummary();
       expect(summary).toContain('Application');
-      expect(summary).toContain('Type');
       expect(summary).toContain('Port');
-      expect(summary).toContain('Mode');
     });
 
     it('should show OTLP endpoint when exporter is otlp', () => {

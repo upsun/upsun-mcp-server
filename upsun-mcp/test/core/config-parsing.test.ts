@@ -9,7 +9,6 @@ import { writeFileSync, readFileSync, existsSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
-import { WritableMode, McpType } from '../../src/core/types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -205,44 +204,6 @@ describe('Configuration Parsing', () => {
       process.env.NODE_ENV = 'production';
       const { appConfig } = await import('../../src/core/config.js');
       expect(appConfig.nodeEnv).toBe('production');
-    });
-  });
-
-  describe('appConfig properties', () => {
-    it('should set type env from env', async () => {
-      process.env.TYPE_ENV = 'local';
-      const { appConfig } = await import('../../src/core/config.js');
-      expect(appConfig.typeEnv).toBe(McpType.LOCAL);
-    });
-
-    it('should default type env to remote', async () => {
-      delete process.env.TYPE_ENV;
-      const { appConfig } = await import('../../src/core/config.js');
-      expect(appConfig.typeEnv).toBe(McpType.REMOTE);
-    });
-
-    it('should set mode from env', async () => {
-      process.env.MODE = 'WRITABLE';
-      const { appConfig } = await import('../../src/core/config.js');
-      expect(appConfig.mode).toBe(WritableMode.WRITABLE);
-    });
-
-    it('should default mode to READONLY', async () => {
-      delete process.env.MODE;
-      const { appConfig } = await import('../../src/core/config.js');
-      expect(appConfig.mode).toBe(WritableMode.READONLY);
-    });
-
-    it('should set API key from env', async () => {
-      process.env.UPSUN_API_KEY = 'test-api-key-123';
-      const { appConfig } = await import('../../src/core/config.js');
-      expect(appConfig.apiKey).toBe('test-api-key-123');
-    });
-
-    it('should default API key to empty string', async () => {
-      delete process.env.UPSUN_API_KEY;
-      const { appConfig } = await import('../../src/core/config.js');
-      expect(appConfig.apiKey).toBe('');
     });
   });
 

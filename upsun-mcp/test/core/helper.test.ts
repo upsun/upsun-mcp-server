@@ -711,34 +711,27 @@ describe('Helper Module', () => {
       return new ResponseError(response);
     }
 
-    it('should forward 401 when requestContext store has res', async () => {
-      const endFn = jest.fn();
-      const statusFn = jest.fn().mockReturnThis();
-      const setHeaderFn = jest.fn();
-      const fakeRes = {
-        headersSent: false,
-        status: statusFn,
-        setHeader: setHeaderFn,
-        end: endFn,
-      } as any;
-
+    it('should store the upstream 401 in the requestContext store', async () => {
+      const store: { upstream401?: globalThis.Response } = {};
       const err = makeResponseError(401, '{"error":"unauthorized"}', {
         'www-authenticate': 'Bearer realm="api"',
         'content-type': 'application/json',
+        'x-other': 'dropped',
       });
 
-      const result = await requestContext.run({ res: fakeRes }, () =>
+      const result = await requestContext.run(store, () =>
         forwardUpstream401<{ content: any[]; isError: boolean }>(err)
       );
 
       expect(result).toEqual({ content: [], isError: true });
-      expect(statusFn).toHaveBeenCalledWith(401);
-      expect(setHeaderFn).toHaveBeenCalledWith('WWW-Authenticate', 'Bearer realm="api"');
-      expect(setHeaderFn).toHaveBeenCalledWith('Content-Type', 'application/json');
-      expect(endFn).toHaveBeenCalledWith('{"error":"unauthorized"}');
+      expect(store.upstream401?.status).toBe(401);
+      expect(store.upstream401?.headers.get('www-authenticate')).toBe('Bearer realm="api"');
+      expect(store.upstream401?.headers.get('content-type')).toBe('application/json');
+      expect(store.upstream401?.headers.get('x-other')).toBeNull();
+      expect(await store.upstream401?.text()).toBe('{"error":"unauthorized"}');
     });
 
-    it('should return null when no requestContext store (stdio mode)', async () => {
+    it('should return null when no requestContext store', async () => {
       const err = makeResponseError(401, 'unauthorized');
       const result = await forwardUpstream401(err);
       expect(result).toBeNull();
@@ -756,14 +749,16 @@ describe('Helper Module', () => {
       expect(result).toBeNull();
     });
 
-    it('should return null when headers already sent', async () => {
-      const fakeRes = { headersSent: true, status: jest.fn(), end: jest.fn() } as any;
-      const err = makeResponseError(401, 'unauthorized');
+    it('should keep the first upstream 401', async () => {
+      const first = new globalThis.Response('first', { status: 401 });
+      const store = { upstream401: first };
 
-      const result = await requestContext.run({ res: fakeRes }, () => forwardUpstream401(err));
+      const result = await requestContext.run(store, () =>
+        forwardUpstream401(makeResponseError(401, 'second'))
+      );
 
       expect(result).toBeNull();
-      expect(fakeRes.status).not.toHaveBeenCalled();
+      expect(store.upstream401).toBe(first);
     });
   });
 });
