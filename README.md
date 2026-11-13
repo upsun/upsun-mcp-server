@@ -23,6 +23,7 @@ You don't need to install or run anything locally unless you're developing or cu
 ### 🌍 Environment Management
 - **activate-environment**: Activate paused environments
 - **delete-environment**: Permanently delete environments
+- **get-deployment-environment**: List the apps, workers, tasks, services and routes of the current deployment
 - **info-environment**: Get environment details and status
 - **list-environment**: List all environments in a project
 - **logs-environment**: Show the logs of an app in an environment
