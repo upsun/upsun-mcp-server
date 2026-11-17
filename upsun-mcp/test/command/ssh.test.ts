@@ -29,6 +29,7 @@ const mockAdapter: McpAdapter = {
 
 describe('SSH Key Command Module', () => {
   let toolCallbacks: Record<string, any> = {};
+  let sshMock: { add: jest.Mock; delete: jest.Mock; get: jest.Mock };
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -55,13 +56,13 @@ describe('SSH Key Command Module', () => {
     // Use jest.Mock<any, any> to avoid 'never' type error
     // Explicitly type as any to avoid TS 'never' assignment errors
     // Declare sshMock with jest.fn() only
-    const sshMock = {
+    sshMock = {
       add: jest.fn() as jest.Mock,
       delete: jest.fn() as jest.Mock,
       get: jest.fn() as jest.Mock,
     };
     (sshMock.add as any).mockResolvedValue('sshkey-added');
-    (sshMock.delete as any).mockResolvedValue('sshkey-deleted');
+    (sshMock.delete as any).mockResolvedValue(undefined);
     (sshMock.get as any).mockResolvedValue({ id: 'sshkey-1', type: 'rsa' });
     (mockAdapter as any).client.ssh = sshMock;
   });
@@ -119,7 +120,7 @@ describe('SSH Key Command Module', () => {
       const params = {
         user_id: 'user-123',
         ssh_key: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7vbqajDhA... user@example.com',
-        key_id: 'laptop-key-1',
+        label: 'laptop-key-1',
       };
 
       const result = await callback(params);
@@ -127,6 +128,32 @@ describe('SSH Key Command Module', () => {
       expect(result).toEqual({
         content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
       });
+      expect(sshMock.add).toHaveBeenCalledTimes(1);
+      expect(sshMock.add).toHaveBeenCalledWith(
+        'user-123',
+        'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7vbqajDhA... user@example.com',
+        'laptop-key-1'
+      );
+    });
+
+    it('should add the SSH key without a label', async () => {
+      const callback = toolCallbacks['add-sshkey'];
+      const params = {
+        user_id: 'user-123',
+        ssh_key: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGbPhiQgg... user@example.com',
+      };
+
+      const result = await callback(params);
+
+      expect(result).toEqual({
+        content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
+      });
+      expect(sshMock.add).toHaveBeenCalledTimes(1);
+      expect(sshMock.add).toHaveBeenCalledWith(
+        'user-123',
+        'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGbPhiQgg... user@example.com',
+        undefined
+      );
     });
 
     it('should register and return the added SSH key with ED25519 key', async () => {
@@ -134,7 +161,7 @@ describe('SSH Key Command Module', () => {
       const params = {
         user_id: 'user-456',
         ssh_key: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGbPhiQgg... user@work.com',
-        key_id: 'work-laptop',
+        label: 'work-laptop',
       };
 
       const result = await callback(params);
@@ -142,6 +169,7 @@ describe('SSH Key Command Module', () => {
       expect(result).toEqual({
         content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
       });
+      expect(sshMock.add).toHaveBeenCalledWith(params.user_id, params.ssh_key, params.label);
     });
 
     it('should handle different key types and formats', async () => {
@@ -150,12 +178,12 @@ describe('SSH Key Command Module', () => {
         {
           user_id: 'user-789',
           ssh_key: 'ssh-dss AAAAB3NzaC1kc3MAAACBAO8... legacy@key.com',
-          key_id: 'legacy-key',
+          label: 'legacy-key',
         },
         {
           user_id: 'user-abc',
           ssh_key: 'ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNo... ec@key.com',
-          key_id: 'ec-key',
+          label: 'ec-key',
         },
       ];
 
@@ -164,6 +192,7 @@ describe('SSH Key Command Module', () => {
         expect(result).toEqual({
           content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
         });
+        expect(sshMock.add).toHaveBeenCalledWith(params.user_id, params.ssh_key, params.label);
       }
     });
 
@@ -172,7 +201,7 @@ describe('SSH Key Command Module', () => {
       const params = {
         user_id: 'user-special-123',
         ssh_key: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7vbqa... test@host',
-        key_id: 'deploy-key-production-2024',
+        label: 'deploy-key-production-2024',
       };
 
       const result = await callback(params);
@@ -180,6 +209,7 @@ describe('SSH Key Command Module', () => {
       expect(result).toEqual({
         content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
       });
+      expect(sshMock.add).toHaveBeenCalledWith(params.user_id, params.ssh_key, params.label);
     });
 
     it('should handle corporate user IDs', async () => {
@@ -187,7 +217,7 @@ describe('SSH Key Command Module', () => {
       const params = {
         user_id: 'corp-user-enterprise-456',
         ssh_key: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGbPhiQgg... corp@company.com',
-        key_id: 'corporate-access-key',
+        label: 'corporate-access-key',
       };
 
       const result = await callback(params);
@@ -195,6 +225,7 @@ describe('SSH Key Command Module', () => {
       expect(result).toEqual({
         content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
       });
+      expect(sshMock.add).toHaveBeenCalledWith(params.user_id, params.ssh_key, params.label);
     });
   });
 
@@ -203,33 +234,35 @@ describe('SSH Key Command Module', () => {
       registerSshKey(mockAdapter);
     });
 
-    it('should return TODO for delete SSH key', async () => {
+    it('should delete the SSH key and return a confirmation text', async () => {
       const callback = toolCallbacks['delete-sshkey'];
       const params = {
         user_id: 'user-123',
-        key_id: 'laptop-key-1',
+        key_id: '4821',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{ type: 'text', text: JSON.stringify('sshkey-deleted', null, 2) }],
+        content: [{ type: 'text', text: `SSH key ${params.key_id} deleted` }],
       });
+      expect(sshMock.delete).toHaveBeenCalledWith(params.user_id, params.key_id);
     });
 
-    it('should handle deletion of different key types', async () => {
+    it('should delete keys of different users', async () => {
       const callback = toolCallbacks['delete-sshkey'];
       const testCases = [
-        { user_id: 'user-456', key_id: 'work-laptop' },
-        { user_id: 'user-789', key_id: 'legacy-key' },
-        { user_id: 'user-abc', key_id: 'deploy-key' },
+        { user_id: 'user-456', key_id: '1001' },
+        { user_id: 'user-789', key_id: '1002' },
+        { user_id: 'user-abc', key_id: '1003' },
       ];
 
       for (const params of testCases) {
         const result = await callback(params);
         expect(result).toEqual({
-          content: [{ type: 'text', text: JSON.stringify('sshkey-deleted', null, 2) }],
+          content: [{ type: 'text', text: `SSH key ${params.key_id} deleted` }],
         });
+        expect(sshMock.delete).toHaveBeenCalledWith(params.user_id, params.key_id);
       }
     });
 
@@ -237,28 +270,30 @@ describe('SSH Key Command Module', () => {
       const callback = toolCallbacks['delete-sshkey'];
       const params = {
         user_id: 'production-user',
-        key_id: 'production-deploy-key',
+        key_id: '987654',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{ type: 'text', text: JSON.stringify('sshkey-deleted', null, 2) }],
+        content: [{ type: 'text', text: `SSH key ${params.key_id} deleted` }],
       });
+      expect(sshMock.delete).toHaveBeenCalledWith(params.user_id, params.key_id);
     });
 
-    it('should handle deletion with special key identifiers', async () => {
+    it('should pass a large key ID through as a string', async () => {
       const callback = toolCallbacks['delete-sshkey'];
       const params = {
         user_id: 'admin-user',
-        key_id: 'emergency-access-key-2024-backup',
+        key_id: '2147483647',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{ type: 'text', text: JSON.stringify('sshkey-deleted', null, 2) }],
+        content: [{ type: 'text', text: `SSH key ${params.key_id} deleted` }],
       });
+      expect(sshMock.delete).toHaveBeenCalledWith(params.user_id, params.key_id);
     });
   });
 
@@ -274,7 +309,6 @@ describe('SSH Key Command Module', () => {
           params: {
             user_id: 'u',
             ssh_key: 'ssh-rsa AAAA... test@test.com',
-            key_id: 'k',
           },
         },
         {
@@ -289,16 +323,15 @@ describe('SSH Key Command Module', () => {
       for (const { name, params } of callbacks) {
         const callback = toolCallbacks[name];
         const result = await callback(params);
-        let expected;
-        if (name === 'add-sshkey') {
-          expected = 'sshkey-added';
-        } else if (name === 'delete-sshkey') {
-          expected = 'sshkey-deleted';
-        }
+        const expected =
+          name === 'add-sshkey' ? JSON.stringify('sshkey-added', null, 2) : 'SSH key k deleted';
         expect(result).toEqual({
-          content: [{ type: 'text', text: JSON.stringify(expected, null, 2) }],
+          content: [{ type: 'text', text: expected }],
         });
       }
+
+      expect(sshMock.add).toHaveBeenCalledWith('u', 'ssh-rsa AAAA... test@test.com', undefined);
+      expect(sshMock.delete).toHaveBeenCalledWith('u', 'k');
     });
 
     it('should handle very long SSH keys', async () => {
@@ -307,7 +340,7 @@ describe('SSH Key Command Module', () => {
       const params = {
         user_id: 'user-long-key',
         ssh_key: longKey,
-        key_id: 'ultra-secure-key',
+        label: 'ultra-secure-key',
       };
 
       const result = await callback(params);
@@ -315,6 +348,7 @@ describe('SSH Key Command Module', () => {
       expect(result).toEqual({
         content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
       });
+      expect(sshMock.add).toHaveBeenCalledWith(params.user_id, params.ssh_key, params.label);
     });
 
     it('should handle numeric user IDs', async () => {
@@ -327,22 +361,26 @@ describe('SSH Key Command Module', () => {
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{ type: 'text', text: JSON.stringify('sshkey-deleted', null, 2) }],
+        content: [{ type: 'text', text: 'SSH key 12345 deleted' }],
       });
+      // The key ID must stay a string, with no numeric conversion
+      expect(sshMock.delete).toHaveBeenCalledWith('123456789', '12345');
+      expect(sshMock.delete).not.toHaveBeenCalledWith('123456789', 12345);
     });
 
     it('should handle UUID-style user IDs', async () => {
       const callback = toolCallbacks['delete-sshkey'];
       const params = {
         user_id: '550e8400-e29b-41d4-a716-446655440000',
-        key_id: 'uuid-key-12345',
+        key_id: '67890',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{ type: 'text', text: JSON.stringify('sshkey-deleted', null, 2) }],
+        content: [{ type: 'text', text: `SSH key ${params.key_id} deleted` }],
       });
+      expect(sshMock.delete).toHaveBeenCalledWith(params.user_id, params.key_id);
     });
 
     it('should handle special characters in key content', async () => {
@@ -350,7 +388,7 @@ describe('SSH Key Command Module', () => {
       const params = {
         user_id: 'special-user',
         ssh_key: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGbPhiQgg+/=special user@host.domain.co.uk',
-        key_id: 'special-chars-key-2024',
+        label: 'special-chars-key-2024',
       };
 
       const result = await callback(params);
@@ -358,6 +396,7 @@ describe('SSH Key Command Module', () => {
       expect(result).toEqual({
         content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
       });
+      expect(sshMock.add).toHaveBeenCalledWith(params.user_id, params.ssh_key, params.label);
     });
 
     it('should handle international characters in identifiers', async () => {
@@ -365,7 +404,7 @@ describe('SSH Key Command Module', () => {
       const params = {
         user_id: 'usuario-español-123',
         ssh_key: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7vbqa... usuario@empresa.es',
-        key_id: 'clave-acceso-producción',
+        label: 'clave-acceso-producción',
       };
 
       const result = await callback(params);
@@ -373,6 +412,7 @@ describe('SSH Key Command Module', () => {
       expect(result).toEqual({
         content: [{ type: 'text', text: JSON.stringify('sshkey-added', null, 2) }],
       });
+      expect(sshMock.add).toHaveBeenCalledWith(params.user_id, params.ssh_key, params.label);
     });
   });
 });

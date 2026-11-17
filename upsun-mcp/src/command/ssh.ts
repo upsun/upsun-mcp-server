@@ -1,7 +1,6 @@
 /**
- * @fileoverview SSH key manageexport function registerSSH(adapter: McpAdapter): void {
-  log.info('Register SSH keys Handlers');nt command module for Upsun MCP server.
- * 
+ * @fileoverview SSH key management command module for Upsun MCP server.
+ *
  * This module provides MCP tools for managing SSH keys for Upsun accounts.
  * SSH keys allow secure access to project environments for Git operations,
  * shell access, and other remote operations.
@@ -43,7 +42,7 @@ export function registerSshKey(adapter: McpAdapter): void {
    *
    * @param user_id - The ID of the user to add the SSH key to
    * @param ssh_key - The SSH public key content (starting with 'ssh-rsa', 'ssh-ed25519', etc.)
-   * @param key_id - A unique identifier or label for the SSH key
+   * @param label - Optional label for the SSH key
    */
   if (adapter.isMode()) {
     adapter.server.registerTool(
@@ -54,14 +53,14 @@ export function registerSshKey(adapter: McpAdapter): void {
         inputSchema: {
           user_id: z.string(),
           ssh_key: z.string(),
-          key_id: z.string(),
+          label: z.string().optional(),
         },
       },
       ToolWrapper.trace(
         'add-sshkey',
-        async ({ user_id, ssh_key, key_id }) => {
-          log.debug(`Add SSH Key for User: ${user_id}, Key ID: ${key_id}`);
-          const result = await adapter.client.ssh.add(ssh_key, user_id, key_id);
+        async ({ user_id, ssh_key, label }) => {
+          log.debug(`Add SSH Key for User: ${user_id}, Label: ${label}`);
+          const result = await adapter.client.ssh.add(user_id, ssh_key, label);
 
           return Response.json(result);
         },
@@ -94,10 +93,9 @@ export function registerSshKey(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('delete-sshkey', async ({ user_id, key_id }) => {
         log.debug(`Delete SSH Key for User: ${user_id}, Key ID: ${key_id}`);
-        const numericKeyId = Number(key_id);
-        const result = await adapter.client.ssh.delete(numericKeyId);
+        await adapter.client.ssh.delete(user_id, key_id);
 
-        return Response.json(result);
+        return Response.text(`SSH key ${key_id} deleted`);
       })
     );
   }
