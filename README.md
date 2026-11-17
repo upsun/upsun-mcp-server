@@ -943,6 +943,8 @@ LOG_LEVEL=DEBUG npm run dev
 4. Run linting and tests: `npm run lint && npm test`
 5. Submit a pull request
 
+Releases are described in [RELEASING.md](./RELEASING.md).
+
 ### Code Style
 
 - TypeScript with strict mode
