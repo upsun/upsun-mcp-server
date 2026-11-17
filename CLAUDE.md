@@ -2,6 +2,8 @@
 
 Usage and setup are in [README.md](./README.md). The npm project is in
 `upsun-mcp/`; its scripts are in [`package.json`](./upsun-mcp/package.json).
+Releases and deploys are in [RELEASING.md](./RELEASING.md); don't bump the
+version by hand.
 
 ## Adding a command
 
