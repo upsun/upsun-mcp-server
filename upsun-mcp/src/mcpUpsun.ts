@@ -18,6 +18,7 @@ import {
   registerCertificate,
   registerDomain,
   registerEnvironment,
+  registerLog,
   registerOrganization,
   registerProject,
   registerRoute,
@@ -77,6 +78,7 @@ export class UpsunMcpServer implements McpAdapter {
     registerCertificate(this);
     registerDomain(this);
     registerEnvironment(this);
+    registerLog(this);
     registerOrganization(this);
     registerProject(this);
     registerRoute(this);

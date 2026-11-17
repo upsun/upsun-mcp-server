@@ -23,7 +23,6 @@ const log = createLogger('MCP:Tool:environment-commands');
  * - delete-environment: Permanently deletes an environment
  * - info-environment: Retrieves environment details and status
  * - list-environment: Lists all environments in a project
- * - logs-environment: Displays application logs
  * - merge-environment: Merges environment changes to parent
  * - pause-environment: Pauses an active environment
  * - redeploy-environment: Triggers a new deployment
@@ -152,42 +151,6 @@ export function registerEnvironment(adapter: McpAdapter): void {
 
       return Response.json(full ? result : lean(result));
     })
-  );
-
-  /**
-   * Tool: logs-environment
-   * Displays application logs for a specific environment.
-   *
-   * @param project_id - The project ID containing the environment
-   * @param environment_name - The name of the environment
-   * @param application_name - The name of the application to get logs from
-   */
-  adapter.server.registerTool(
-    'logs-environment',
-    {
-      annotations: { readOnlyHint: true },
-      description: 'Display logs of app of upsun project',
-      inputSchema: {
-        project_id: Schema.projectId(),
-        environment_name: Schema.environmentName(),
-        application_name: Schema.applicationName(),
-      },
-    },
-    ToolWrapper.trace(
-      'logs-environment',
-      async ({ project_id, environment_name, application_name }) => {
-        log.debug(
-          `Get Logs of Application ${application_name} in Environment ${environment_name}, Project ${project_id}`
-        );
-        const result = await adapter.client.environments.logs(
-          project_id,
-          environment_name,
-          application_name
-        );
-
-        return Response.json(result);
-      }
-    )
   );
 
   /**

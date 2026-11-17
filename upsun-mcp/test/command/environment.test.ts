@@ -27,7 +27,6 @@ const mockEnvironmentsApi = {
   resume: jest.fn(),
   url: jest.fn(),
   urls: jest.fn(),
-  logs: jest.fn(),
 };
 
 const mockClient: { environments: any; routes: any } = {
@@ -120,7 +119,6 @@ describe('Environment Command Module', () => {
     mockClient.environments.url.mockResolvedValue(mockUrls);
     mockClient.environments.urls.mockResolvedValue(mockUrls);
     mockClient.routes.list.mockResolvedValue(mockUrls);
-    mockClient.environments.logs.mockResolvedValue(['log1', 'log2']);
   });
 
   afterEach(() => {
@@ -132,14 +130,13 @@ describe('Environment Command Module', () => {
     it('should register all environment tools', () => {
       registerEnvironment(mockAdapter);
 
-      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(10);
+      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(9);
 
       // Verify all tools are registered
       expect(toolCallbacks['activate-environment']).toBeDefined();
       expect(toolCallbacks['delete-environment']).toBeDefined();
       expect(toolCallbacks['info-environment']).toBeDefined();
       expect(toolCallbacks['list-environment']).toBeDefined();
-      expect(toolCallbacks['logs-environment']).toBeDefined();
       expect(toolCallbacks['merge-environment']).toBeDefined();
       expect(toolCallbacks['pause-environment']).toBeDefined();
       expect(toolCallbacks['redeploy-environment']).toBeDefined();
@@ -156,12 +153,11 @@ describe('Environment Command Module', () => {
       expect(calls[1][0]).toBe('delete-environment');
       expect(calls[2][0]).toBe('info-environment');
       expect(calls[3][0]).toBe('list-environment');
-      expect(calls[4][0]).toBe('logs-environment');
-      expect(calls[5][0]).toBe('merge-environment');
-      expect(calls[6][0]).toBe('pause-environment');
-      expect(calls[7][0]).toBe('redeploy-environment');
-      expect(calls[8][0]).toBe('resume-environment');
-      expect(calls[9][0]).toBe('urls-environment');
+      expect(calls[4][0]).toBe('merge-environment');
+      expect(calls[5][0]).toBe('pause-environment');
+      expect(calls[6][0]).toBe('redeploy-environment');
+      expect(calls[7][0]).toBe('resume-environment');
+      expect(calls[8][0]).toBe('urls-environment');
     });
   });
 
@@ -323,33 +319,6 @@ describe('Environment Command Module', () => {
           {
             type: 'text',
             text: JSON.stringify([], null, 2),
-          },
-        ],
-      });
-    });
-  });
-
-  describe('logs-environment tool', () => {
-    beforeEach(() => {
-      registerEnvironment(mockAdapter);
-    });
-
-    it('should return logs for the application', async () => {
-      const callback = toolCallbacks['logs-environment'];
-      const params = {
-        project_id: 'test-project-13',
-        environment_name: 'main',
-        application_name: 'web',
-      };
-
-      const result = await callback(params);
-
-      expect(mockClient.environments.logs).toHaveBeenCalledWith('test-project-13', 'main', 'web');
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(['log1', 'log2'], null, 2),
           },
         ],
       });

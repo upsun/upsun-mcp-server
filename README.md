@@ -25,7 +25,6 @@ You don't need to install or run anything locally unless you're developing or cu
 - **delete-environment**: Permanently delete environments
 - **info-environment**: Get environment details and status
 - **list-environment**: List all environments in a project
-- **logs-environment**: Show the logs of an app in an environment
 - **merge-environment**: Merge environment changes to parent
 - **pause-environment**: Pause active environments
 - **redeploy-environment**: Trigger new deployments
@@ -43,6 +42,8 @@ You don't need to install or run anything locally unless you're developing or cu
 - **get-activity**: Get the details of an activity
 - **get-activity-log**: Get the log of an activity, such as a deployment
 - **list-activity**: List the activities of a project
+- **get-environment-log-overview**: Get the log severity counts per time slot of an environment
+- **query-environment-log**: Get the log entries of an environment, 100 per page. Use `_cursor` as `cursor` to get the next page.
 
 ### 🔐 Security & Access
 - **add-sshkey**: Add an SSH key to the Upsun account
