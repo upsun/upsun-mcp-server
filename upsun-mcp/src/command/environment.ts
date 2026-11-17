@@ -46,7 +46,7 @@ function sixKeyReply(result: unknown): Record<string, unknown> {
       }
       delete entry.variables;
       delete entry.access;
-      if (mapKey === 'services' && isPlainObject(entry.endpoints)) {
+      if (isPlainObject(entry.endpoints)) {
         for (const endpoint of Object.values(entry.endpoints)) {
           if (isPlainObject(endpoint)) {
             delete endpoint.password;

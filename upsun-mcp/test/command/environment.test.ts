@@ -91,6 +91,7 @@ const mockDeployment = {
       access: { ssh: 'contributor' },
       hooks: { build: 'npm ci', deploy: 'npm run migrate', postDeploy: null },
       web: { commands: { start: 'node index.js' } },
+      endpoints: { http: { host: 'app.internal', port: 8080, password: 'app-password' } },
     },
   },
   workers: {
@@ -98,6 +99,7 @@ const mockDeployment = {
       name: 'app--queue',
       variables: { env: { WORKER_SECRET: 'worker-secret' } },
       access: { ssh: 'admin' },
+      endpoints: { queue: { host: 'queue.internal', password: 'worker-password' } },
     },
   },
   tasks: {},
@@ -617,11 +619,15 @@ describe('Environment Command Module', () => {
       expect(reply.services.postgresql.access).toBeUndefined();
       expect(reply.services.postgresql.endpoints.postgresql.password).toBeUndefined();
       expect(reply.services.postgresql.endpoints.postgresql.host).toBe('postgresql.internal');
+      expect(reply.webapps.app.endpoints.http.password).toBeUndefined();
+      expect(reply.webapps.app.endpoints.http.host).toBe('app.internal');
+      expect(reply.workers['app--queue'].endpoints.queue.password).toBeUndefined();
+      expect(reply.workers['app--queue'].endpoints.queue.host).toBe('queue.internal');
       expect(reply.routes).toEqual(mockDeployment.routes);
       expect(reply.tasks).toEqual({});
       expect(reply.restrictRobots).toBe(true);
       expect(result.content[0].text).not.toContain('secret');
-      expect(result.content[0].text).not.toContain('db-password');
+      expect(result.content[0].text).not.toContain('password');
 
       // The SDK result is not mutated.
       expect(mockDeployment).toEqual(before);
