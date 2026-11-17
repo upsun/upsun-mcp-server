@@ -22,17 +22,19 @@ import { createLogger } from '../core/logger.js';
 const log = createLogger('MCP:Tool:log-commands');
 
 const FILTER_HELP =
-  'Each list filter has a `<name>_mode`: "1" includes only the listed values, "-1" excludes them. The default is "-1" (exclude).';
+  'Each list filter needs its `<name>_mode`: "1" includes only the listed values, "-1" excludes them.';
 
 function filterMode(name: string): z.ZodOptional<z.ZodEnum<typeof LogsQuerySeveritiesModeEnum>> {
   return z
     .enum(LogsQuerySeveritiesModeEnum)
     .optional()
-    .describe(`"1" includes only the listed ${name}, "-1" excludes them. Default: "-1".`);
+    .describe(
+      `Required with the ${name} list: "1" includes only the listed ${name}, "-1" excludes them.`
+    );
 }
 
 function stringFilter(description: string): z.ZodOptional<z.ZodArray<z.ZodString>> {
-  return z.array(z.string()).optional().describe(description);
+  return z.array(z.string()).min(1).optional().describe(description);
 }
 
 const logFilterShape = {
@@ -40,7 +42,7 @@ const logFilterShape = {
   environment_name: Schema.environmentName(),
   from: z.number().int().describe('Start of the time range, as a Unix timestamp in seconds.'),
   to: z.number().int().describe('End of the time range, as a Unix timestamp in seconds.'),
-  severities: z.array(z.enum(LogsQuerySeveritiesEnum)).optional(),
+  severities: z.array(z.enum(LogsQuerySeveritiesEnum)).min(1).optional(),
   severities_mode: filterMode('severities'),
   services: stringFilter('Service names.'),
   services_mode: filterMode('services'),
@@ -58,6 +60,7 @@ const logFilterShape = {
   container_images_mode: filterMode('container images'),
   log_kinds: z
     .array(z.enum(LogsQueryLogKindsEnum))
+    .min(1)
     .optional()
     .describe('Log kinds. When not set, the API returns only "application" logs.'),
   log_kinds_mode: filterMode('log kinds'),
@@ -66,7 +69,28 @@ const logFilterShape = {
 
 type LogFilterInput = z.infer<z.ZodObject<typeof logFilterShape>>;
 
+const LIST_FILTERS = [
+  'severities',
+  'services',
+  'instances',
+  'hosts',
+  'commands',
+  'units',
+  'container_ids',
+  'container_images',
+  'log_kinds',
+] as const;
+
 function toSdkRequest(input: LogFilterInput): LogsOverviewRequest {
+  // The API excludes the listed values when the mode is absent, which is the opposite of what a caller usually means.
+  for (const name of LIST_FILTERS) {
+    if (input[name] !== undefined && input[`${name}_mode`] === undefined) {
+      throw new Error(
+        `${name}_mode is required with ${name}: "1" includes only the listed values, "-1" excludes them.`
+      );
+    }
+  }
+
   return {
     projectId: input.project_id,
     environmentId: input.environment_name,

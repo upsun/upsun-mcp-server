@@ -1,5 +1,6 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 import { Configuration } from 'upsun-sdk-node';
+import { z } from 'zod';
 import { McpAdapter } from '../../src/core/adapter';
 import { registerLog } from '../../src/command/log';
 import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
@@ -106,12 +107,12 @@ describe('Log Command Module', () => {
     expect(toolConfigs['query-environment-log'].annotations).toEqual({ readOnlyHint: true });
   });
 
-  it('tells the agent that filter modes default to exclude and that query-environment-log pages hold 100 entries', () => {
+  it('tells the agent that each filter list needs its mode and that query-environment-log pages hold 100 entries', () => {
     expect(toolConfigs['get-environment-log-overview'].description).toContain(
-      'The default is "-1" (exclude)'
+      'Each list filter needs its `<name>_mode`'
     );
     expect(toolConfigs['query-environment-log'].description).toContain(
-      'The default is "-1" (exclude)'
+      'Each list filter needs its `<name>_mode`'
     );
     expect(toolConfigs['query-environment-log'].description).toContain('100 entries');
   });
@@ -130,6 +131,7 @@ describe('Log Command Module', () => {
         container_ids: ['c-1'],
         container_ids_mode: '-1',
         log_kinds: ['deployment'],
+        log_kinds_mode: '1',
       });
 
       const url = requestedUrl();
@@ -143,7 +145,36 @@ describe('Log Command Module', () => {
       expect(url.searchParams.getAll('container_ids[]')).toEqual(['c-1']);
       expect(url.searchParams.get('container_ids_mode')).toBe('-1');
       expect(url.searchParams.getAll('log_kinds[]')).toEqual(['deployment']);
+      expect(url.searchParams.get('log_kinds_mode')).toBe('1');
       expect(url.searchParams.has('services[]')).toBe(false);
+    });
+
+    // Without a mode the API excludes the listed values, the opposite of what the caller usually means.
+    it('rejects a filter list sent without its mode and calls no API', async () => {
+      await expect(
+        toolCallbacks['get-environment-log-overview']({
+          project_id: 'abcdefghijklm',
+          environment_name: 'main',
+          from: 1,
+          to: 2,
+          log_kinds: ['deployment'],
+        })
+      ).rejects.toThrow('log_kinds_mode is required with log_kinds');
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    // The SDK sends an empty list as `name[]=`, a filter on the empty string.
+    it('rejects an empty filter list in the input schema', () => {
+      const schema = z.object(toolConfigs['get-environment-log-overview'].inputSchema);
+      const base = { project_id: 'abcdefghijklm', environment_name: 'main', from: 1, to: 2 };
+
+      expect(schema.safeParse({ ...base, services: [], services_mode: '1' }).success).toBe(false);
+      expect(schema.safeParse({ ...base, severities: [], severities_mode: '1' }).success).toBe(
+        false
+      );
+      expect(schema.safeParse({ ...base, services: ['app'], services_mode: '1' }).success).toBe(
+        true
+      );
     });
 
     it('returns the API keys and strips _links from each time slot by default', async () => {
