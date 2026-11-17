@@ -188,7 +188,7 @@ describe('Environment Command Module', () => {
       expect(toolCallbacks['redeploy-environment']).toBeDefined();
       expect(toolCallbacks['resume-environment']).toBeDefined();
       expect(toolCallbacks['urls-environment']).toBeDefined();
-      expect(toolCallbacks['get-deployment-environment']).toBeDefined();
+      expect(toolCallbacks['get-environment-deployment']).toBeDefined();
     });
 
     it('should register tools with correct names and descriptions', () => {
@@ -205,7 +205,7 @@ describe('Environment Command Module', () => {
       expect(calls[6][0]).toBe('redeploy-environment');
       expect(calls[7][0]).toBe('resume-environment');
       expect(calls[8][0]).toBe('urls-environment');
-      expect(calls[9][0]).toBe('get-deployment-environment');
+      expect(calls[9][0]).toBe('get-environment-deployment');
     });
   });
 
@@ -594,13 +594,13 @@ describe('Environment Command Module', () => {
     });
   });
 
-  describe('get-deployment-environment tool', () => {
+  describe('get-environment-deployment tool', () => {
     beforeEach(() => {
       registerEnvironment(mockAdapter);
     });
 
     it('should return the six keys without secret fields by default', async () => {
-      const callback = toolCallbacks['get-deployment-environment'];
+      const callback = toolCallbacks['get-environment-deployment'];
       const before = structuredClone(mockDeployment);
 
       const result = await callback({ project_id: 'test-project', environment_name: 'main' });
@@ -628,7 +628,7 @@ describe('Environment Command Module', () => {
     });
 
     it('should keep hooks and web.commands by default', async () => {
-      const callback = toolCallbacks['get-deployment-environment'];
+      const callback = toolCallbacks['get-environment-deployment'];
 
       const result = await callback({
         project_id: 'test-project',
@@ -642,7 +642,7 @@ describe('Environment Command Module', () => {
     });
 
     it('should return the full raw payload with full:true', async () => {
-      const callback = toolCallbacks['get-deployment-environment'];
+      const callback = toolCallbacks['get-environment-deployment'];
 
       const result = await callback({
         project_id: 'test-project',
@@ -664,7 +664,7 @@ describe('Environment Command Module', () => {
     });
 
     it("should request the 'current' deployment", async () => {
-      const callback = toolCallbacks['get-deployment-environment'];
+      const callback = toolCallbacks['get-environment-deployment'];
 
       await callback({ project_id: 'test-project', environment_name: 'main' });
 
@@ -676,7 +676,7 @@ describe('Environment Command Module', () => {
     });
 
     it('should not crash on missing maps or malformed entries', async () => {
-      const callback = toolCallbacks['get-deployment-environment'];
+      const callback = toolCallbacks['get-environment-deployment'];
       mockClient.environments.getDeployment.mockResolvedValue({
         webapps: { app: null },
         services: { db: { type: 'mariadb' }, cache: { endpoints: { redis: null } } },
@@ -693,7 +693,7 @@ describe('Environment Command Module', () => {
     });
 
     it('should handle a null deployment', async () => {
-      const callback = toolCallbacks['get-deployment-environment'];
+      const callback = toolCallbacks['get-environment-deployment'];
       mockClient.environments.getDeployment.mockResolvedValue(null);
 
       const result = await callback({ project_id: 'test-project', environment_name: 'main' });
@@ -702,7 +702,7 @@ describe('Environment Command Module', () => {
     });
 
     it('should handle get deployment errors', async () => {
-      const callback = toolCallbacks['get-deployment-environment'];
+      const callback = toolCallbacks['get-environment-deployment'];
       const errorMessage = 'Deployment not found';
       mockClient.environments.getDeployment.mockRejectedValue(new Error(errorMessage));
 
