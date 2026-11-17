@@ -7,12 +7,13 @@ and deployed to Upsun by hand.
 
 Release-please reads the [Conventional Commits](https://www.conventionalcommits.org/)
 on `main` that touch `upsun-mcp/`, so PR titles (used as squash commit messages)
-must follow it. Before 1.0, `feat!` and `BREAKING CHANGE` bump the minor
-version; `feat` and `fix` bump the patch version.
+must follow it. Before 1.0, `feat` and breaking changes (`feat!`,
+`BREAKING CHANGE`) bump the minor version; `fix` bumps the patch version.
 
 On each push to `main`, the [Release Please workflow](.github/workflows/release-please.yml)
 opens or updates a release PR. It bumps the version in `upsun-mcp/package.json`
-and `package-lock.json`, and updates `upsun-mcp/CHANGELOG.md`.
+and `package-lock.json`, and updates `upsun-mcp/CHANGELOG.md`. The workflow
+uses `GITHUB_TOKEN`, so CI doesn't run on the release PR.
 
 Merging the release PR tags the commit `vX.Y.Z` and publishes a GitHub release.
 
