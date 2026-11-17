@@ -6,8 +6,8 @@ and deployed to Upsun by hand.
 ## Versioning
 
 Release-please reads the [Conventional Commits](https://www.conventionalcommits.org/)
-on `main` that touch `upsun-mcp/`, so PR titles (used as squash commit messages)
-must follow it. Before 1.0, `feat` and breaking changes (`feat!`,
+on `main` that touch `upsun-mcp/`, so commit messages must follow it (for
+squash merges, that's the PR title). Before 1.0, `feat` and breaking changes (`feat!`,
 `BREAKING CHANGE`) bump the minor version; `fix` bumps the patch version.
 
 On each push to `main`, the [Release Please workflow](.github/workflows/release-please.yml)
