@@ -268,8 +268,8 @@ describe('UpsunMcpServer', () => {
           'get-activity',
           'list-activity',
           'get-activity-log',
-          'overview-log',
-          'query-log',
+          'get-environment-log-overview',
+          'query-environment-log',
         ];
 
         expectedTools.forEach(toolName => {

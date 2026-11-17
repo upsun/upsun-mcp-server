@@ -97,23 +97,30 @@ describe('Log Command Module', () => {
     jest.restoreAllMocks();
   });
 
-  it('registers overview-log and query-log as read-only tools', () => {
-    expect(Object.keys(toolCallbacks)).toEqual(['overview-log', 'query-log']);
-    expect(toolConfigs['overview-log'].annotations).toEqual({ readOnlyHint: true });
-    expect(toolConfigs['query-log'].annotations).toEqual({ readOnlyHint: true });
+  it('registers get-environment-log-overview and query-environment-log as read-only tools', () => {
+    expect(Object.keys(toolCallbacks)).toEqual([
+      'get-environment-log-overview',
+      'query-environment-log',
+    ]);
+    expect(toolConfigs['get-environment-log-overview'].annotations).toEqual({ readOnlyHint: true });
+    expect(toolConfigs['query-environment-log'].annotations).toEqual({ readOnlyHint: true });
   });
 
-  it('tells the agent that filter modes default to exclude and that query-log pages hold 100 entries', () => {
-    expect(toolConfigs['overview-log'].description).toContain('The default is "-1" (exclude)');
-    expect(toolConfigs['query-log'].description).toContain('The default is "-1" (exclude)');
-    expect(toolConfigs['query-log'].description).toContain('100 entries');
+  it('tells the agent that filter modes default to exclude and that query-environment-log pages hold 100 entries', () => {
+    expect(toolConfigs['get-environment-log-overview'].description).toContain(
+      'The default is "-1" (exclude)'
+    );
+    expect(toolConfigs['query-environment-log'].description).toContain(
+      'The default is "-1" (exclude)'
+    );
+    expect(toolConfigs['query-environment-log'].description).toContain('100 entries');
   });
 
-  describe('overview-log', () => {
+  describe('get-environment-log-overview', () => {
     it('maps the tool inputs to the overview route and its query parameters', async () => {
       respondWith(200, overviewBody);
 
-      await toolCallbacks['overview-log']({
+      await toolCallbacks['get-environment-log-overview']({
         project_id: 'abcdefghijklm',
         environment_name: 'main',
         from: 1763366400,
@@ -142,7 +149,7 @@ describe('Log Command Module', () => {
     it('returns the API keys and strips _links from each time slot by default', async () => {
       respondWith(200, overviewBody);
 
-      const result = await toolCallbacks['overview-log']({
+      const result = await toolCallbacks['get-environment-log-overview']({
         project_id: 'abcdefghijklm',
         environment_name: 'main',
         from: 1,
@@ -160,7 +167,7 @@ describe('Log Command Module', () => {
     it('returns the raw API body when full is true', async () => {
       respondWith(200, overviewBody);
 
-      const result = await toolCallbacks['overview-log']({
+      const result = await toolCallbacks['get-environment-log-overview']({
         project_id: 'abcdefghijklm',
         environment_name: 'main',
         from: 1,
@@ -172,11 +179,11 @@ describe('Log Command Module', () => {
     });
   });
 
-  describe('query-log', () => {
+  describe('query-environment-log', () => {
     it('maps cursor and order in addition to the shared filters', async () => {
       respondWith(200, queryBody);
 
-      await toolCallbacks['query-log']({
+      await toolCallbacks['query-environment-log']({
         project_id: 'abcdefghijklm',
         environment_name: 'staging',
         from: 10,
@@ -200,7 +207,7 @@ describe('Log Command Module', () => {
     it('keeps the pagination keys and strips _links from each entry by default', async () => {
       respondWith(200, queryBody);
 
-      const result = await toolCallbacks['query-log']({
+      const result = await toolCallbacks['query-environment-log']({
         project_id: 'abcdefghijklm',
         environment_name: 'main',
         from: 1,
@@ -226,7 +233,7 @@ describe('Log Command Module', () => {
     it('returns the raw API body when full is true', async () => {
       respondWith(200, queryBody);
 
-      const result = await toolCallbacks['query-log']({
+      const result = await toolCallbacks['query-environment-log']({
         project_id: 'abcdefghijklm',
         environment_name: 'main',
         from: 1,
@@ -242,7 +249,7 @@ describe('Log Command Module', () => {
       respondWith(499, '{"error":"too much data"}', 'Client Closed Request');
 
       await expect(
-        toolCallbacks['query-log']({
+        toolCallbacks['query-environment-log']({
           project_id: 'abcdefghijklm',
           environment_name: 'main',
           from: 1,

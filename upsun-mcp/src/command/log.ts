@@ -95,8 +95,8 @@ function toSdkRequest(input: LogFilterInput): LogsOverviewRequest {
 
 /**
  * Registers the log tools with the MCP server:
- * - overview-log: severity counts per time slot of an environment
- * - query-log: log entries of an environment, 100 per page
+ * - get-environment-log-overview: severity counts per time slot of an environment
+ * - query-environment-log: log entries of an environment, 100 per page
  *
  * @param adapter - The MCP adapter instance to register tools with
  */
@@ -104,7 +104,7 @@ export function registerLog(adapter: McpAdapter): void {
   log.info('Register Log Handlers');
 
   adapter.server.registerTool(
-    'overview-log',
+    'get-environment-log-overview',
     {
       annotations: { readOnlyHint: true },
       description:
@@ -112,7 +112,7 @@ export function registerLog(adapter: McpAdapter): void {
         FILTER_HELP,
       inputSchema: logFilterShape,
     },
-    ToolWrapper.trace('overview-log', async input => {
+    ToolWrapper.trace('get-environment-log-overview', async input => {
       log.debug(
         `Get Log Overview of Environment ${input.environment_name} in Project ${input.project_id}`
       );
@@ -127,7 +127,7 @@ export function registerLog(adapter: McpAdapter): void {
   );
 
   adapter.server.registerTool(
-    'query-log',
+    'query-environment-log',
     {
       annotations: { readOnlyHint: true },
       description:
@@ -146,7 +146,7 @@ export function registerLog(adapter: McpAdapter): void {
           .describe('"DESC" (newest first) or "ASC". Default: "DESC".'),
       },
     },
-    ToolWrapper.trace('query-log', async input => {
+    ToolWrapper.trace('query-environment-log', async input => {
       log.debug(
         `Query Logs of Environment ${input.environment_name} in Project ${input.project_id}`
       );
