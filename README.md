@@ -941,7 +941,7 @@ LOG_LEVEL=DEBUG npm run dev
 2. Create a feature branch
 3. Make changes with tests
 4. Run linting and tests: `npm run lint && npm test`
-5. Submit a pull request with a [Conventional Commits](https://www.conventionalcommits.org/) title
+5. Submit a pull request whose commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (for squash merges, the PR title)
 
 Releases are described in [RELEASING.md](./RELEASING.md).
 
