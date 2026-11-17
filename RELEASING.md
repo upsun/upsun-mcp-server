@@ -1,23 +1,56 @@
 # Releasing
 
-Releases are versioned by [release-please](https://github.com/googleapis/release-please)
-and deployed to Upsun by hand.
+Releases are tagged `vX.Y.Z`, published as GitHub releases, and deployed to
+Upsun by hand. These steps are written for a maintainer or a coding agent to
+follow.
 
-## Versioning
+## 1. Choose the version
 
-Release-please reads the [Conventional Commits](https://www.conventionalcommits.org/)
-on `main` that touch `upsun-mcp/`, so commit messages must follow it (for
-squash merges, that's the PR title). Before 1.0, `feat` and breaking changes (`feat!`,
-`BREAKING CHANGE`) bump the minor version; `fix` bumps the patch version.
+List the changes since the last release:
 
-On each push to `main`, the [Release Please workflow](.github/workflows/release-please.yml)
-opens or updates a release PR. It bumps the version in `upsun-mcp/package.json`
-and `package-lock.json`, and updates `upsun-mcp/CHANGELOG.md`. The workflow
-uses `GITHUB_TOKEN`, so CI doesn't run on the release PR.
+```bash
+git fetch origin --tags
+PREV=$(git describe --tags --abbrev=0 origin/main)
+git log --no-merges --format='%h %s' "$PREV..origin/main" -- upsun-mcp/
+```
 
-Merging the release PR tags the commit `vX.Y.Z` and publishes a GitHub release.
+Before 1.0, breaking changes and new features bump the minor version, and fixes
+bump the patch version. Changes outside `upsun-mcp/` don't need a release.
 
-## Deploying
+## 2. Open the release PR
+
+From a branch off `origin/main`:
+
+```bash
+cd upsun-mcp && npm version X.Y.Z --no-git-tag-version
+```
+
+This updates `package.json` and `package-lock.json`. Commit them as
+`chore: release vX.Y.Z` and open a PR with that title. The PR description holds
+the draft release notes:
+
+- Sections, in order and only when non-empty: **Breaking changes**, **Features**,
+  **Fixes**, **Configuration**.
+- One line per user-visible change, linking its PR or commit. Merge similar
+  changes, and leave out internal refactors, tests, CI and dependency bumps
+  unless users notice them.
+- Under **Breaking changes**, say what users must do.
+- Under **Configuration**, list new, removed or changed environment variables
+  and defaults.
+
+## 3. Tag and publish
+
+After the release PR merges, save the release notes from its description to
+`notes.md`, then tag the merge commit and publish:
+
+```bash
+git fetch origin
+git tag -a vX.Y.Z -m vX.Y.Z <merge-commit>
+git push origin vX.Y.Z
+gh release create vX.Y.Z --title vX.Y.Z --notes-file notes.md
+```
+
+## 4. Deploy
 
 The server runs on an Upsun project with two environments: `main` (production,
 `mcp.upsun.com`) and `staging`, a child of `main` that uses manual deployments.
@@ -31,7 +64,6 @@ The server runs on an Upsun project with two environments: `main` (production,
 2. Deploy the tag to staging and smoke-test it:
 
    ```bash
-   git fetch origin --tags
    upsun environment:resume -p <project-id> -e staging
    git push upsun vX.Y.Z^{commit}:refs/heads/staging
    upsun environment:deploy -p <project-id> -e staging
