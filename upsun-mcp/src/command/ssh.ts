@@ -93,9 +93,9 @@ export function registerSshKey(adapter: McpAdapter): void {
       },
       ToolWrapper.trace('delete-sshkey', async ({ user_id, key_id }) => {
         log.debug(`Delete SSH Key for User: ${user_id}, Key ID: ${key_id}`);
-        const result = await adapter.client.ssh.delete(user_id, key_id);
+        await adapter.client.ssh.delete(user_id, key_id);
 
-        return Response.json(result);
+        return Response.text(`SSH key ${key_id} deleted`);
       })
     );
   }

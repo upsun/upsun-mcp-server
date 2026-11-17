@@ -234,33 +234,33 @@ describe('SSH Key Command Module', () => {
       registerSshKey(mockAdapter);
     });
 
-    it('should delete the SSH key and return an empty result', async () => {
+    it('should delete the SSH key and return a confirmation text', async () => {
       const callback = toolCallbacks['delete-sshkey'];
       const params = {
         user_id: 'user-123',
-        key_id: 'laptop-key-1',
+        key_id: '4821',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{ type: 'text', text: JSON.stringify(undefined, null, 2) }],
+        content: [{ type: 'text', text: `SSH key ${params.key_id} deleted` }],
       });
       expect(sshMock.delete).toHaveBeenCalledWith(params.user_id, params.key_id);
     });
 
-    it('should handle deletion of different key types', async () => {
+    it('should delete keys of different users', async () => {
       const callback = toolCallbacks['delete-sshkey'];
       const testCases = [
-        { user_id: 'user-456', key_id: 'work-laptop' },
-        { user_id: 'user-789', key_id: 'legacy-key' },
-        { user_id: 'user-abc', key_id: 'deploy-key' },
+        { user_id: 'user-456', key_id: '1001' },
+        { user_id: 'user-789', key_id: '1002' },
+        { user_id: 'user-abc', key_id: '1003' },
       ];
 
       for (const params of testCases) {
         const result = await callback(params);
         expect(result).toEqual({
-          content: [{ type: 'text', text: JSON.stringify(undefined, null, 2) }],
+          content: [{ type: 'text', text: `SSH key ${params.key_id} deleted` }],
         });
         expect(sshMock.delete).toHaveBeenCalledWith(params.user_id, params.key_id);
       }
@@ -270,28 +270,28 @@ describe('SSH Key Command Module', () => {
       const callback = toolCallbacks['delete-sshkey'];
       const params = {
         user_id: 'production-user',
-        key_id: 'production-deploy-key',
+        key_id: '987654',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{ type: 'text', text: JSON.stringify(undefined, null, 2) }],
+        content: [{ type: 'text', text: `SSH key ${params.key_id} deleted` }],
       });
       expect(sshMock.delete).toHaveBeenCalledWith(params.user_id, params.key_id);
     });
 
-    it('should handle deletion with special key identifiers', async () => {
+    it('should pass a large key ID through as a string', async () => {
       const callback = toolCallbacks['delete-sshkey'];
       const params = {
         user_id: 'admin-user',
-        key_id: 'emergency-access-key-2024-backup',
+        key_id: '2147483647',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{ type: 'text', text: JSON.stringify(undefined, null, 2) }],
+        content: [{ type: 'text', text: `SSH key ${params.key_id} deleted` }],
       });
       expect(sshMock.delete).toHaveBeenCalledWith(params.user_id, params.key_id);
     });
@@ -323,14 +323,10 @@ describe('SSH Key Command Module', () => {
       for (const { name, params } of callbacks) {
         const callback = toolCallbacks[name];
         const result = await callback(params);
-        let expected;
-        if (name === 'add-sshkey') {
-          expected = 'sshkey-added';
-        } else if (name === 'delete-sshkey') {
-          expected = undefined;
-        }
+        const expected =
+          name === 'add-sshkey' ? JSON.stringify('sshkey-added', null, 2) : 'SSH key k deleted';
         expect(result).toEqual({
-          content: [{ type: 'text', text: JSON.stringify(expected, null, 2) }],
+          content: [{ type: 'text', text: expected }],
         });
       }
 
@@ -365,7 +361,7 @@ describe('SSH Key Command Module', () => {
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{ type: 'text', text: JSON.stringify(undefined, null, 2) }],
+        content: [{ type: 'text', text: 'SSH key 12345 deleted' }],
       });
       // The key ID must stay a string, with no numeric conversion
       expect(sshMock.delete).toHaveBeenCalledWith('123456789', '12345');
@@ -376,13 +372,13 @@ describe('SSH Key Command Module', () => {
       const callback = toolCallbacks['delete-sshkey'];
       const params = {
         user_id: '550e8400-e29b-41d4-a716-446655440000',
-        key_id: 'uuid-key-12345',
+        key_id: '67890',
       };
 
       const result = await callback(params);
 
       expect(result).toEqual({
-        content: [{ type: 'text', text: JSON.stringify(undefined, null, 2) }],
+        content: [{ type: 'text', text: `SSH key ${params.key_id} deleted` }],
       });
       expect(sshMock.delete).toHaveBeenCalledWith(params.user_id, params.key_id);
     });
