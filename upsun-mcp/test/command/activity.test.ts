@@ -119,7 +119,7 @@ describe('Activity Command Module', () => {
       expect(toolCallbacks['cancel-activity']).toBeDefined();
       expect(toolCallbacks['get-activity']).toBeDefined();
       expect(toolCallbacks['list-activity']).toBeDefined();
-      expect(toolCallbacks['log-activity']).toBeDefined();
+      expect(toolCallbacks['get-activity-log']).toBeDefined();
     });
 
     it('should register tools with correct names and descriptions', () => {
@@ -158,10 +158,11 @@ describe('Activity Command Module', () => {
       ]);
 
       expect(calls[3]).toEqual([
-        'log-activity',
+        'get-activity-log',
         {
           annotations: { readOnlyHint: true },
-          description: 'Get log activity of upsun project',
+          description:
+            'Get the log of an activity, such as a deployment. Use it to find why an activity failed.',
           inputSchema: expect.any(Object),
         },
         expect.any(Function),
@@ -319,13 +320,13 @@ describe('Activity Command Module', () => {
     });
   });
 
-  describe('log-activity tool', () => {
+  describe('get-activity-log tool', () => {
     beforeEach(() => {
       registerActivity(mockAdapter);
     });
 
     it('should get activity logs successfully', async () => {
-      const callback = toolCallbacks['log-activity'];
+      const callback = toolCallbacks['get-activity-log'];
       const params = {
         project_id: 'test-project-13',
         activity_id: 'test-activity-123',
@@ -348,7 +349,7 @@ describe('Activity Command Module', () => {
     });
 
     it('should handle empty logs', async () => {
-      const callback = toolCallbacks['log-activity'];
+      const callback = toolCallbacks['get-activity-log'];
       mockClient.activities.log.mockResolvedValue('');
 
       const params = {
@@ -373,7 +374,7 @@ describe('Activity Command Module', () => {
     });
 
     it('should handle log activity errors', async () => {
-      const callback = toolCallbacks['log-activity'];
+      const callback = toolCallbacks['get-activity-log'];
       const errorMessage = 'Activity logs not available';
       mockClient.activities.log.mockRejectedValue(new Error(errorMessage));
 

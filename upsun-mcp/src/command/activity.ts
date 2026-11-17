@@ -21,8 +21,8 @@ import { lean } from '../core/lean.js';
  * This function adds four tools for activity operations:
  * - cancel-activity: Cancels a running activity
  * - get-activity: Retrieves detailed information about an activity
+ * - get-activity-log: Retrieves logs for a specific activity
  * - list-activity: Lists all activities for a project
- * - log-activity: Retrieves logs for a specific activity
  *
  * @param adapter - The MCP adapter instance to register tools with
  *
@@ -121,7 +121,7 @@ export function registerActivity(adapter: McpAdapter): void {
   );
 
   /**
-   * Tool: log-activity
+   * Tool: get-activity-log
    * Retrieves logs for a specific activity.
    *
    * Returns the complete log output for an activity, which is essential
@@ -132,16 +132,17 @@ export function registerActivity(adapter: McpAdapter): void {
    * @param activity_id - The unique identifier of the activity
    */
   adapter.server.registerTool(
-    'log-activity',
+    'get-activity-log',
     {
       annotations: { readOnlyHint: true },
-      description: 'Get log activity of upsun project',
+      description:
+        'Get the log of an activity, such as a deployment. Use it to find why an activity failed.',
       inputSchema: {
         project_id: Schema.projectId(),
         activity_id: Schema.activityId(),
       },
     },
-    ToolWrapper.trace('log-activity', async ({ project_id, activity_id }) => {
+    ToolWrapper.trace('get-activity-log', async ({ project_id, activity_id }) => {
       log.debug(`Get Logs for Activity ${activity_id} in Project ${project_id}`);
       const result = await adapter.client.activities.log(project_id, activity_id);
       return Response.json(result);
