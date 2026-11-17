@@ -53,7 +53,10 @@ gh release create vX.Y.Z --title vX.Y.Z --notes-file notes.md
 ## 4. Deploy
 
 The server runs on an Upsun project with two environments: `main` (production,
-`mcp.upsun.com`) and `staging`, a child of `main` that uses manual deployments.
+`mcp.upsun.com`) and `staging`, a child of `main`. Both use manual deployments:
+a push builds the release, and `upsun environment:deploy` makes it live.
+Production deploys with the rolling strategy, which needs the project's
+maintenance window to be set.
 
 1. Add the project's Git remote once:
 
@@ -73,10 +76,11 @@ The server runs on an Upsun project with two environments: `main` (production,
    Check the OAuth metadata at `/.well-known/oauth-authorization-server`,
    then connect an MCP client and call the tools the release changed.
 
-3. Deploy the tag to production:
+3. Deploy the tag to production without downtime:
 
    ```bash
    git push upsun vX.Y.Z^{commit}:refs/heads/main
+   upsun environment:deploy -p <project-id> -e main --strategy=rolling
    ```
 
    Repeat the checks on `https://mcp.upsun.com/`.
