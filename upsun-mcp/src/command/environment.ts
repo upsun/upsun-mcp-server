@@ -15,6 +15,50 @@ import { createLogger } from '../core/logger.js';
 // Create logger for environment operations
 const log = createLogger('MCP:Tool:environment-commands');
 
+/** Top-level keys of a deployment kept in the default (non-full) reply. */
+const DEPLOYMENT_KEYS = ['webapps', 'workers', 'tasks', 'services', 'routes', 'restrictRobots'];
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Build the default reply of `get-environment-deployment`: the six deployment
+ * keys, from a deep copy of the SDK result, with secret fields removed.
+ * The SDK result itself is never mutated.
+ */
+function sixKeyReply(result: unknown): Record<string, unknown> {
+  const copy: unknown = JSON.parse(JSON.stringify(result ?? {}));
+  const source = isPlainObject(copy) ? copy : {};
+  const out: Record<string, unknown> = {};
+  for (const key of DEPLOYMENT_KEYS) {
+    out[key] = source[key];
+  }
+
+  for (const mapKey of ['webapps', 'workers', 'services']) {
+    const map = out[mapKey];
+    if (!isPlainObject(map)) {
+      continue;
+    }
+    for (const entry of Object.values(map)) {
+      if (!isPlainObject(entry)) {
+        continue;
+      }
+      delete entry.variables;
+      delete entry.access;
+      if (isPlainObject(entry.endpoints)) {
+        for (const endpoint of Object.values(entry.endpoints)) {
+          if (isPlainObject(endpoint)) {
+            delete endpoint.password;
+          }
+        }
+      }
+    }
+  }
+
+  return out;
+}
+
 /**
  * Registers environment management tools with the MCP server.
  *
@@ -27,7 +71,9 @@ const log = createLogger('MCP:Tool:environment-commands');
  * - pause-environment: Pauses an active environment
  * - redeploy-environment: Triggers a new deployment
  * - resume-environment: Resumes a paused environment
- * - urls-environment: Gets all URLs for an environment
+ * - get-environment-urls: Gets all URLs for an environment
+ * - get-environment-deployment: Gets the apps, workers, tasks, services and routes
+ *   of the current deployment
  *
  * @param adapter - The MCP adapter instance to register tools with
  *
@@ -275,7 +321,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
   }
 
   /**
-   * Tool: urls-environment
+   * Tool: get-environment-urls
    * Retrieves all URLs associated with an environment.
    *
    * Returns a list of URLs where the environment's applications can be accessed,
@@ -285,7 +331,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param environment_name - The name of the environment to get URLs for
    */
   adapter.server.registerTool(
-    'urls-environment',
+    'get-environment-urls',
     {
       annotations: { readOnlyHint: true },
       description: 'Get URLs of environment on upsun project',
@@ -295,11 +341,53 @@ export function registerEnvironment(adapter: McpAdapter): void {
         full: Schema.full(),
       },
     },
-    ToolWrapper.trace('urls-environment', async ({ project_id, environment_name, full }) => {
+    ToolWrapper.trace('get-environment-urls', async ({ project_id, environment_name, full }) => {
       log.debug(`Get URLs of Environment ${environment_name} in Project ${project_id}`);
       const result = await adapter.client.routes.list(project_id, environment_name);
 
       return Response.json(full ? result : lean(result));
     })
+  );
+
+  /**
+   * Tool: get-environment-deployment
+   * Retrieves the current deployment of an environment.
+   *
+   * Returns the apps (webapps), workers, tasks, services and routes, so an agent
+   * can find which app, worker or service an error comes from. By default the
+   * reply holds only those keys plus `restrictRobots`, without secret fields;
+   * `full: true` returns the raw SDK result.
+   *
+   * @param project_id - The project ID containing the environment
+   * @param environment_name - The name of the environment (not its machine name)
+   */
+  adapter.server.registerTool(
+    'get-environment-deployment',
+    {
+      annotations: { readOnlyHint: true },
+      description:
+        'Get the current deployment of an environment on upsun project (apps, workers, tasks, services, routes). ' +
+        'Use the environment name (e.g. "main"), not its machine name.',
+      inputSchema: {
+        project_id: Schema.projectId(),
+        environment_name: Schema.environmentName(),
+        full: Schema.full(),
+      },
+    },
+    ToolWrapper.trace(
+      'get-environment-deployment',
+      async ({ project_id, environment_name, full }) => {
+        log.debug(
+          `Get current Deployment of Environment ${environment_name} in Project ${project_id}`
+        );
+        const result = await adapter.client.environments.getDeployment(
+          project_id,
+          environment_name,
+          'current'
+        );
+
+        return Response.json(full ? result : sixKeyReply(result));
+      }
+    )
   );
 }

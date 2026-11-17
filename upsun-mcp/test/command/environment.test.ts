@@ -27,6 +27,7 @@ const mockEnvironmentsApi = {
   resume: jest.fn(),
   url: jest.fn(),
   urls: jest.fn(),
+  getDeployment: jest.fn(),
 };
 
 const mockClient: { environments: any; routes: any } = {
@@ -79,6 +80,52 @@ const mockOperationResult = {
 
 const mockUrls = ['https://main-abc123.upsun.app', 'https://www.example.com'];
 
+const mockDeployment = {
+  id: 'current',
+  fingerprint: 'abc123',
+  webapps: {
+    app: {
+      name: 'app',
+      type: 'nodejs:22',
+      variables: { env: { SECRET: 'app-secret' } },
+      access: { ssh: 'contributor' },
+      hooks: { build: 'npm ci', deploy: 'npm run migrate', postDeploy: null },
+      web: { commands: { start: 'node index.js' } },
+      endpoints: { http: { host: 'app.internal', port: 8080, password: 'app-password' } },
+    },
+  },
+  workers: {
+    'app--queue': {
+      name: 'app--queue',
+      variables: { env: { WORKER_SECRET: 'worker-secret' } },
+      access: { ssh: 'admin' },
+      endpoints: { queue: { host: 'queue.internal', password: 'worker-password' } },
+    },
+  },
+  tasks: {},
+  services: {
+    postgresql: {
+      type: 'postgresql:16',
+      variables: { SERVICE_SECRET: 'service-secret' },
+      access: { ssh: 'viewer' },
+      endpoints: {
+        postgresql: { host: 'postgresql.internal', port: 5432, password: 'db-password' },
+      },
+    },
+  },
+  routes: {
+    'https://main-abc123.upsun.app/': {
+      type: 'upstream',
+      upstream: 'app:http',
+    },
+    'https://www.main-abc123.upsun.app/': {
+      type: 'redirect',
+      to: 'https://main-abc123.upsun.app/',
+    },
+  },
+  restrictRobots: true,
+};
+
 // ...existing code...
 
 // ...existing code...
@@ -119,6 +166,7 @@ describe('Environment Command Module', () => {
     mockClient.environments.url.mockResolvedValue(mockUrls);
     mockClient.environments.urls.mockResolvedValue(mockUrls);
     mockClient.routes.list.mockResolvedValue(mockUrls);
+    mockClient.environments.getDeployment.mockResolvedValue(mockDeployment);
   });
 
   afterEach(() => {
@@ -130,7 +178,7 @@ describe('Environment Command Module', () => {
     it('should register all environment tools', () => {
       registerEnvironment(mockAdapter);
 
-      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(9);
+      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(10);
 
       // Verify all tools are registered
       expect(toolCallbacks['activate-environment']).toBeDefined();
@@ -141,7 +189,8 @@ describe('Environment Command Module', () => {
       expect(toolCallbacks['pause-environment']).toBeDefined();
       expect(toolCallbacks['redeploy-environment']).toBeDefined();
       expect(toolCallbacks['resume-environment']).toBeDefined();
-      expect(toolCallbacks['urls-environment']).toBeDefined();
+      expect(toolCallbacks['get-environment-urls']).toBeDefined();
+      expect(toolCallbacks['get-environment-deployment']).toBeDefined();
     });
 
     it('should register tools with correct names and descriptions', () => {
@@ -157,7 +206,8 @@ describe('Environment Command Module', () => {
       expect(calls[5][0]).toBe('pause-environment');
       expect(calls[6][0]).toBe('redeploy-environment');
       expect(calls[7][0]).toBe('resume-environment');
-      expect(calls[8][0]).toBe('urls-environment');
+      expect(calls[8][0]).toBe('get-environment-urls');
+      expect(calls[9][0]).toBe('get-environment-deployment');
     });
   });
 
@@ -486,13 +536,13 @@ describe('Environment Command Module', () => {
     });
   });
 
-  describe('urls-environment tool', () => {
+  describe('get-environment-urls tool', () => {
     beforeEach(() => {
       registerEnvironment(mockAdapter);
     });
 
     it('should get environment URLs successfully', async () => {
-      const callback = toolCallbacks['urls-environment'];
+      const callback = toolCallbacks['get-environment-urls'];
       const params = {
         project_id: 'test-project-13',
         environment_name: 'main',
@@ -512,7 +562,7 @@ describe('Environment Command Module', () => {
     });
 
     it('should handle get URLs errors', async () => {
-      const callback = toolCallbacks['urls-environment'];
+      const callback = toolCallbacks['get-environment-urls'];
       const errorMessage = 'Environment URLs not available';
       mockClient.routes.list.mockRejectedValue(new Error(errorMessage));
 
@@ -525,7 +575,7 @@ describe('Environment Command Module', () => {
     });
 
     it('should handle empty URLs list', async () => {
-      const callback = toolCallbacks['urls-environment'];
+      const callback = toolCallbacks['get-environment-urls'];
       mockClient.routes.list.mockResolvedValue([]);
 
       const params = {
@@ -543,6 +593,128 @@ describe('Environment Command Module', () => {
           },
         ],
       });
+    });
+  });
+
+  describe('get-environment-deployment tool', () => {
+    beforeEach(() => {
+      registerEnvironment(mockAdapter);
+    });
+
+    it('should return the six keys without secret fields by default', async () => {
+      const callback = toolCallbacks['get-environment-deployment'];
+      const before = structuredClone(mockDeployment);
+
+      const result = await callback({ project_id: 'test-project', environment_name: 'main' });
+      const reply = JSON.parse(result.content[0].text);
+
+      expect(Object.keys(reply).sort()).toEqual(
+        ['restrictRobots', 'routes', 'services', 'tasks', 'webapps', 'workers'].sort()
+      );
+      expect(reply.webapps.app.variables).toBeUndefined();
+      expect(reply.webapps.app.access).toBeUndefined();
+      expect(reply.workers['app--queue'].variables).toBeUndefined();
+      expect(reply.workers['app--queue'].access).toBeUndefined();
+      expect(reply.services.postgresql.variables).toBeUndefined();
+      expect(reply.services.postgresql.access).toBeUndefined();
+      expect(reply.services.postgresql.endpoints.postgresql.password).toBeUndefined();
+      expect(reply.services.postgresql.endpoints.postgresql.host).toBe('postgresql.internal');
+      expect(reply.webapps.app.endpoints.http.password).toBeUndefined();
+      expect(reply.webapps.app.endpoints.http.host).toBe('app.internal');
+      expect(reply.workers['app--queue'].endpoints.queue.password).toBeUndefined();
+      expect(reply.workers['app--queue'].endpoints.queue.host).toBe('queue.internal');
+      expect(reply.routes).toEqual(mockDeployment.routes);
+      expect(reply.tasks).toEqual({});
+      expect(reply.restrictRobots).toBe(true);
+      expect(result.content[0].text).not.toContain('secret');
+      expect(result.content[0].text).not.toContain('password');
+
+      // The SDK result is not mutated.
+      expect(mockDeployment).toEqual(before);
+    });
+
+    it('should keep hooks and web.commands by default', async () => {
+      const callback = toolCallbacks['get-environment-deployment'];
+
+      const result = await callback({
+        project_id: 'test-project',
+        environment_name: 'main',
+        full: false,
+      });
+      const reply = JSON.parse(result.content[0].text);
+
+      expect(reply.webapps.app.hooks).toEqual(mockDeployment.webapps.app.hooks);
+      expect(reply.webapps.app.web.commands).toEqual({ start: 'node index.js' });
+    });
+
+    it('should return the full raw payload with full:true', async () => {
+      const callback = toolCallbacks['get-environment-deployment'];
+
+      const result = await callback({
+        project_id: 'test-project',
+        environment_name: 'main',
+        full: true,
+      });
+
+      expect(result).toEqual({
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mockDeployment, null, 2),
+          },
+        ],
+      });
+      const reply = JSON.parse(result.content[0].text);
+      expect(reply.services.postgresql.endpoints.postgresql.password).toBe('db-password');
+      expect(reply.webapps.app.variables).toEqual(mockDeployment.webapps.app.variables);
+    });
+
+    it("should request the 'current' deployment", async () => {
+      const callback = toolCallbacks['get-environment-deployment'];
+
+      await callback({ project_id: 'test-project', environment_name: 'main' });
+
+      expect(mockClient.environments.getDeployment).toHaveBeenCalledWith(
+        'test-project',
+        'main',
+        'current'
+      );
+    });
+
+    it('should not crash on missing maps or malformed entries', async () => {
+      const callback = toolCallbacks['get-environment-deployment'];
+      mockClient.environments.getDeployment.mockResolvedValue({
+        webapps: { app: null },
+        services: { db: { type: 'mariadb' }, cache: { endpoints: { redis: null } } },
+        routes: { 'https://a/': { type: 'upstream' }, 'https://b/': null },
+      });
+
+      const result = await callback({ project_id: 'test-project', environment_name: 'main' });
+      const reply = JSON.parse(result.content[0].text);
+
+      expect(Object.keys(reply).sort()).toEqual(['routes', 'services', 'webapps']);
+      expect(reply.webapps.app).toBeNull();
+      expect(reply.services.db).toEqual({ type: 'mariadb' });
+      expect(reply.routes['https://a/']).toEqual({ type: 'upstream' });
+    });
+
+    it('should handle a null deployment', async () => {
+      const callback = toolCallbacks['get-environment-deployment'];
+      mockClient.environments.getDeployment.mockResolvedValue(null);
+
+      const result = await callback({ project_id: 'test-project', environment_name: 'main' });
+
+      expect(JSON.parse(result.content[0].text)).toEqual({});
+    });
+
+    it('should handle get deployment errors', async () => {
+      const callback = toolCallbacks['get-environment-deployment'];
+      const errorMessage = 'Deployment not found';
+      mockClient.environments.getDeployment.mockRejectedValue(new Error(errorMessage));
+
+      await expect(
+        callback({ project_id: 'test-project', environment_name: 'non-existent' })
+      ).rejects.toThrow(errorMessage);
     });
   });
 

@@ -23,13 +23,14 @@ You don't need to install or run anything locally unless you're developing or cu
 ### 🌍 Environment Management
 - **activate-environment**: Activate paused environments
 - **delete-environment**: Permanently delete environments
+- **get-environment-deployment**: List the apps, workers, tasks, services and routes of the current deployment
+- **get-environment-urls**: Get all URLs for an environment
 - **info-environment**: Get environment details and status
 - **list-environment**: List all environments in a project
 - **merge-environment**: Merge environment changes to parent
 - **pause-environment**: Pause active environments
 - **redeploy-environment**: Trigger new deployments
 - **resume-environment**: Resume paused environments
-- **urls-environment**: Get all URLs for an environment
 
 ### 🏢 Organization Management
 - **create-organization**: Create an organization
