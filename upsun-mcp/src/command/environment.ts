@@ -23,7 +23,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Build the default reply of `get-deployment`: the six deployment
+ * Build the default reply of `get-environment-deployment`: the six deployment
  * keys, from a deep copy of the SDK result, with secret fields removed.
  * The SDK result itself is never mutated.
  */
@@ -71,8 +71,8 @@ function sixKeyReply(result: unknown): Record<string, unknown> {
  * - pause-environment: Pauses an active environment
  * - redeploy-environment: Triggers a new deployment
  * - resume-environment: Resumes a paused environment
- * - urls-environment: Gets all URLs for an environment
- * - get-deployment: Gets the apps, workers, tasks, services and routes
+ * - get-environment-urls: Gets all URLs for an environment
+ * - get-environment-deployment: Gets the apps, workers, tasks, services and routes
  *   of the current deployment
  *
  * @param adapter - The MCP adapter instance to register tools with
@@ -321,7 +321,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
   }
 
   /**
-   * Tool: urls-environment
+   * Tool: get-environment-urls
    * Retrieves all URLs associated with an environment.
    *
    * Returns a list of URLs where the environment's applications can be accessed,
@@ -331,7 +331,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param environment_name - The name of the environment to get URLs for
    */
   adapter.server.registerTool(
-    'urls-environment',
+    'get-environment-urls',
     {
       annotations: { readOnlyHint: true },
       description: 'Get URLs of environment on upsun project',
@@ -341,7 +341,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
         full: Schema.full(),
       },
     },
-    ToolWrapper.trace('urls-environment', async ({ project_id, environment_name, full }) => {
+    ToolWrapper.trace('get-environment-urls', async ({ project_id, environment_name, full }) => {
       log.debug(`Get URLs of Environment ${environment_name} in Project ${project_id}`);
       const result = await adapter.client.routes.list(project_id, environment_name);
 
@@ -350,7 +350,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
   );
 
   /**
-   * Tool: get-deployment
+   * Tool: get-environment-deployment
    * Retrieves the current deployment of an environment.
    *
    * Returns the apps (webapps), workers, tasks, services and routes, so an agent
@@ -362,7 +362,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param environment_name - The name of the environment (not its machine name)
    */
   adapter.server.registerTool(
-    'get-deployment',
+    'get-environment-deployment',
     {
       annotations: { readOnlyHint: true },
       description:
@@ -374,17 +374,20 @@ export function registerEnvironment(adapter: McpAdapter): void {
         full: Schema.full(),
       },
     },
-    ToolWrapper.trace('get-deployment', async ({ project_id, environment_name, full }) => {
-      log.debug(
-        `Get current Deployment of Environment ${environment_name} in Project ${project_id}`
-      );
-      const result = await adapter.client.environments.getDeployment(
-        project_id,
-        environment_name,
-        'current'
-      );
+    ToolWrapper.trace(
+      'get-environment-deployment',
+      async ({ project_id, environment_name, full }) => {
+        log.debug(
+          `Get current Deployment of Environment ${environment_name} in Project ${project_id}`
+        );
+        const result = await adapter.client.environments.getDeployment(
+          project_id,
+          environment_name,
+          'current'
+        );
 
-      return Response.json(full ? result : sixKeyReply(result));
-    })
+        return Response.json(full ? result : sixKeyReply(result));
+      }
+    )
   );
 }
