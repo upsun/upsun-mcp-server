@@ -254,8 +254,8 @@ describe('UpsunMcpServer', () => {
         expect(toolCallbacks['list-activity']).toBeDefined();
       });
 
-      it('should register log-activity tool', () => {
-        expect(toolCallbacks['log-activity']).toBeDefined();
+      it('should register get-activity-log tool', () => {
+        expect(toolCallbacks['get-activity-log']).toBeDefined();
       });
 
       it('should handle list-activity correctly', async () => {
@@ -283,7 +283,7 @@ describe('UpsunMcpServer', () => {
           'cancel-activity',
           'get-activity',
           'list-activity',
-          'log-activity',
+          'get-activity-log',
         ];
 
         expectedTools.forEach(toolName => {

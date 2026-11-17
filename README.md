@@ -41,8 +41,8 @@ You don't need to install or run anything locally unless you're developing or cu
 ### 📊 Activity & Monitoring
 - **cancel-activity**: Cancel a running or pending activity
 - **get-activity**: Get the details of an activity
+- **get-activity-log**: Get the log of an activity, such as a deployment
 - **list-activity**: List the activities of a project
-- **log-activity**: Get the log of an activity, such as a deployment
 
 ### 🔐 Security & Access
 - **add-sshkey**: Add an SSH key to the Upsun account
