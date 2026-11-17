@@ -29,6 +29,7 @@ describe('Authentication Module', () => {
       expect(config.authorizationUrl).toBe('https://auth.upsun.com/oauth2/authorize');
       expect(config.tokenUrl).toBe('https://auth.upsun.com/oauth2/token');
       expect(config.revocationUrl).toBe('https://auth.upsun.com/oauth2/revoke');
+      expect(config.registrationUrl).toBe('https://auth.upsun.com/oauth2/register');
       expect(config.issuerUrl).toBe('https://auth.upsun.com');
       expect(config.baseUrl).toBe('http://127.0.0.1:3000/');
       expect(config.scope).toBe('offline_access');
@@ -60,6 +61,7 @@ describe('Authentication Module', () => {
       expect(metadata.authorization_endpoint).toBe(config.authorizationUrl);
       expect(metadata.token_endpoint).toBe(config.tokenUrl);
       expect(metadata.revocation_endpoint).toBe(config.revocationUrl);
+      expect(metadata.registration_endpoint).toBe('https://auth.upsun.com/oauth2/register');
       expect(metadata.scopes_supported).toEqual(config.scope.split(' '));
       expect(metadata.response_types_supported).toEqual(['code']);
       expect(metadata.grant_types_supported).toEqual(['authorization_code', 'refresh_token']);

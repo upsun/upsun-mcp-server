@@ -39,7 +39,7 @@ export interface OAuth2Config {
   authorizationUrl: string;
   tokenUrl: string;
   revocationUrl: string;
-  registrationUrl?: string; // Optional: for external OAuth2 servers supporting dynamic registration
+  registrationUrl?: string; // Unset when dynamic client registration is disabled.
   issuerUrl: string;
   baseUrl: string;
   scope: string;
@@ -108,7 +108,7 @@ export function createAuthorizationServerMetadata(
     code_challenge_methods_supported: ['S256'],
   };
 
-  // Only add registration_endpoint if configured (external OAuth2 server support)
+  // Advertise dynamic client registration unless it is disabled.
   if (config.registrationUrl) {
     metadata.registration_endpoint = config.registrationUrl;
   }
@@ -281,7 +281,7 @@ export function setupOAuth2Direct(
   if (oauth2Config.registrationUrl) {
     log.info(`OAuth2 - Dynamic Client Registration: ${oauth2Config.registrationUrl}`);
   } else {
-    log.warn('OAuth2 - Dynamic Client Registration: Not configured (set OAUTH_REGISTRATION_URL)');
+    log.info('OAuth2 - Dynamic Client Registration: disabled (OAUTH_REGISTRATION_URL is empty)');
   }
 }
 

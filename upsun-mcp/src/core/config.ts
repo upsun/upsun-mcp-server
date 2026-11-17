@@ -156,8 +156,9 @@ export const oauth2Config = {
   /** OAuth2 token endpoint URL */
   tokenUrl: process.env.OAUTH_TOKEN_URL || `${getOAuth2Base()}/oauth2/token`,
 
-  /** OAuth2 dynamic client registration endpoint (optional) */
-  registrationUrl: process.env.OAUTH_REGISTRATION_URL || undefined,
+  /** OAuth2 dynamic client registration endpoint URL; an empty value disables it */
+  registrationUrl:
+    (process.env.OAUTH_REGISTRATION_URL ?? `${getOAuth2Base()}/oauth2/register`) || undefined,
 
   /** OAuth2 token revocation endpoint URL */
   revocationUrl: process.env.OAUTH_REVOCATION_URL || `${getOAuth2Base()}/oauth2/revoke`,
@@ -264,7 +265,7 @@ Configuration:
     - Authorization Endpoint: ${oauth2Config.authorizationUrl}
     - Token Endpoint: ${oauth2Config.tokenUrl}
     - Revocation Endpoint: ${oauth2Config.revocationUrl}
-    - Registration Endpoint: ${oauth2Config.registrationUrl || 'not configured'}
+    - Registration Endpoint: ${oauth2Config.registrationUrl || 'disabled'}
     - Issuer URL: ${oauth2Config.issuerUrl}
     - Scope: ${oauth2Config.scope}
     - Documentation URL: ${oauth2Config.documentationUrl}
