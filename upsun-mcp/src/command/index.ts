@@ -11,6 +11,7 @@
  * - Certificate: SSL/TLS certificate management
  * - Domain: Custom domain configuration
  * - Environment: Environment management and configuration
+ * - Log: Environment log overview and query
  * - Organization: Organization-level operations
  * - Project: Project creation and management
  * - Route: URL routing configuration
@@ -24,6 +25,7 @@ export * from './backup.js';
 export * from './certificate.js';
 export * from './domain.js';
 export * from './environment.js';
+export * from './log.js';
 export * from './organization.js';
 export * from './project.js';
 export * from './route.js';
