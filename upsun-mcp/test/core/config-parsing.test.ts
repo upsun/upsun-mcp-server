@@ -27,6 +27,27 @@ describe('Configuration Parsing', () => {
     jest.resetModules();
   });
 
+  describe('OAuth2 registration URL', () => {
+    it('should default to the OAuth2 base URL', async () => {
+      delete process.env.OAUTH_REGISTRATION_URL;
+      process.env.OAUTH_URL = 'https://auth.example.com';
+      const { oauth2Config } = await import('../../src/core/config.js');
+      expect(oauth2Config.registrationUrl).toBe('https://auth.example.com/oauth2/register');
+    });
+
+    it('should use OAUTH_REGISTRATION_URL when set', async () => {
+      process.env.OAUTH_REGISTRATION_URL = 'https://dcr.example.com/register';
+      const { oauth2Config } = await import('../../src/core/config.js');
+      expect(oauth2Config.registrationUrl).toBe('https://dcr.example.com/register');
+    });
+
+    it('should be disabled when OAUTH_REGISTRATION_URL is empty', async () => {
+      process.env.OAUTH_REGISTRATION_URL = '';
+      const { oauth2Config } = await import('../../src/core/config.js');
+      expect(oauth2Config.registrationUrl).toBeUndefined();
+    });
+  });
+
   describe('parseBoolean functionality', () => {
     it('should parse "true" string as true', async () => {
       process.env.OTEL_ENABLED = 'true';
