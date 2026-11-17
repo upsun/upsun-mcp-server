@@ -23,7 +23,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Build the default reply of `get-environment-deployment`: the six deployment
+ * Build the default reply of `get-deployment`: the six deployment
  * keys, from a deep copy of the SDK result, with secret fields removed.
  * The SDK result itself is never mutated.
  */
@@ -72,7 +72,7 @@ function sixKeyReply(result: unknown): Record<string, unknown> {
  * - redeploy-environment: Triggers a new deployment
  * - resume-environment: Resumes a paused environment
  * - urls-environment: Gets all URLs for an environment
- * - get-environment-deployment: Gets the apps, workers, tasks, services and routes
+ * - get-deployment: Gets the apps, workers, tasks, services and routes
  *   of the current deployment
  *
  * @param adapter - The MCP adapter instance to register tools with
@@ -350,7 +350,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
   );
 
   /**
-   * Tool: get-environment-deployment
+   * Tool: get-deployment
    * Retrieves the current deployment of an environment.
    *
    * Returns the apps (webapps), workers, tasks, services and routes, so an agent
@@ -362,7 +362,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
    * @param environment_name - The name of the environment (not its machine name)
    */
   adapter.server.registerTool(
-    'get-environment-deployment',
+    'get-deployment',
     {
       annotations: { readOnlyHint: true },
       description:
@@ -374,20 +374,17 @@ export function registerEnvironment(adapter: McpAdapter): void {
         full: Schema.full(),
       },
     },
-    ToolWrapper.trace(
-      'get-environment-deployment',
-      async ({ project_id, environment_name, full }) => {
-        log.debug(
-          `Get current Deployment of Environment ${environment_name} in Project ${project_id}`
-        );
-        const result = await adapter.client.environments.getDeployment(
-          project_id,
-          environment_name,
-          'current'
-        );
+    ToolWrapper.trace('get-deployment', async ({ project_id, environment_name, full }) => {
+      log.debug(
+        `Get current Deployment of Environment ${environment_name} in Project ${project_id}`
+      );
+      const result = await adapter.client.environments.getDeployment(
+        project_id,
+        environment_name,
+        'current'
+      );
 
-        return Response.json(full ? result : sixKeyReply(result));
-      }
-    )
+      return Response.json(full ? result : sixKeyReply(result));
+    })
   );
 }
