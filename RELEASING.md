@@ -64,6 +64,7 @@ The server runs on an Upsun project with two environments: `main` (production,
 2. Deploy the tag to staging and smoke-test it:
 
    ```bash
+   git fetch origin --tags
    upsun environment:resume -p <project-id> -e staging
    git push upsun vX.Y.Z^{commit}:refs/heads/staging
    upsun environment:deploy -p <project-id> -e staging
