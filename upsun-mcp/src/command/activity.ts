@@ -80,6 +80,30 @@ function parseLogRecord(line: string): string | null {
 }
 
 /**
+ * Returns a copy of apiConfig whose fetch records each raw response in rawResponses.
+ * A post middleware (the UpsunClient auth retry) makes the SDK return a clone of the raw
+ * response; the clone shares the connection, which closes only when both bodies are cancelled.
+ */
+function recordingConfig(
+  apiConfig: Configuration,
+  rawResponses: globalThis.Response[]
+): Configuration {
+  const fetchApi = apiConfig.fetchApi ?? fetch;
+  return new Configuration({
+    basePath: apiConfig.basePath,
+    accessToken: apiConfig.accessToken,
+    middleware: apiConfig.middleware,
+    headers: apiConfig.headers,
+    credentials: apiConfig.credentials,
+    fetchApi: async (url, init): Promise<globalThis.Response> => {
+      const rawResponse = await fetchApi(url, init);
+      rawResponses.push(rawResponse);
+      return rawResponse;
+    },
+  });
+}
+
+/**
  * Reads the activity log stream until its seal record. When the body does not end within
  * ACTIVITY_LOG_TIMEOUT_MS after the headers, returns the messages read so far followed by
  * ACTIVITY_LOG_INCOMPLETE_NOTE.
@@ -89,17 +113,28 @@ export async function readActivityLog(
   projectId: string,
   activityId: string
 ): Promise<string> {
-  const response = await new ActivityLogApi(apiConfig).fetchLog(projectId, activityId);
+  const rawResponses: globalThis.Response[] = [];
+  const response = await new ActivityLogApi(recordingConfig(apiConfig, rawResponses)).fetchLog(
+    projectId,
+    activityId
+  );
   if (!response.body) {
     throw new Error('Activity log response has no body');
   }
   const reader = response.body.getReader();
-  // Cancelling the reader closes the upstream connection. An abort signal would error the body,
+  // Cancelling every body closes the upstream connection. An abort signal would error the body,
   // and the cancel promise would then reject with no handler.
-  const release = (): Promise<void> =>
-    reader
-      .cancel()
-      .catch((error: unknown) => log.warn(`Cannot release the activity log stream: ${error}`));
+  const release = async (): Promise<void> => {
+    const unreadBodies = rawResponses
+      .filter(raw => raw !== response && raw.body && !raw.body.locked)
+      .map(raw => raw.body!.cancel());
+    const results = await Promise.allSettled([reader.cancel(), ...unreadBodies]);
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        log.warn(`Cannot release the activity log stream: ${result.reason}`);
+      }
+    }
+  };
   let timedOut = false;
   // The timer starts after the headers: only an open log stream gives an incomplete log.
   const timer = setTimeout(() => {

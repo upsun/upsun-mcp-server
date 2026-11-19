@@ -1,7 +1,7 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 import http from 'node:http';
 import { AddressInfo } from 'node:net';
-import { Configuration, ResponseError } from 'upsun-sdk-node';
+import { Configuration, ResponseError, UpsunClient } from 'upsun-sdk-node';
 import { McpAdapter } from '../../src/core/adapter';
 import {
   ACTIVITY_LOG_HEADERS_TIMEOUT_MS,
@@ -602,41 +602,56 @@ describe('Activity Command Module', () => {
   // The real fetch ties the body to the connection: the mocked responses above cannot show a leak.
   describe('get-activity-log with a real HTTP server', () => {
     let server: http.Server;
-    let responseClosed: Promise<void>;
-    let realConfig: Configuration;
+    let basePath: string;
+    let responseClosed: boolean;
     const unhandled: unknown[] = [];
     const onUnhandled = (reason: unknown) => unhandled.push(reason);
 
     beforeEach(async () => {
+      responseClosed = false;
       server = http.createServer((_req, res) => {
-        responseClosed = new Promise(resolve => res.on('close', () => resolve()));
+        res.on('close', () => (responseClosed = true));
         res.writeHead(200, { 'content-type': 'application/x-ndjson' });
         // The stream stays open, as for a running activity.
         res.write(logRecord(0, 'Building application\n') + '{"_id": 1, "data": {}}\n');
       });
       await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       const { port } = server.address() as AddressInfo;
-      realConfig = new Configuration({
-        basePath: `http://127.0.0.1:${port}`,
-        accessToken: async () => 'test-token',
-      });
+      basePath = `http://127.0.0.1:${port}`;
       unhandled.length = 0;
       process.on('unhandledRejection', onUnhandled);
     });
 
     afterEach(async () => {
       process.off('unhandledRejection', onUnhandled);
+      server.closeAllConnections();
       await new Promise(resolve => server.close(resolve));
     });
 
-    it('should close the connection and leave no unhandled rejection when a record is malformed', async () => {
-      await expect(readActivityLog(realConfig, 'test-project-13', 'act')).rejects.toThrow(
+    async function expectReleasedAfterMalformedRecord(apiConfig: Configuration): Promise<void> {
+      await expect(readActivityLog(apiConfig, 'test-project-13', 'act')).rejects.toThrow(
         'Unexpected activity log record'
       );
 
-      await responseClosed;
-      await new Promise(resolve => setTimeout(resolve, 50));
+      for (let waited = 0; !responseClosed && waited < 2_000; waited += 20) {
+        await new Promise(resolve => setTimeout(resolve, 20));
+      }
+      expect(responseClosed).toBe(true);
       expect(unhandled).toEqual([]);
+    }
+
+    it('should close the connection and leave no unhandled rejection when a record is malformed', async () => {
+      await expectReleasedAfterMalformedRecord(
+        new Configuration({ basePath, accessToken: async () => 'test-token' })
+      );
+    });
+
+    // The UpsunClient auth middleware makes the SDK return a clone that shares the connection.
+    it('should close the connection with the UpsunClient configuration', async () => {
+      const client = new UpsunClient({ base_url: basePath, auth_url: basePath, clientId: 'test' });
+      client.setBearerToken('test-token');
+
+      await expectReleasedAfterMalformedRecord(client.apiConfig);
     });
   });
 
