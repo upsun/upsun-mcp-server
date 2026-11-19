@@ -11,6 +11,7 @@ import { McpAdapter } from '../core/adapter.js';
 import { Response, Schema, ToolWrapper } from '../core/helper.js';
 import { lean } from '../core/lean.js';
 import { createLogger } from '../core/logger.js';
+import { deployedRoutes } from './route.js';
 
 // Create logger for environment operations
 const log = createLogger('MCP:Tool:environment-commands');
@@ -322,10 +323,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
 
   /**
    * Tool: get-environment-urls
-   * Retrieves all URLs associated with an environment.
-   *
-   * Returns a list of URLs where the environment's applications can be accessed,
-   * including both default and custom domain URLs.
+   * Returns the routes of the current deployment of an environment, keyed by route URL.
    *
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment to get URLs for
@@ -334,18 +332,18 @@ export function registerEnvironment(adapter: McpAdapter): void {
     'get-environment-urls',
     {
       annotations: { readOnlyHint: true },
-      description: 'Get URLs of environment on upsun project',
+      description:
+        'Get URLs of environment on upsun project, from its current deployment, keyed by route URL',
       inputSchema: {
         project_id: Schema.projectId(),
         environment_name: Schema.environmentName(),
-        full: Schema.full(),
       },
     },
-    ToolWrapper.trace('get-environment-urls', async ({ project_id, environment_name, full }) => {
+    ToolWrapper.trace('get-environment-urls', async ({ project_id, environment_name }) => {
       log.debug(`Get URLs of Environment ${environment_name} in Project ${project_id}`);
-      const result = await adapter.client.routes.list(project_id, environment_name);
+      const result = await deployedRoutes(adapter, project_id, environment_name);
 
-      return Response.json(full ? result : lean(result));
+      return Response.json(result);
     })
   );
 

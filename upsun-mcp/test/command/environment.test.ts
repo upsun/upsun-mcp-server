@@ -30,11 +30,8 @@ const mockEnvironmentsApi = {
   getDeployment: jest.fn(),
 };
 
-const mockClient: { environments: any; routes: any } = {
+const mockClient: { environments: any } = {
   environments: mockEnvironmentsApi,
-  routes: {
-    list: jest.fn(),
-  },
 };
 const mockAdapter: McpAdapter = {
   client: mockClient,
@@ -165,7 +162,6 @@ describe('Environment Command Module', () => {
     mockClient.environments.resume.mockResolvedValue(mockOperationResult);
     mockClient.environments.url.mockResolvedValue(mockUrls);
     mockClient.environments.urls.mockResolvedValue(mockUrls);
-    mockClient.routes.list.mockResolvedValue(mockUrls);
     mockClient.environments.getDeployment.mockResolvedValue(mockDeployment);
   });
 
@@ -541,7 +537,7 @@ describe('Environment Command Module', () => {
       registerEnvironment(mockAdapter);
     });
 
-    it('should get environment URLs successfully', async () => {
+    it('should get the routes of the current deployment, keyed by URL', async () => {
       const callback = toolCallbacks['get-environment-urls'];
       const params = {
         project_id: 'test-project-13',
@@ -550,21 +546,18 @@ describe('Environment Command Module', () => {
 
       const result = await callback(params);
 
-      expect(mockClient.routes.list).toHaveBeenCalledWith('test-project-13', 'main');
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(mockUrls, null, 2),
-          },
-        ],
-      });
+      expect(mockClient.environments.getDeployment).toHaveBeenCalledWith(
+        'test-project-13',
+        'main',
+        'current'
+      );
+      expect(JSON.parse(result.content[0].text)).toEqual(mockDeployment.routes);
     });
 
     it('should handle get URLs errors', async () => {
       const callback = toolCallbacks['get-environment-urls'];
       const errorMessage = 'Environment URLs not available';
-      mockClient.routes.list.mockRejectedValue(new Error(errorMessage));
+      mockClient.environments.getDeployment.mockRejectedValue(new Error(errorMessage));
 
       const params = {
         project_id: 'test-project-13',
@@ -572,27 +565,6 @@ describe('Environment Command Module', () => {
       };
 
       await expect(callback(params)).rejects.toThrow(errorMessage);
-    });
-
-    it('should handle empty URLs list', async () => {
-      const callback = toolCallbacks['get-environment-urls'];
-      mockClient.routes.list.mockResolvedValue([]);
-
-      const params = {
-        project_id: 'test-project-13',
-        environment_name: 'staging',
-      };
-
-      const result = await callback(params);
-
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify([], null, 2),
-          },
-        ],
-      });
     });
   });
 
