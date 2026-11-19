@@ -24,7 +24,7 @@ You don't need to install or run anything locally unless you're developing or cu
 - **activate-environment**: Activate paused environments
 - **delete-environment**: Permanently delete environments
 - **get-environment-deployment**: List the apps, workers, tasks, services and routes of the current deployment
-- **get-environment-urls**: Get all URLs for an environment
+- **get-environment-urls**: Get the routes of the current deployment of an environment, keyed by URL
 - **info-environment**: Get environment details and status
 - **list-environment**: List all environments in a project
 - **merge-environment**: Merge environment changes to parent
