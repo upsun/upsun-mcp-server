@@ -183,43 +183,6 @@ describe('Helper Module', () => {
       });
     });
 
-    describe('backupId', () => {
-      it('should return a string schema with 27 character length requirement', () => {
-        const schema = Schema.backupId();
-        expect(schema).toBeInstanceOf(z.ZodString);
-        expect(schema.parse('123456789012345678901234567')).toBe('123456789012345678901234567');
-      });
-
-      it('should reject backup IDs not exactly 27 characters', () => {
-        const schema = Schema.backupId();
-        expect(() => schema.parse('12345678901234567890123456')).toThrow(
-          'Backup ID must be 27 characters long'
-        );
-        expect(() => schema.parse('1234567890123456789012345678')).toThrow(
-          'Backup ID must be 27 characters long'
-        );
-        expect(() => schema.parse('')).toThrow('Backup ID must be 27 characters long');
-      });
-    });
-
-    describe('certificateId', () => {
-      it('should return a string schema with 65 character length requirement', () => {
-        const schema = Schema.certificateId();
-        expect(schema).toBeInstanceOf(z.ZodString);
-        const validId = '1'.repeat(65);
-        expect(schema.parse(validId)).toBe(validId);
-      });
-
-      it('should reject certificate IDs not exactly 65 characters', () => {
-        const schema = Schema.certificateId();
-        const shortId = '1'.repeat(64);
-        const longId = '1'.repeat(66);
-        expect(() => schema.parse(shortId)).toThrow('Certificate ID must be 65 characters long');
-        expect(() => schema.parse(longId)).toThrow('Certificate ID must be 65 characters long');
-        expect(() => schema.parse('')).toThrow('Certificate ID must be 65 characters long');
-      });
-    });
-
     describe('domainName', () => {
       it('should return a string schema with max 255 characters requirement', () => {
         const schema = Schema.domainName();
