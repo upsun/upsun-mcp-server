@@ -4,6 +4,7 @@ import { AddressInfo } from 'node:net';
 import { Configuration, ResponseError } from 'upsun-sdk-node';
 import { McpAdapter } from '../../src/core/adapter';
 import {
+  ACTIVITY_LOG_HEADERS_TIMEOUT_MS,
   ACTIVITY_LOG_INCOMPLETE_NOTE,
   ACTIVITY_LOG_TIMEOUT_MS,
   readActivityLog,
@@ -450,6 +451,26 @@ describe('Activity Command Module', () => {
       const result = await pending;
 
       expect(result.content[0].text).toBe('Done\n');
+    });
+
+    // A stalled upstream is an error, not a running activity.
+    it('should throw when the headers do not arrive within the headers timeout', async () => {
+      jest.useFakeTimers({ doNotFake: ['queueMicrotask', 'nextTick', 'setImmediate'] });
+      fetchMock.mockImplementation(
+        (_url, init) =>
+          new Promise((_resolve, reject) => {
+            init.signal?.addEventListener('abort', () => reject(init.signal?.reason));
+          })
+      );
+
+      const pending = toolCallbacks['get-activity-log'](params).catch((e: unknown) => e);
+      await jest.advanceTimersByTimeAsync(ACTIVITY_LOG_HEADERS_TIMEOUT_MS);
+      const error = await pending;
+
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe(
+        `No response from the activity log endpoint within ${ACTIVITY_LOG_HEADERS_TIMEOUT_MS / 1000} s`
+      );
     });
 
     // A running activity keeps the stream open: a failed call must not keep the connection.
