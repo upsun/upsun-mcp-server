@@ -94,20 +94,18 @@ export class Schema {
 
   /**
    * Creates a Zod string schema for backup IDs.
-   * Backup IDs must be exactly 27 characters long.
    * @returns A Zod string schema for validating backup IDs
    */
   static backupId(): z.ZodString {
-    return z.string().length(27, 'Backup ID must be 27 characters long');
+    return z.string();
   }
 
   /**
    * Creates a Zod string schema for certificate IDs.
-   * Certificate IDs must be exactly 65 characters long.
    * @returns A Zod string schema for validating certificate IDs
    */
   static certificateId(): z.ZodString {
-    return z.string().length(65, 'Certificate ID must be 65 characters long');
+    return z.string();
   }
 
   /**

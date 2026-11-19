@@ -1,4 +1,5 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
+import { z } from 'zod';
 import { McpAdapter } from '../../src/core/adapter';
 import { registerBackup } from '../../src/command/backup';
 import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
@@ -69,6 +70,7 @@ const makeMockAdapter = () => {
 
 describe('Backup Command Module', () => {
   let toolCallbacks: Record<string, any> = {};
+  let toolConfigs: Record<string, any> = {};
   let mockAdapter: McpAdapter;
   const originalEnv = process.env;
 
@@ -77,6 +79,7 @@ describe('Backup Command Module', () => {
     jest.clearAllMocks();
     Object.values(mockLogger).forEach(fn => fn.mockClear());
     toolCallbacks = {};
+    toolConfigs = {};
     mockAdapter = makeMockAdapter();
     // Setup mock server.registerTool to capture callbacks
     (mockAdapter.server.registerTool as any) = jest
@@ -84,9 +87,17 @@ describe('Backup Command Module', () => {
       .mockImplementation((name: any, ...args: any[]) => {
         const callback = args[args.length - 1];
         toolCallbacks[name] = callback;
+        toolConfigs[name] = args[0];
         return mockAdapter.server;
       });
   });
+
+  // Real backup IDs are 26 characters of base32 (lower case).
+  const realBackupId = 'k2wq7x4ztmhd3rnb5fyc6sjpla';
+
+  async function callThroughInputSchema(tool: string, params: Record<string, unknown>) {
+    return toolCallbacks[tool](z.object(toolConfigs[tool].inputSchema).parse(params));
+  }
 
   afterEach(() => {
     teardownTestEnvironment(originalEnv);
@@ -234,6 +245,20 @@ describe('Backup Command Module', () => {
       registerBackup(mockAdapter);
     });
 
+    it('accepts a real backup ID through the input schema and deletes that backup', async () => {
+      await callThroughInputSchema('delete-backup', {
+        project_id: 'abcdefghijklm',
+        environment_name: 'main',
+        backup_id: realBackupId,
+      });
+
+      expect(mockAdapter.client.backups.delete).toHaveBeenCalledWith(
+        'abcdefghijklm',
+        'main',
+        realBackupId
+      );
+    });
+
     it('should return TODO for delete backup', async () => {
       const callback = toolCallbacks['delete-backup'];
       const params = {
@@ -278,6 +303,20 @@ describe('Backup Command Module', () => {
   describe('get-backup tool', () => {
     beforeEach(() => {
       registerBackup(mockAdapter);
+    });
+
+    it('accepts a real backup ID through the input schema and gets that backup', async () => {
+      await callThroughInputSchema('get-backup', {
+        project_id: 'abcdefghijklm',
+        environment_name: 'main',
+        backup_id: realBackupId,
+      });
+
+      expect(mockAdapter.client.backups.get).toHaveBeenCalledWith(
+        'abcdefghijklm',
+        'main',
+        realBackupId
+      );
     });
 
     it('should return the mocked backup object for get-backup', async () => {
