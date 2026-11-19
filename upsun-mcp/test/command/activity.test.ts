@@ -469,8 +469,39 @@ describe('Activity Command Module', () => {
 
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).message).toBe(
-        `No response from the activity log endpoint within ${ACTIVITY_LOG_HEADERS_TIMEOUT_MS / 1000} s`
+        `The activity log request got no response within ${ACTIVITY_LOG_HEADERS_TIMEOUT_MS / 1000} s`
       );
+    });
+
+    // The headers timer starts after the token: a slow token is not blamed on the log endpoint.
+    it('should return the full log when the token arrives after the headers timeout', async () => {
+      jest.useFakeTimers({ doNotFake: ['queueMicrotask', 'nextTick', 'setImmediate'] });
+      const apiConfig = mockClient.apiConfig;
+      mockClient.apiConfig = new Configuration({
+        basePath: BASE_PATH,
+        accessToken: () =>
+          new Promise<string>(resolve =>
+            setTimeout(() => resolve('slow-token'), ACTIVITY_LOG_HEADERS_TIMEOUT_MS + 5_000)
+          ),
+        fetchApi: fetchMock as any,
+      });
+      // As the real fetch, reject at once on a signal that is already aborted.
+      fetchMock.mockImplementation(async (_url, init) => {
+        if (init.signal?.aborted) {
+          throw init.signal.reason;
+        }
+        return streamResponse([logRecord(0, 'Done\n'), sealRecord(1)]);
+      });
+
+      try {
+        const pending = toolCallbacks['get-activity-log'](params);
+        await jest.advanceTimersByTimeAsync(ACTIVITY_LOG_HEADERS_TIMEOUT_MS + 5_000);
+        const result = await pending;
+
+        expect(result.content[0].text).toBe('Done\n');
+      } finally {
+        mockClient.apiConfig = apiConfig;
+      }
     });
 
     // A running activity keeps the stream open: a failed call must not keep the connection.

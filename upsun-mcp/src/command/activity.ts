@@ -19,7 +19,7 @@ import { lean } from '../core/lean.js';
 // The log endpoint streams until the activity ends, so a running activity would block the tool.
 export const ACTIVITY_LOG_TIMEOUT_MS = 10_000;
 
-// Bounds the token fetch and the wait for headers; a stalled upstream fails instead of hanging.
+// Bounds the request until its headers; a stalled upstream fails instead of hanging. The token fetch is not bounded.
 export const ACTIVITY_LOG_HEADERS_TIMEOUT_MS = 30_000;
 
 export const ACTIVITY_LOG_INCOMPLETE_NOTE =
@@ -31,11 +31,7 @@ type ActivityLogRecord = { _id: number; seal?: true; data?: { message?: string }
 
 // SDK 0.8.0 has no method for this endpoint, and activities.log() throws.
 class ActivityLogApi extends BaseAPI {
-  async fetchLog(
-    projectId: string,
-    activityId: string,
-    signal: AbortSignal
-  ): Promise<globalThis.Response> {
+  async fetchLog(projectId: string, activityId: string): Promise<globalThis.Response> {
     const headers: Record<string, string> = {};
     if (this.configuration.accessToken) {
       const token = await this.configuration.accessToken('BearerAuth', []);
@@ -43,14 +39,29 @@ class ActivityLogApi extends BaseAPI {
         headers['Authorization'] = `Bearer ${token}`;
       }
     }
-    return this.request(
-      {
-        path: `/projects/${encodeURIComponent(projectId)}/activities/${encodeURIComponent(activityId)}/log`,
-        method: 'GET',
-        headers,
-      },
-      { signal }
-    );
+    // The signal is never aborted after the headers: an abort would put the body in an error state.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ACTIVITY_LOG_HEADERS_TIMEOUT_MS);
+    try {
+      return await this.request(
+        {
+          path: `/projects/${encodeURIComponent(projectId)}/activities/${encodeURIComponent(activityId)}/log`,
+          method: 'GET',
+          headers,
+        },
+        { signal: controller.signal }
+      );
+    } catch (error) {
+      if (controller.signal.aborted) {
+        throw new Error(
+          `The activity log request got no response within ${ACTIVITY_LOG_HEADERS_TIMEOUT_MS / 1000} s`,
+          { cause: error }
+        );
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 }
 
@@ -78,27 +89,7 @@ export async function readActivityLog(
   projectId: string,
   activityId: string
 ): Promise<string> {
-  // The signal is never aborted after the headers: an abort would put the body in an error state.
-  const headersController = new AbortController();
-  const headersTimer = setTimeout(() => headersController.abort(), ACTIVITY_LOG_HEADERS_TIMEOUT_MS);
-  let response: globalThis.Response;
-  try {
-    response = await new ActivityLogApi(apiConfig).fetchLog(
-      projectId,
-      activityId,
-      headersController.signal
-    );
-  } catch (error) {
-    if (headersController.signal.aborted) {
-      throw new Error(
-        `No response from the activity log endpoint within ${ACTIVITY_LOG_HEADERS_TIMEOUT_MS / 1000} s`,
-        { cause: error }
-      );
-    }
-    throw error;
-  } finally {
-    clearTimeout(headersTimer);
-  }
+  const response = await new ActivityLogApi(apiConfig).fetchLog(projectId, activityId);
   if (!response.body) {
     throw new Error('Activity log response has no body');
   }
