@@ -1,84 +1,88 @@
 /**
- * @fileoverview Route management command module for Upsun MCP server.
+ * @fileoverview Route command module for Upsun MCP server.
  *
- * This module provides MCP tools for managing Upsun routes, which define how
- * HTTP requests are handled within a project environment. It includes
- * utilities for retrieving route information and URLs.
+ * Provides MCP tools that read the routes of an environment.
  */
 
 import { McpAdapter } from '../core/adapter.js';
 import { Response, Schema, ToolWrapper } from '../core/helper.js';
 import { z } from 'zod';
+import { Deployment } from 'upsun-sdk-node';
 import { createLogger } from '../core/logger.js';
 
-// Create logger for route operations
 const log = createLogger('MCP:Tool:route-commands');
 
+// The environment routes endpoint returns default routes for projects configured in
+// `.upsun/config.yaml` (GIT-1834); the current deployment holds the real routes.
+async function deployedRoutes(
+  adapter: McpAdapter,
+  projectId: string,
+  environmentName: string
+): Promise<Deployment['routes']> {
+  const deployment = await adapter.client.environments.getDeployment(
+    projectId,
+    environmentName,
+    'current'
+  );
+  return deployment.routes;
+}
+
 /**
- * Registers route management tools with the MCP server.
- *
- * This function adds two tools for route operations:
- * - get-route: Retrieves information about a specific route
- * - list-route: Lists all routes for an environment
+ * Registers the route tools with the MCP server:
+ * - get-route: one route of an environment (the primary route by default)
+ * - list-route: all routes of an environment
  *
  * @param adapter - The MCP adapter instance to register tools with
- *
- * @example
- * ```typescript
- * const server = new UpsunMcpServer();
- * registerRoute(server);
- * ```
  */
 export function registerRoute(adapter: McpAdapter): void {
   log.info('Register Route Handlers');
 
-  /**
-   * Tool: get-route
-   * Retrieves information about a specific route in an environment.
-   *
-   * Routes define how HTTP requests are handled within a project environment,
-   * including URL patterns, upstream services, and caching configurations.
-   *
-   * @param project_id - The project ID containing the environment
-   * @param environment_name - The name of the environment
-   * @param route_id - Optional identifier for a specific route (if omitted, returns the primary route)
-   */
   adapter.server.registerTool(
     'get-route',
     {
       annotations: { readOnlyHint: true },
-      description: 'Get route URL of upsun project',
+      description:
+        'Get a route of the current deployment of an environment on upsun project. ' +
+        'Without route_id, get the primary route.',
       inputSchema: {
         project_id: Schema.projectId(),
         environment_name: Schema.environmentName(),
-        route_id: z.string().optional(),
+        route_id: z
+          .string()
+          .optional()
+          .describe(
+            'Route URL as returned by list-route, or the route id. Omit it to get the primary route.'
+          ),
       },
     },
     ToolWrapper.trace('get-route', async ({ project_id, environment_name, route_id }) => {
       log.debug(
         `Get Route: ${route_id || 'primary'} in Environment: ${environment_name} of Project: ${project_id}`
       );
-      const result = await adapter.client.routes.get(project_id, environment_name, route_id || '');
+      const routes = await deployedRoutes(adapter, project_id, environment_name);
 
-      return Response.json(result);
+      const match = Object.entries(routes).find(([url, route]) =>
+        route_id ? url === route_id || route.id === route_id : route.primary === true
+      );
+      if (!match) {
+        throw new Error(
+          route_id
+            ? `Route not found: ${route_id}. Use list-route to get the route URLs.`
+            : `No primary route in Environment: ${environment_name}`
+        );
+      }
+
+      const [url, route] = match;
+      return Response.json({ url, ...route });
     })
   );
 
-  /**
-   * Tool: list-route
-   * Lists all routes defined for a specific environment.
-   *
-   * Returns an array of routes with information such as URL patterns,
-   * upstream services, caching configurations, and TLS settings.
-   *
-   * @param project_id - The project ID containing the environment
-   * @param environment_name - The name of the environment to list routes from
-   */
   adapter.server.registerTool(
     'list-route',
     {
       annotations: { readOnlyHint: true },
-      description: 'List routes URL of upsun project',
+      description:
+        'List the routes of the current deployment of an environment on upsun project, keyed by route URL',
       inputSchema: {
         project_id: Schema.projectId(),
         environment_name: Schema.environmentName(),
@@ -86,9 +90,9 @@ export function registerRoute(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('list-route', async ({ project_id, environment_name }) => {
       log.debug(`List Routes in Environment: ${environment_name} of Project: ${project_id}`);
-      const result = await adapter.client.routes.list(project_id, environment_name);
+      const routes = await deployedRoutes(adapter, project_id, environment_name);
 
-      return Response.json(result);
+      return Response.json(routes);
     })
   );
 }

@@ -58,8 +58,8 @@ You don't need to install or run anything locally unless you're developing or cu
 - **update-domain**: Set whether a domain is the project default
 
 ### 🛣️ Routing
-- **get-route**: Get the details of a route
-- **list-route**: List all routes for environments
+- **get-route**: Get a route of the current deployment (the primary route by default)
+- **list-route**: List the routes of the current deployment, keyed by URL
 
 ### 🔒 SSL/TLS Certificates
 - **add-certificate**: Add SSL certificates
