@@ -28,11 +28,7 @@ type ActivityLogRecord = { _id: number; seal?: true; data?: { message?: string }
 
 // SDK 0.8.0 has no method for this endpoint, and activities.log() throws.
 class ActivityLogApi extends BaseAPI {
-  async fetchLog(
-    projectId: string,
-    activityId: string,
-    signal: AbortSignal
-  ): Promise<globalThis.Response> {
+  async fetchLog(projectId: string, activityId: string): Promise<globalThis.Response> {
     const headers: Record<string, string> = {};
     if (this.configuration.accessToken) {
       const token = await this.configuration.accessToken('BearerAuth', []);
@@ -40,14 +36,11 @@ class ActivityLogApi extends BaseAPI {
         headers['Authorization'] = `Bearer ${token}`;
       }
     }
-    return this.request(
-      {
-        path: `/projects/${encodeURIComponent(projectId)}/activities/${encodeURIComponent(activityId)}/log`,
-        method: 'GET',
-        headers,
-      },
-      { signal }
-    );
+    return this.request({
+      path: `/projects/${encodeURIComponent(projectId)}/activities/${encodeURIComponent(activityId)}/log`,
+      method: 'GET',
+      headers,
+    });
   }
 }
 
@@ -75,20 +68,23 @@ export async function readActivityLog(
   projectId: string,
   activityId: string
 ): Promise<string> {
-  const controller = new AbortController();
-  const response = await new ActivityLogApi(apiConfig).fetchLog(
-    projectId,
-    activityId,
-    controller.signal
-  );
+  const response = await new ActivityLogApi(apiConfig).fetchLog(projectId, activityId);
   if (!response.body) {
     throw new Error('Activity log response has no body');
   }
   const reader = response.body.getReader();
-  // A body that ignores the abort signal must still stop the read loop.
-  controller.signal.addEventListener('abort', () => void reader.cancel());
+  // Cancelling the reader closes the upstream connection. An abort signal would error the body,
+  // and the cancel promise would then reject with no handler.
+  const release = (): Promise<void> =>
+    reader
+      .cancel()
+      .catch((error: unknown) => log.warn(`Cannot release the activity log stream: ${error}`));
+  let timedOut = false;
   // The timer starts after the headers: only an open log stream gives an incomplete log.
-  const timer = setTimeout(() => controller.abort(), ACTIVITY_LOG_TIMEOUT_MS);
+  const timer = setTimeout(() => {
+    timedOut = true;
+    void release();
+  }, ACTIVITY_LOG_TIMEOUT_MS);
   const messages: string[] = [];
 
   try {
@@ -114,19 +110,19 @@ export async function readActivityLog(
       }
     }
 
-    if (controller.signal.aborted) {
+    if (timedOut) {
       return messages.join('') + ACTIVITY_LOG_INCOMPLETE_NOTE;
     }
     throw new Error('Activity log stream ended without a seal record');
   } catch (error) {
-    if (controller.signal.aborted) {
+    if (timedOut) {
       return messages.join('') + ACTIVITY_LOG_INCOMPLETE_NOTE;
     }
     throw error;
   } finally {
     clearTimeout(timer);
     // Releases the upstream connection on every path, also when a running activity keeps it open.
-    controller.abort();
+    void release();
   }
 }
 

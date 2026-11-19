@@ -1,9 +1,12 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
+import http from 'node:http';
+import { AddressInfo } from 'node:net';
 import { Configuration, ResponseError } from 'upsun-sdk-node';
 import { McpAdapter } from '../../src/core/adapter';
 import {
   ACTIVITY_LOG_INCOMPLETE_NOTE,
   ACTIVITY_LOG_TIMEOUT_MS,
+  readActivityLog,
   registerActivity,
 } from '../../src/command/activity';
 import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
@@ -525,6 +528,47 @@ describe('Activity Command Module', () => {
       fetchMock.mockResolvedValue(streamResponse(['<html>\n', sealRecord(1)]));
 
       await expect(toolCallbacks['get-activity-log'](params)).rejects.toThrow(SyntaxError);
+    });
+  });
+
+  // The real fetch ties the body to the connection: the mocked responses above cannot show a leak.
+  describe('get-activity-log with a real HTTP server', () => {
+    let server: http.Server;
+    let responseClosed: Promise<void>;
+    let realConfig: Configuration;
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => unhandled.push(reason);
+
+    beforeEach(async () => {
+      server = http.createServer((_req, res) => {
+        responseClosed = new Promise(resolve => res.on('close', () => resolve()));
+        res.writeHead(200, { 'content-type': 'application/x-ndjson' });
+        // The stream stays open, as for a running activity.
+        res.write(logRecord(0, 'Building application\n') + '{"_id": 1, "data": {}}\n');
+      });
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+      const { port } = server.address() as AddressInfo;
+      realConfig = new Configuration({
+        basePath: `http://127.0.0.1:${port}`,
+        accessToken: async () => 'test-token',
+      });
+      unhandled.length = 0;
+      process.on('unhandledRejection', onUnhandled);
+    });
+
+    afterEach(async () => {
+      process.off('unhandledRejection', onUnhandled);
+      await new Promise(resolve => server.close(resolve));
+    });
+
+    it('should close the connection and leave no unhandled rejection when a record is malformed', async () => {
+      await expect(readActivityLog(realConfig, 'test-project-13', 'act')).rejects.toThrow(
+        'Unexpected activity log record'
+      );
+
+      await responseClosed;
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(unhandled).toEqual([]);
     });
   });
 
