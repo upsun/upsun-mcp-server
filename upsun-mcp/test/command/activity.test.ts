@@ -433,6 +433,22 @@ describe('Activity Command Module', () => {
       expect(result.content[0].text).toBe('Building application\n' + ACTIVITY_LOG_INCOMPLETE_NOTE);
     });
 
+    // The timer can cut the stream inside a record: the partial record is dropped, not an error.
+    it('should return the partial log with a note when the timeout cuts a record', async () => {
+      jest.useFakeTimers({ doNotFake: ['queueMicrotask', 'nextTick', 'setImmediate'] });
+      fetchMock.mockResolvedValue(
+        streamResponse([logRecord(0, 'Building application\n') + '{"_id": 1, "data": {"mess'], {
+          close: false,
+        })
+      );
+
+      const pending = toolCallbacks['get-activity-log'](params);
+      await jest.advanceTimersByTimeAsync(ACTIVITY_LOG_TIMEOUT_MS);
+      const result = await pending;
+
+      expect(result.content[0].text).toBe('Building application\n' + ACTIVITY_LOG_INCOMPLETE_NOTE);
+    });
+
     // The timeout applies to the body only: a slow token exchange or slow headers is not a running activity.
     it('should return the full log when the headers arrive after the timeout', async () => {
       jest.useFakeTimers({ doNotFake: ['queueMicrotask', 'nextTick', 'setImmediate'] });
