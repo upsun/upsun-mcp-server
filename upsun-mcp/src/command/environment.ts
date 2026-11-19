@@ -323,10 +323,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
 
   /**
    * Tool: get-environment-urls
-   * Retrieves all URLs associated with an environment.
-   *
-   * Returns a list of URLs where the environment's applications can be accessed,
-   * including both default and custom domain URLs.
+   * Returns the routes of the current deployment of an environment, keyed by route URL.
    *
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment to get URLs for
@@ -340,14 +337,13 @@ export function registerEnvironment(adapter: McpAdapter): void {
       inputSchema: {
         project_id: Schema.projectId(),
         environment_name: Schema.environmentName(),
-        full: Schema.full(),
       },
     },
-    ToolWrapper.trace('get-environment-urls', async ({ project_id, environment_name, full }) => {
+    ToolWrapper.trace('get-environment-urls', async ({ project_id, environment_name }) => {
       log.debug(`Get URLs of Environment ${environment_name} in Project ${project_id}`);
       const result = await deployedRoutes(adapter, project_id, environment_name);
 
-      return Response.json(full ? result : lean(result));
+      return Response.json(result);
     })
   );
 
