@@ -14,7 +14,7 @@ const log = createLogger('MCP:Tool:route-commands');
 
 // The environment routes endpoint returns default routes for projects configured in
 // `.upsun/config.yaml` (GIT-1834); the current deployment holds the real routes.
-async function deployedRoutes(
+export async function deployedRoutes(
   adapter: McpAdapter,
   projectId: string,
   environmentName: string

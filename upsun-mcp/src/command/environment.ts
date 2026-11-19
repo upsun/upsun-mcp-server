@@ -11,6 +11,7 @@ import { McpAdapter } from '../core/adapter.js';
 import { Response, Schema, ToolWrapper } from '../core/helper.js';
 import { lean } from '../core/lean.js';
 import { createLogger } from '../core/logger.js';
+import { deployedRoutes } from './route.js';
 
 // Create logger for environment operations
 const log = createLogger('MCP:Tool:environment-commands');
@@ -334,7 +335,8 @@ export function registerEnvironment(adapter: McpAdapter): void {
     'get-environment-urls',
     {
       annotations: { readOnlyHint: true },
-      description: 'Get URLs of environment on upsun project',
+      description:
+        'Get URLs of environment on upsun project, from its current deployment, keyed by route URL',
       inputSchema: {
         project_id: Schema.projectId(),
         environment_name: Schema.environmentName(),
@@ -343,7 +345,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('get-environment-urls', async ({ project_id, environment_name, full }) => {
       log.debug(`Get URLs of Environment ${environment_name} in Project ${project_id}`);
-      const result = await adapter.client.routes.list(project_id, environment_name);
+      const result = await deployedRoutes(adapter, project_id, environment_name);
 
       return Response.json(full ? result : lean(result));
     })
