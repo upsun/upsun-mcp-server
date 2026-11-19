@@ -73,7 +73,10 @@ const mockActivityList = [
 ];
 
 /** Builds a streamed HTTP response whose body sends each chunk in order. */
-function streamResponse(chunks: string[], { close = true } = {}): globalThis.Response {
+function streamResponse(
+  chunks: string[],
+  { close = true, onCancel = () => {} } = {}
+): globalThis.Response {
   const encoder = new TextEncoder();
   const body = new ReadableStream<Uint8Array>({
     start(controller) {
@@ -82,6 +85,7 @@ function streamResponse(chunks: string[], { close = true } = {}): globalThis.Res
         controller.close();
       }
     },
+    cancel: onCancel,
   });
   return new globalThis.Response(body, { status: 200 });
 }
@@ -425,20 +429,56 @@ describe('Activity Command Module', () => {
       expect(result.content[0].text).toBe('Building application\n' + ACTIVITY_LOG_INCOMPLETE_NOTE);
     });
 
-    it('should return only the note when the response headers do not arrive in time', async () => {
+    // The timeout applies to the body only: a slow token exchange or slow headers is not a running activity.
+    it('should return the full log when the headers arrive after the timeout', async () => {
       jest.useFakeTimers({ doNotFake: ['queueMicrotask', 'nextTick', 'setImmediate'] });
       fetchMock.mockImplementation(
-        (_url, init) =>
-          new Promise((_resolve, reject) => {
-            init.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+        () =>
+          new Promise(resolve => {
+            setTimeout(
+              () => resolve(streamResponse([logRecord(0, 'Done\n'), sealRecord(1)])),
+              ACTIVITY_LOG_TIMEOUT_MS + 5_000
+            );
           })
       );
 
       const pending = toolCallbacks['get-activity-log'](params);
-      await jest.advanceTimersByTimeAsync(ACTIVITY_LOG_TIMEOUT_MS);
+      await jest.advanceTimersByTimeAsync(ACTIVITY_LOG_TIMEOUT_MS + 5_000);
       const result = await pending;
 
-      expect(result.content[0].text).toBe(ACTIVITY_LOG_INCOMPLETE_NOTE);
+      expect(result.content[0].text).toBe('Done\n');
+    });
+
+    // A running activity keeps the stream open: a failed call must not keep the connection.
+    it('should release the open log stream when a record is malformed', async () => {
+      const onCancel = jest.fn();
+      fetchMock.mockResolvedValue(
+        streamResponse(['{"_id": 0, "data": {}}\n'], { close: false, onCancel })
+      );
+
+      await expect(toolCallbacks['get-activity-log'](params)).rejects.toThrow(
+        'Unexpected activity log record'
+      );
+      expect(onCancel).toHaveBeenCalled();
+    });
+
+    it('should send no Authorization header when the token is empty', async () => {
+      const apiConfig = mockClient.apiConfig;
+      mockClient.apiConfig = new Configuration({
+        basePath: BASE_PATH,
+        accessToken: async () => '',
+        fetchApi: fetchMock as any,
+      });
+      fetchMock.mockResolvedValue(streamResponse([sealRecord(0)]));
+
+      try {
+        await toolCallbacks['get-activity-log'](params);
+      } finally {
+        mockClient.apiConfig = apiConfig;
+      }
+
+      const [, init] = fetchMock.mock.calls[0];
+      expect(init.headers as Record<string, string>).not.toHaveProperty('Authorization');
     });
 
     // The HTTP layer forwards an upstream 401 only when it gets a ResponseError.

@@ -20,8 +20,9 @@ import { lean } from '../core/lean.js';
 export const ACTIVITY_LOG_TIMEOUT_MS = 10_000;
 
 export const ACTIVITY_LOG_INCOMPLETE_NOTE =
-  `\n[Incomplete log: the stream did not end within ${ACTIVITY_LOG_TIMEOUT_MS / 1000} s. ` +
-  'The activity is probably still running. Call this tool again later to get the full log.]\n';
+  `\n[Incomplete log: the log stream did not end within ${ACTIVITY_LOG_TIMEOUT_MS / 1000} s. ` +
+  'The activity can still be running, or its log is too long to read in this time. ' +
+  'Call this tool again after the activity ends to get the full log.]\n';
 
 type ActivityLogRecord = { _id: number; seal?: true; data?: { message?: string } };
 
@@ -34,7 +35,10 @@ class ActivityLogApi extends BaseAPI {
   ): Promise<globalThis.Response> {
     const headers: Record<string, string> = {};
     if (this.configuration.accessToken) {
-      headers['Authorization'] = `Bearer ${await this.configuration.accessToken('BearerAuth', [])}`;
+      const token = await this.configuration.accessToken('BearerAuth', []);
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
     }
     return this.request(
       {
@@ -62,8 +66,9 @@ function parseLogRecord(line: string): string | null {
 }
 
 /**
- * Reads the activity log stream until its seal record. After ACTIVITY_LOG_TIMEOUT_MS,
- * returns the messages read so far followed by ACTIVITY_LOG_INCOMPLETE_NOTE.
+ * Reads the activity log stream until its seal record. When the body does not end within
+ * ACTIVITY_LOG_TIMEOUT_MS after the headers, returns the messages read so far followed by
+ * ACTIVITY_LOG_INCOMPLETE_NOTE.
  */
 export async function readActivityLog(
   apiConfig: Configuration,
@@ -71,22 +76,22 @@ export async function readActivityLog(
   activityId: string
 ): Promise<string> {
   const controller = new AbortController();
+  const response = await new ActivityLogApi(apiConfig).fetchLog(
+    projectId,
+    activityId,
+    controller.signal
+  );
+  if (!response.body) {
+    throw new Error('Activity log response has no body');
+  }
+  const reader = response.body.getReader();
+  // A body that ignores the abort signal must still stop the read loop.
+  controller.signal.addEventListener('abort', () => void reader.cancel());
+  // The timer starts after the headers: only an open log stream gives an incomplete log.
   const timer = setTimeout(() => controller.abort(), ACTIVITY_LOG_TIMEOUT_MS);
   const messages: string[] = [];
 
   try {
-    const response = await new ActivityLogApi(apiConfig).fetchLog(
-      projectId,
-      activityId,
-      controller.signal
-    );
-    if (!response.body) {
-      throw new Error('Activity log response has no body');
-    }
-    const reader = response.body.getReader();
-    // A body that ignores the abort signal must still stop the read loop.
-    controller.signal.addEventListener('abort', () => void reader.cancel());
-
     const decoder = new TextDecoder();
     let buffer = '';
     for (;;) {
@@ -100,7 +105,6 @@ export async function readActivityLog(
         }
         const message = parseLogRecord(line);
         if (message === null) {
-          await reader.cancel();
           return messages.join('');
         }
         messages.push(message);
@@ -121,6 +125,8 @@ export async function readActivityLog(
     throw error;
   } finally {
     clearTimeout(timer);
+    // Releases the upstream connection on every path, also when a running activity keeps it open.
+    controller.abort();
   }
 }
 
