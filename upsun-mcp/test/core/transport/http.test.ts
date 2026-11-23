@@ -1,4 +1,4 @@
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeAll, beforeEach, afterEach } from '@jest/globals';
 import { McpServer } from '@modelcontextprotocol/server';
 import request from 'supertest';
 import { ResponseError } from 'upsun-sdk-node/dist/core/runtime.js';
@@ -7,6 +7,8 @@ import { GatewayServer } from '../../../src/core/gateway';
 import { HttpTransport } from '../../../src/core/transport/http';
 import { WritableMode } from '../../../src/core/authentication';
 import { ToolWrapper } from '../../../src/core/helper';
+import { createTestAuth } from '../../helpers/jwt';
+import type { TestAuth } from '../../helpers/jwt';
 
 /** Adapter whose server has one tool that fails with an upstream 401. */
 class StubAdapter {
@@ -40,25 +42,22 @@ class StubAdapter {
   }
 }
 
-const jwt = (() => {
-  const payload = Buffer.from(JSON.stringify({ sub: 'user-1', exp: 4102444800 })).toString(
-    'base64url'
-  );
-  return `eyJhbGciOiJub25lIn0.${payload}.sig`;
-})();
+// Signed in beforeAll; the cases read it lazily because describe.each runs first.
+let auth: TestAuth;
+let jwt: string;
 
 const authCases = [
   {
     name: 'API key',
-    headers: { 'upsun-api-token': 'the-key' },
+    headers: () => ({ 'upsun-api-token': 'the-key' }),
     use: 'useApiKey',
-    token: 'the-key',
+    token: () => 'the-key',
   },
   {
     name: 'bearer',
-    headers: { authorization: `Bearer ${jwt}` },
+    headers: () => ({ authorization: `Bearer ${jwt}` }),
     use: 'useBearerToken',
-    token: jwt,
+    token: () => jwt,
   },
 ] as const;
 
@@ -118,10 +117,15 @@ describe('HttpTransport', () => {
       .set(headers)
       .send(body as object);
 
+  beforeAll(async () => {
+    auth = await createTestAuth();
+    jwt = await auth.sign({ sub: 'user-1' });
+  });
+
   beforeEach(() => {
     StubAdapter.instances = [];
     listenersBefore = crashListeners();
-    gateway = new GatewayServer(StubAdapter as any);
+    gateway = new GatewayServer(StubAdapter as any, undefined, auth.verifier());
   });
 
   afterEach(() => {
@@ -130,31 +134,31 @@ describe('HttpTransport', () => {
 
   describe.each(authCases)('$name requests', ({ headers, use, token }) => {
     it('should serve a legacy initialize as a JSON response', async () => {
-      const res = await post(headers, initialize);
+      const res = await post(headers(), initialize);
 
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toMatch(/^application\/json/);
       expect(res.headers['mcp-session-id']).toBeUndefined();
       expect(res.body.result.protocolVersion).toBe('2025-06-18');
       expect(StubAdapter.instances).toHaveLength(1);
-      expect(StubAdapter.instances[0][use]).toHaveBeenCalledWith(token);
+      expect(StubAdapter.instances[0][use]).toHaveBeenCalledWith(token());
     });
 
     it('should serve a modern server/discover', async () => {
       const res = await post(
-        { ...headers, 'mcp-protocol-version': '2026-07-28', 'mcp-method': 'server/discover' },
+        { ...headers(), 'mcp-protocol-version': '2026-07-28', 'mcp-method': 'server/discover' },
         { jsonrpc: '2.0', id: 1, method: 'server/discover', params: { _meta: modernMeta } }
       );
 
       expect(res.status).toBe(200);
       expect(res.body.result.supportedVersions).toContain('2026-07-28');
-      expect(StubAdapter.instances[0][use]).toHaveBeenCalledWith(token);
+      expect(StubAdapter.instances[0][use]).toHaveBeenCalledWith(token());
     });
 
     it.each(['legacy', 'modern'] as const)(
       'should forward an upstream 401 from a %s tool call',
       async era => {
-        const res = await post({ ...headers, ...toolCall[era].headers }, toolCall[era].body);
+        const res = await post({ ...headers(), ...toolCall[era].headers }, toolCall[era].body);
 
         expect(res.status).toBe(401);
         expect(res.headers['www-authenticate']).toBe('Bearer error="invalid_token"');
@@ -162,6 +166,24 @@ describe('HttpTransport', () => {
         expect(res.text).toBe('{"title":"Unauthorized"}');
       }
     );
+  });
+
+  // The token is checked before any MCP server instance exists or any tool runs.
+  it('should refuse a bearer token with a changed payload before it builds a server', async () => {
+    const [header, , signature] = jwt.split('.');
+    const payload = Buffer.from(JSON.stringify({ sub: 'other-user', exp: 4102444800 })).toString(
+      'base64url'
+    );
+
+    const res = await post(
+      { authorization: `Bearer ${header}.${payload}.${signature}` },
+      toolCall.legacy.body
+    );
+
+    expect(res.status).toBe(401);
+    expect(res.headers['www-authenticate']).toContain('error="invalid_token"');
+    expect(res.body.error_description).toBe('Invalid token signature');
+    expect(StubAdapter.instances).toHaveLength(0);
   });
 
   it('should keep a legacy response when server cleanup fails', async () => {

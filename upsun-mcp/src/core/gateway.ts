@@ -4,6 +4,8 @@ import express from 'express';
 import { McpAdapter } from './adapter.js';
 import {
   setupOAuth2Direct,
+  createProtectedResourceMetadata,
+  getOAuth2Config,
   JwtTokenVerifier,
   requireMcpAuth,
   WritableMode,
@@ -38,6 +40,7 @@ export class GatewayServer<A extends McpAdapter> {
    *
    * @param mcpAdapterServerFactory - Factory function to create MCP adapter instances
    * @param app - Optional Express application instance (creates new one if not provided)
+   * @param verifier - Optional bearer token verifier (defaults to the configured JWKS, issuer and resource)
    *
    * @example
    * ```typescript
@@ -47,7 +50,10 @@ export class GatewayServer<A extends McpAdapter> {
    */
   constructor(
     private readonly mcpAdapterServerFactory: new (mode: WritableMode) => A,
-    public readonly app: core.Express = express()
+    public readonly app: core.Express = express(),
+    verifier: JwtTokenVerifier = JwtTokenVerifier.fromConfig(
+      createProtectedResourceMetadata(getOAuth2Config(), HTTP_MCP_PATH).resource
+    )
   ) {
     coreLog.info('Initializing gateway server instance...');
     this.app.use(express.json());
@@ -57,7 +63,6 @@ export class GatewayServer<A extends McpAdapter> {
 
     // Build auth middleware using the SDK's requireBearerAuth for bearer
     // tokens and a fallback for API keys.
-    const verifier = new JwtTokenVerifier();
     const resourceMetadataUrl = new URL(
       '/.well-known/oauth-protected-resource',
       oauth2Config.resourceUrl

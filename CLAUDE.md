@@ -28,4 +28,9 @@ Read tools add `full: Schema.full()` to the schema and return
 - Forwarding an upstream 401 (`forwardUpstream401`) relies on JSON responses in
   `transport/http.ts`, which settle only after the tool completes. That's why
   2025-era requests bypass the SDK's legacy leg, which always streams.
+- Bearer tokens are verified locally (ES256 signature from the Auth JWKS,
+  issuer, expiry, audience). In tests, sign them with `test/helpers/jwt.ts`
+  and pass its verifier to `GatewayServer`; an unsigned JWT gets 401.
+- Run the tests with `env -u PORT` if `PORT` is set in your shell: one
+  config test expects the default port 3000.
 - Coverage thresholds are in `jest.config.ts`; check with `npm run coverage:check`.

@@ -166,6 +166,9 @@ export const oauth2Config = {
   /** OAuth2 issuer URL used for token validation */
   issuerUrl: process.env.OAUTH_ISSUER_URL || getOAuth2Base(),
 
+  /** JWKS URL with the public keys that sign the access tokens */
+  jwksUrl: process.env.OAUTH_JWKS_URL || `${getOAuth2Base()}/.well-known/jwks.json`,
+
   /** OAuth2 scopes requested during authorization */
   scope: process.env.OAUTH_SCOPE || 'offline_access',
 

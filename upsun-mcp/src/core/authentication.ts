@@ -2,6 +2,8 @@ import express, { RequestHandler } from 'express';
 import { requireBearerAuth } from '@modelcontextprotocol/express';
 import { OAuthError, OAuthErrorCode } from '@modelcontextprotocol/server';
 import type { AuthInfo } from '@modelcontextprotocol/server';
+import { createRemoteJWKSet, decodeJwt, errors, jwtVerify } from 'jose';
+import type { JWTPayload, JWTVerifyGetKey } from 'jose';
 import { createLogger } from './logger.js';
 import { oauth2Config as appAuthConfig } from './config.js';
 import { WritableMode, HeaderKey, API_KEY_CLIENT_ID } from './types.js';
@@ -133,42 +135,106 @@ export function createProtectedResourceMetadata(
   };
 }
 
+export interface JwtVerifierOptions {
+  /** Public keys of the authorization server, e.g. from `createRemoteJWKSet`. */
+  keys: JWTVerifyGetKey;
+  issuer: string;
+  /** The protected resource URL that the token audience must name. */
+  resource: string;
+  clockSkewSeconds?: number;
+}
+
+/** Bearer auth info, with a flag for a token that names no audience. */
+export type BearerAuthInfo = AuthInfo & { emptyAudience?: true };
+
+// Same limit as authlib: a token issued more than 5 minutes in the future is refused.
+const MAX_IAT_SKEW_SECONDS = 300;
+
+// jose error codes that mean the token is bad. Other errors (JWKS fetch failure,
+// timeout) are server faults and propagate, so the client does not drop a valid token.
+const INVALID_TOKEN_ERRORS: Record<string, string> = {
+  ERR_JWS_INVALID: 'Malformed token',
+  ERR_JWT_INVALID: 'Malformed token',
+  ERR_JOSE_ALG_NOT_ALLOWED: 'Token signing algorithm not allowed',
+  ERR_JWS_SIGNATURE_VERIFICATION_FAILED: 'Invalid token signature',
+  ERR_JWKS_NO_MATCHING_KEY: 'Unknown token signing key',
+  ERR_JWT_EXPIRED: 'Token expired',
+  ERR_JWT_CLAIM_VALIDATION_FAILED: 'Invalid token claims',
+};
+
+const trimSlash = (url: string): string => url.replace(/\/+$/, '');
+
 /**
- * Verifies JWT access tokens by parsing the payload without cryptographic
- * validation. The MCP server delegates actual validation to the Upsun API.
- * This extracts `exp` so the SDK middleware can reject expired tokens with
- * HTTP 401 before the transport writes 200 headers.
+ * Verifies Upsun Auth JWT access tokens: ES256 signature, issuer, expiry,
+ * issued-at and audience.
+ *
+ * The audience must be the protected resource URL. A token with an empty
+ * audience is also accepted, and flagged with `emptyAudience`: this is
+ * temporary, for clients that do not send the RFC 8707 `resource` parameter.
  *
  * A clock-skew buffer (default 30s) is subtracted from the `exp` claim so
  * that tokens close to expiry are rejected early, before the response is
  * committed to 200.
  */
 export class JwtTokenVerifier {
-  constructor(private readonly clockSkewSeconds: number = 30) {}
+  private readonly clockSkewSeconds: number;
 
-  async verifyAccessToken(token: string): Promise<AuthInfo> {
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      throw new OAuthError(OAuthErrorCode.InvalidToken, 'Not a valid JWT');
-    }
-    let payload: Record<string, unknown>;
+  constructor(private readonly options: JwtVerifierOptions) {
+    this.clockSkewSeconds = options.clockSkewSeconds ?? 30;
+  }
+
+  /** Builds a verifier that fetches the keys from the configured JWKS URL. */
+  static fromConfig(resource: string): JwtTokenVerifier {
+    return new JwtTokenVerifier({
+      keys: createRemoteJWKSet(new URL(appAuthConfig.jwksUrl)),
+      issuer: appAuthConfig.issuerUrl,
+      resource,
+    });
+  }
+
+  async verifyAccessToken(token: string): Promise<BearerAuthInfo> {
+    let payload: JWTPayload;
     try {
-      payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
-    } catch {
-      throw new OAuthError(OAuthErrorCode.InvalidToken, 'Malformed JWT payload');
+      ({ payload } = await jwtVerify(token, this.options.keys, {
+        algorithms: ['ES256'],
+        issuer: this.options.issuer,
+        requiredClaims: ['exp'],
+      }));
+    } catch (error) {
+      const reason = error instanceof errors.JOSEError && INVALID_TOKEN_ERRORS[error.code];
+      if (reason) {
+        throw new OAuthError(OAuthErrorCode.InvalidToken, reason);
+      }
+      throw error;
     }
-    const rawExp = typeof payload.exp === 'number' ? payload.exp : undefined;
-    if (rawExp === undefined) {
-      throw new OAuthError(OAuthErrorCode.InvalidToken, 'JWT missing exp claim');
+
+    if (payload.iat !== undefined && payload.iat > Date.now() / 1000 + MAX_IAT_SKEW_SECONDS) {
+      throw new OAuthError(OAuthErrorCode.InvalidToken, 'Token issued in the future');
     }
-    // Subtract the clock-skew buffer so the SDK middleware rejects tokens
-    // that are about to expire, before the transport writes 200 headers.
-    const expiresAt = rawExp - this.clockSkewSeconds;
+
+    const audiences = payload.aud === undefined ? [] : [payload.aud].flat();
+    const emptyAudience = audiences.every(aud => aud === '');
+    const resource = trimSlash(this.options.resource);
+    if (!emptyAudience && !audiences.some(aud => trimSlash(aud) === resource)) {
+      throw new OAuthError(OAuthErrorCode.InvalidToken, 'Token audience is not this server');
+    }
+
+    const clientId = [payload.cid, payload.sub].find(v => typeof v === 'string') as
+      string | undefined;
+    const scopes = Array.isArray(payload.scp)
+      ? payload.scp.filter((s): s is string => typeof s === 'string')
+      : typeof payload.scope === 'string'
+        ? payload.scope.split(/\s+/).filter(Boolean)
+        : [];
+
     return {
       token,
-      clientId: typeof payload.sub === 'string' ? payload.sub : 'unknown',
-      scopes: typeof payload.scope === 'string' ? payload.scope.split(/\s+/).filter(Boolean) : [],
-      expiresAt,
+      clientId: clientId ?? 'unknown',
+      scopes,
+      // Subtract the clock-skew buffer so the SDK middleware rejects tokens
+      // that are about to expire, before the transport writes 200 headers.
+      expiresAt: (payload.exp as number) - this.clockSkewSeconds,
+      ...(emptyAudience && { emptyAudience: true as const }),
     };
   }
 }
@@ -218,6 +284,16 @@ export function requireMcpAuth(
         return next(error);
       }
       if (req.auth) {
+        if ((req.auth as BearerAuthInfo).emptyAudience) {
+          // Fields go in the message: the development log format drops extra arguments.
+          // JSON.stringify quotes the client-supplied values, so they cannot forge log text.
+          const { cid, grant } = decodeJwt(req.auth.token);
+          const userAgent = req.headers['user-agent'];
+          log.warn(
+            `empty_token_audience: token with empty audience accepted ` +
+              `cid=${JSON.stringify(cid)} grant=${JSON.stringify(grant)} user_agent=${JSON.stringify(userAgent)}`
+          );
+        }
         req.auth = { ...req.auth, authType: AuthType.Bearer } as McpAuthInfo;
       }
       return next();
