@@ -199,6 +199,7 @@ describe('Authentication Module', () => {
       it.each([
         ['an empty string', ''],
         ['a list of one empty string', ['']],
+        ['an empty list', []],
         ['no aud claim', undefined],
       ])('accepts and flags %s', async (_name, aud) => {
         const info = await verifier.verifyAccessToken(await auth.sign({ aud }));

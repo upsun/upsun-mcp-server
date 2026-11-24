@@ -48,6 +48,21 @@ describe('Configuration Parsing', () => {
     });
   });
 
+  describe('OAuth2 JWKS URL', () => {
+    it('should default to the JWKS of the OAuth2 base URL', async () => {
+      delete process.env.OAUTH_JWKS_URL;
+      process.env.OAUTH_URL = 'https://auth.example.com';
+      const { oauth2Config } = await import('../../src/core/config.js');
+      expect(oauth2Config.jwksUrl).toBe('https://auth.example.com/.well-known/jwks.json');
+    });
+
+    it('should use OAUTH_JWKS_URL when set', async () => {
+      process.env.OAUTH_JWKS_URL = 'https://keys.example.com/jwks.json';
+      const { oauth2Config } = await import('../../src/core/config.js');
+      expect(oauth2Config.jwksUrl).toBe('https://keys.example.com/jwks.json');
+    });
+  });
+
   describe('parseBoolean functionality', () => {
     it('should parse "true" string as true', async () => {
       process.env.OTEL_ENABLED = 'true';

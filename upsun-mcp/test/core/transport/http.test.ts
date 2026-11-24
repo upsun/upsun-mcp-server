@@ -5,7 +5,7 @@ import { ResponseError } from 'upsun-sdk-node/dist/core/runtime.js';
 
 import { GatewayServer } from '../../../src/core/gateway';
 import { HttpTransport } from '../../../src/core/transport/http';
-import { WritableMode } from '../../../src/core/authentication';
+import { JwtTokenVerifier, WritableMode } from '../../../src/core/authentication';
 import { ToolWrapper } from '../../../src/core/helper';
 import { createTestAuth } from '../../helpers/jwt';
 import type { TestAuth } from '../../helpers/jwt';
@@ -264,5 +264,22 @@ describe('HttpTransport', () => {
     await httpTransport.handle({ method: 'POST', headers: {}, body: {} } as any, res);
 
     expect(res.status).toHaveBeenCalledWith(500);
+  });
+});
+
+describe('GatewayServer default verifier', () => {
+  // The audience check must use the resource that the protected resource metadata publishes.
+  it('checks the audience against the published protected resource', async () => {
+    const fromConfig = jest.spyOn(JwtTokenVerifier, 'fromConfig');
+    try {
+      const { app } = new GatewayServer(StubAdapter as any);
+      const res = await request(app).get('/.well-known/oauth-protected-resource/mcp');
+
+      expect(res.status).toBe(200);
+      expect(res.body.resource).toMatch(/\/mcp$/);
+      expect(fromConfig).toHaveBeenCalledWith(res.body.resource);
+    } finally {
+      fromConfig.mockRestore();
+    }
   });
 });
