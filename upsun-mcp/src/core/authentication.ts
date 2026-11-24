@@ -20,7 +20,7 @@ export const AuthType = {
 } as const;
 
 export type AuthType = (typeof AuthType)[keyof typeof AuthType];
-export type McpAuthInfo = AuthInfo & { authType: AuthType };
+export type McpAuthInfo = AuthInfo & { authType: AuthType; hasUser?: boolean };
 
 // Create logger instance
 const log = createLogger('Auth');
@@ -145,7 +145,7 @@ export interface JwtVerifierOptions {
 }
 
 /** Bearer auth info, with a flag for a token that names no audience. */
-export type BearerAuthInfo = AuthInfo & { emptyAudience?: true };
+export type BearerAuthInfo = AuthInfo & { hasUser: boolean; emptyAudience?: true };
 
 // Same limit as authlib: a token issued more than 5 minutes in the future is refused.
 const MAX_IAT_SKEW_SECONDS = 300;
@@ -242,6 +242,8 @@ export class JwtTokenVerifier {
       // Subtract the clock-skew buffer so the SDK middleware rejects tokens
       // that are about to expire, before the transport writes 200 headers.
       expiresAt: (payload.exp as number) - this.clockSkewSeconds,
+      // A client_credentials token has no `sub`, so it has no user.
+      hasUser: typeof payload.sub === 'string' && payload.sub.length > 0,
       ...(emptyAudience && { emptyAudience: true as const }),
     };
   }

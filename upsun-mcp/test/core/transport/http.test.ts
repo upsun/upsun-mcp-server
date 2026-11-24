@@ -17,6 +17,7 @@ class StubAdapter {
   readonly client = {} as any;
   readonly useApiKey = jest.fn();
   readonly useBearerToken = jest.fn();
+  readonly hasUser = false;
 
   constructor(public readonly mode: WritableMode) {
     StubAdapter.instances.push(this);
@@ -42,22 +43,29 @@ class StubAdapter {
   }
 }
 
-// Signed in beforeAll; the cases read it lazily because describe.each runs first.
+// Signed in beforeAll; the cases read them lazily because describe.each runs first.
 let auth: TestAuth;
 let jwt: string;
+let machineJwt: string;
 
 const authCases = [
   {
     name: 'API key',
     headers: () => ({ 'upsun-api-token': 'the-key' }),
     use: 'useApiKey',
-    token: () => 'the-key',
+    args: () => ['the-key'],
   },
   {
     name: 'bearer',
     headers: () => ({ authorization: `Bearer ${jwt}` }),
     use: 'useBearerToken',
-    token: () => jwt,
+    args: () => [jwt, true],
+  },
+  {
+    name: 'bearer without user',
+    headers: () => ({ authorization: `Bearer ${machineJwt}` }),
+    use: 'useBearerToken',
+    args: () => [machineJwt, false],
   },
 ] as const;
 
@@ -120,6 +128,7 @@ describe('HttpTransport', () => {
   beforeAll(async () => {
     auth = await createTestAuth();
     jwt = await auth.sign({ sub: 'user-1' });
+    machineJwt = await auth.sign({ cid: 'machine' });
   });
 
   beforeEach(() => {
@@ -132,7 +141,7 @@ describe('HttpTransport', () => {
     expect(crashListeners()).toEqual(listenersBefore);
   });
 
-  describe.each(authCases)('$name requests', ({ headers, use, token }) => {
+  describe.each(authCases)('$name requests', ({ headers, use, args }) => {
     it('should serve a legacy initialize as a JSON response', async () => {
       const res = await post(headers(), initialize);
 
@@ -141,7 +150,7 @@ describe('HttpTransport', () => {
       expect(res.headers['mcp-session-id']).toBeUndefined();
       expect(res.body.result.protocolVersion).toBe('2025-06-18');
       expect(StubAdapter.instances).toHaveLength(1);
-      expect(StubAdapter.instances[0][use]).toHaveBeenCalledWith(token());
+      expect(StubAdapter.instances[0][use]).toHaveBeenCalledWith(...args());
     });
 
     it('should serve a modern server/discover', async () => {
@@ -152,7 +161,7 @@ describe('HttpTransport', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.result.supportedVersions).toContain('2026-07-28');
-      expect(StubAdapter.instances[0][use]).toHaveBeenCalledWith(token());
+      expect(StubAdapter.instances[0][use]).toHaveBeenCalledWith(...args());
     });
 
     it.each(['legacy', 'modern'] as const)(
@@ -264,6 +273,19 @@ describe('HttpTransport', () => {
     await httpTransport.handle({ method: 'POST', headers: {}, body: {} } as any, res);
 
     expect(res.status).toHaveBeenCalledWith(500);
+  });
+
+  it('should throw if bearer auth did not set hasUser', () => {
+    const httpTransport = new HttpTransport(gateway);
+    const createServer = (httpTransport as any).createServer.bind(httpTransport);
+
+    expect(() =>
+      createServer({
+        authInfo: { token: jwt, clientId: 'user-1', scopes: [], authType: 'bearer' },
+        requestInfo: { headers: new Headers() },
+      })
+    ).toThrow('Bearer auth did not set hasUser');
+    expect(StubAdapter.instances[0].useBearerToken).not.toHaveBeenCalled();
   });
 });
 

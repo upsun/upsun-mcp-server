@@ -153,9 +153,32 @@ describe('UpsunMcpServer', () => {
     });
 
     it('should set the Upsun client from a bearer token', () => {
-      server.useBearerToken('test-bearer-token');
+      server.useBearerToken('test-bearer-token', true);
 
       expect(server.client).toBeDefined();
+    });
+
+    it('should start without a user', () => {
+      expect(server.hasUser).toBe(false);
+    });
+
+    it.each([true, false])('should store hasUser %s from a bearer token', hasUser => {
+      server.useBearerToken('test-bearer-token', hasUser);
+
+      expect(server.hasUser).toBe(hasUser);
+    });
+
+    it('should set hasUser to true from an API key', () => {
+      server.useApiKey('test-api-key');
+
+      expect(server.hasUser).toBe(true);
+    });
+
+    it('should set hasUser to true from a cached API key client', () => {
+      new UpsunMcpServer().useApiKey('test-api-key-cached');
+      server.useApiKey('test-api-key-cached');
+
+      expect(server.hasUser).toBe(true);
     });
   });
 

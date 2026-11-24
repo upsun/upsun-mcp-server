@@ -25,6 +25,7 @@ const mockServer = {
 const mockAdapter: McpAdapter = {
   client: {} as any,
   server: mockServer as any,
+  hasUser: true,
 } as any;
 
 describe('Config Task Module', () => {

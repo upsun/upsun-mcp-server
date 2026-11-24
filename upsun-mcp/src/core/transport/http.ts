@@ -15,6 +15,7 @@ import express from 'express';
 
 import { createLogger } from '../logger.js';
 import { extractMode, isApiKeyAuth } from '../authentication.js';
+import type { McpAuthInfo } from '../authentication.js';
 import { GatewayServer } from '../gateway.js';
 import { requestContext } from '../requestContext.js';
 
@@ -72,7 +73,11 @@ export class HttpTransport {
     if (isApiKeyAuth(authInfo)) {
       adapter.useApiKey(authInfo.token);
     } else {
-      adapter.useBearerToken(authInfo.token);
+      const { hasUser } = authInfo as Partial<McpAuthInfo>;
+      if (typeof hasUser !== 'boolean') {
+        throw new Error('Bearer auth did not set hasUser');
+      }
+      adapter.useBearerToken(authInfo.token, hasUser);
     }
     return adapter.server;
   }

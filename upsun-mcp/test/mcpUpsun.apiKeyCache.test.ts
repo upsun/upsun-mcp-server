@@ -5,7 +5,7 @@ import { UpsunMcpServer } from '../src/mcpUpsun';
 const clientFor = (key: string, bearer = false) => {
   const server = new UpsunMcpServer();
   if (bearer) {
-    server.useBearerToken(key);
+    server.useBearerToken(key, true);
   } else {
     server.useApiKey(key);
   }

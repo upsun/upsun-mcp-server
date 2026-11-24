@@ -164,6 +164,7 @@ describe('Authentication Module', () => {
         clientId: 'claude',
         scopes: ['offline_access'],
         expiresAt: exp - 30,
+        hasUser: true,
       });
     });
 
@@ -184,6 +185,21 @@ describe('Authentication Module', () => {
       const token = await auth.sign({ exp });
       expect((await auth.verifier(60).verifyAccessToken(token)).expiresAt).toBe(exp - 60);
       expect((await auth.verifier(0).verifyAccessToken(token)).expiresAt).toBe(exp);
+    });
+
+    it('flags a token with a non-empty sub as having a user', async () => {
+      const info = await verifier.verifyAccessToken(await auth.sign({ sub: 'user-1' }));
+      expect(info.hasUser).toBe(true);
+    });
+
+    // A client_credentials token has no sub: it has no user.
+    it.each([
+      ['missing', undefined],
+      ['empty', ''],
+      ['not a string', 123],
+    ])('flags a token whose sub is %s as having no user', async (_name, sub) => {
+      const info = await verifier.verifyAccessToken(await auth.sign({ sub } as JWTPayload));
+      expect(info.hasUser).toBe(false);
     });
 
     describe('audience', () => {
@@ -407,6 +423,7 @@ describe('Authentication Module', () => {
         clientId: 'claude',
         scopes: ['offline_access'],
         expiresAt: exp - 30,
+        hasUser: false,
         authType: AuthType.Bearer,
       });
       expect(warn).not.toHaveBeenCalled();
@@ -427,6 +444,7 @@ describe('Authentication Module', () => {
         clientId: 'some-client',
         scopes: [],
         expiresAt: expect.any(Number),
+        hasUser: true,
         authType: AuthType.Bearer,
       });
 
