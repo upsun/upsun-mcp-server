@@ -22,14 +22,21 @@ export async function createTestAuth(): Promise<TestAuth> {
   const { publicKey, privateKey } = await generateKeyPair('ES256');
   const jwk = { ...(await exportJWK(publicKey)), kid: TEST_KID, alg: 'ES256' };
   const keys = createLocalJWKSet({ keys: [jwk] });
-  const now = Math.floor(Date.now() / 1000);
 
   return {
     privateKey,
-    sign: (claims = {}) =>
-      new SignJWT({ iss: TEST_ISSUER, aud: TEST_RESOURCE, iat: now, exp: now + 300, ...claims })
+    sign: (claims = {}) => {
+      const now = Math.floor(Date.now() / 1000);
+      return new SignJWT({
+        iss: TEST_ISSUER,
+        aud: TEST_RESOURCE,
+        iat: now,
+        exp: now + 300,
+        ...claims,
+      })
         .setProtectedHeader({ alg: 'ES256', kid: TEST_KID })
-        .sign(privateKey),
+        .sign(privateKey);
+    },
     verifier: clockSkewSeconds =>
       new JwtTokenVerifier({
         keys,

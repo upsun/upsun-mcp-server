@@ -213,6 +213,10 @@ export class JwtTokenVerifier {
     }
 
     const audiences = payload.aud === undefined ? [] : [payload.aud].flat();
+    // jose checks the aud type only when an audience option is given, and this verifier gives none.
+    if (audiences.some(aud => typeof aud !== 'string')) {
+      throw new OAuthError(OAuthErrorCode.InvalidToken, 'Invalid token audience');
+    }
     const emptyAudience = audiences.every(aud => aud === '');
     const resource = trimSlash(this.options.resource);
     if (!emptyAudience && !audiences.some(aud => trimSlash(aud) === resource)) {
@@ -284,17 +288,18 @@ export function requireMcpAuth(
         return next(error);
       }
       if (req.auth) {
-        if ((req.auth as BearerAuthInfo).emptyAudience) {
+        const { emptyAudience, ...auth } = req.auth as BearerAuthInfo;
+        if (emptyAudience) {
           // Fields go in the message: the development log format drops extra arguments.
           // JSON.stringify quotes the client-supplied values, so they cannot forge log text.
-          const { cid, grant } = decodeJwt(req.auth.token);
+          const { cid, grant } = decodeJwt(auth.token);
           const userAgent = req.headers['user-agent'];
           log.warn(
             `empty_token_audience: token with empty audience accepted ` +
               `cid=${JSON.stringify(cid)} grant=${JSON.stringify(grant)} user_agent=${JSON.stringify(userAgent)}`
           );
         }
-        req.auth = { ...req.auth, authType: AuthType.Bearer } as McpAuthInfo;
+        req.auth = { ...auth, authType: AuthType.Bearer } as McpAuthInfo;
       }
       return next();
     });

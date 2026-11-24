@@ -14,6 +14,7 @@ import {
 } from '../../src/core/authentication';
 
 import { SignJWT, createRemoteJWKSet, generateKeyPair } from 'jose';
+import type { JWTPayload } from 'jose';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { createLogger } from '../../src/core/logger';
@@ -212,6 +213,15 @@ describe('Authentication Module', () => {
       ])('refuses %s', async (_name, aud) => {
         await rejects(auth.sign({ aud }), 'Token audience is not this server');
       });
+
+      // Only Upsun Auth can sign such a token, but it must still get 401, not a 500.
+      it.each([
+        ['a number', 123],
+        ['a list with a number', [123]],
+        ['an object', {}],
+      ])('refuses a non-string audience: %s', async (_name, aud) => {
+        await rejects(auth.sign({ aud } as JWTPayload), 'Invalid token audience');
+      });
     });
 
     describe('signature', () => {
@@ -382,7 +392,15 @@ describe('Authentication Module', () => {
         sub: 'user-secret-id',
       });
 
-      await runBearer(token, { 'user-agent': 'SomeClient/1.0' });
+      const req = await runBearer(token, { 'user-agent': 'SomeClient/1.0' });
+
+      expect(req.auth).toEqual({
+        token,
+        clientId: 'some-client',
+        scopes: [],
+        expiresAt: expect.any(Number),
+        authType: AuthType.Bearer,
+      });
 
       expect(warn).toHaveBeenCalledTimes(1);
       expect(warn).toHaveBeenCalledWith(
