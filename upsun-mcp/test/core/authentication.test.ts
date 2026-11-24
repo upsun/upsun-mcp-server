@@ -13,7 +13,7 @@ import {
   AuthType,
 } from '../../src/core/authentication';
 
-import { SignJWT, createRemoteJWKSet, generateKeyPair } from 'jose';
+import { SignJWT, createLocalJWKSet, createRemoteJWKSet, exportJWK, generateKeyPair } from 'jose';
 import type { JWTPayload } from 'jose';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -246,6 +246,33 @@ describe('Authentication Module', () => {
           .setProtectedHeader({ alg: 'ES256', kid: 'other-key' })
           .sign(auth.privateKey);
         await rejects(token, 'Unknown token signing key');
+      });
+
+      // jose does not try each key: with two ES256 keys, a token with no kid matches none.
+      it('refuses a token with no key ID when the key set holds two keys', async () => {
+        const jwk = async () => ({
+          ...(await exportJWK((await generateKeyPair('ES256')).publicKey)),
+          alg: 'ES256',
+        });
+        const twoKeys = new JwtTokenVerifier({
+          keys: createLocalJWKSet({ keys: [await jwk(), await jwk()] }),
+          issuer: TEST_ISSUER,
+          resource: TEST_RESOURCE,
+        });
+        const token = await new SignJWT({ iss: TEST_ISSUER, aud: TEST_RESOURCE, exp: now() + 300 })
+          .setProtectedHeader({ alg: 'ES256' })
+          .sign(auth.privateKey);
+        await expect(twoKeys.verifyAccessToken(token)).rejects.toMatchObject({
+          code: 'invalid_token',
+          message: 'Unknown token signing key',
+        });
+      });
+
+      it('refuses a token with an unknown crit header', async () => {
+        const part = (v: object) => Buffer.from(JSON.stringify(v)).toString('base64url');
+        const header = { alg: 'ES256', kid: TEST_KID, crit: ['zz'], zz: 1 };
+        const claims = { iss: TEST_ISSUER, aud: TEST_RESOURCE, exp: now() + 300 };
+        await rejects(`${part(header)}.${part(claims)}.c2ln`, 'Malformed token');
       });
 
       it('refuses an HS256 token', async () => {

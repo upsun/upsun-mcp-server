@@ -158,6 +158,10 @@ const INVALID_TOKEN_ERRORS: Record<string, string> = {
   ERR_JOSE_ALG_NOT_ALLOWED: 'Token signing algorithm not allowed',
   ERR_JWS_SIGNATURE_VERIFICATION_FAILED: 'Invalid token signature',
   ERR_JWKS_NO_MATCHING_KEY: 'Unknown token signing key',
+  // A token with no kid, when the JWKS holds more than one ES256 key.
+  ERR_JWKS_MULTIPLE_MATCHING_KEYS: 'Unknown token signing key',
+  // An unknown crit header. ES256-only algorithms keep JWKS-side causes out of this code.
+  ERR_JOSE_NOT_SUPPORTED: 'Malformed token',
   ERR_JWT_EXPIRED: 'Token expired',
   ERR_JWT_CLAIM_VALIDATION_FAILED: 'Invalid token claims',
 };
