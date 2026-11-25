@@ -114,6 +114,7 @@ const mockDeployment = {
     'https://main-abc123.upsun.app/': {
       type: 'upstream',
       upstream: 'app:http',
+      primary: true,
     },
     'https://www.main-abc123.upsun.app/': {
       type: 'redirect',
@@ -537,7 +538,7 @@ describe('Environment Command Module', () => {
       registerEnvironment(mockAdapter);
     });
 
-    it('should get the routes of the current deployment, keyed by URL', async () => {
+    it('should get the type and primary flag of each route of the current deployment, keyed by URL', async () => {
       const callback = toolCallbacks['get-environment-urls'];
       const params = {
         project_id: 'test-project-13',
@@ -551,7 +552,10 @@ describe('Environment Command Module', () => {
         'main',
         'current'
       );
-      expect(JSON.parse(result.content[0].text)).toEqual(mockDeployment.routes);
+      expect(JSON.parse(result.content[0].text)).toEqual({
+        'https://main-abc123.upsun.app/': { type: 'upstream', primary: true },
+        'https://www.main-abc123.upsun.app/': { type: 'redirect', primary: false },
+      });
     });
 
     it('should handle get URLs errors', async () => {

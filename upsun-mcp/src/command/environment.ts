@@ -323,7 +323,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
 
   /**
    * Tool: get-environment-urls
-   * Returns the routes of the current deployment of an environment, keyed by route URL.
+   * Returns the type and primary flag of each route of the current deployment, keyed by route URL.
    *
    * @param project_id - The project ID containing the environment
    * @param environment_name - The name of the environment to get URLs for
@@ -333,7 +333,7 @@ export function registerEnvironment(adapter: McpAdapter): void {
     {
       annotations: { readOnlyHint: true },
       description:
-        'Get URLs of environment on upsun project, from its current deployment, keyed by route URL',
+        'Get URLs of environment on upsun project, from its current deployment, keyed by route URL with the route type and primary flag',
       inputSchema: {
         project_id: Schema.projectId(),
         environment_name: Schema.environmentName(),
@@ -341,9 +341,15 @@ export function registerEnvironment(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('get-environment-urls', async ({ project_id, environment_name }) => {
       log.debug(`Get URLs of Environment ${environment_name} in Project ${project_id}`);
-      const result = await deployedRoutes(adapter, project_id, environment_name);
+      const routes = await deployedRoutes(adapter, project_id, environment_name);
+      const urls = Object.fromEntries(
+        Object.entries(routes).map(([url, route]) => [
+          url,
+          { type: route.type, primary: route.primary ?? false },
+        ])
+      );
 
-      return Response.json(result);
+      return Response.json(urls);
     })
   );
 
