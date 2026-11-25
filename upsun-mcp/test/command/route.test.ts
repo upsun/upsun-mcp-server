@@ -1,6 +1,7 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 import { McpAdapter } from '../../src/core/adapter';
 import { registerRoute } from '../../src/command/route';
+import { ResponseError } from 'upsun-sdk-node/dist/core/runtime.js';
 import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
 
 const mockLogger = {
@@ -193,6 +194,28 @@ describe('Route Command Module', () => {
       await expect(
         toolCallbacks['list-route']({ project_id: 'test-project-1', environment_name: 'nope' })
       ).rejects.toThrow('Environment not found');
+    });
+
+    // The API answers 404 with a generic message when the environment was never deployed.
+    it('names the missing current deployment on a 404', async () => {
+      mockEnvironmentsApi.getDeployment.mockRejectedValue(
+        new ResponseError(new Response('{}', { status: 404 }), 'HTTP 404 Not Found')
+      );
+
+      await expect(
+        toolCallbacks['list-route']({ project_id: 'test-project-1', environment_name: 'main' })
+      ).rejects.toThrow(
+        'Environment main of project test-project-1 has no current deployment, or does not exist'
+      );
+    });
+
+    it('propagates other API errors unchanged', async () => {
+      const error = new ResponseError(new Response('{}', { status: 403 }), 'HTTP 403 Forbidden');
+      mockEnvironmentsApi.getDeployment.mockRejectedValue(error);
+
+      await expect(
+        toolCallbacks['list-route']({ project_id: 'test-project-1', environment_name: 'main' })
+      ).rejects.toBe(error);
     });
   });
 });

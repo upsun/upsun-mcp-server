@@ -8,6 +8,7 @@ import { McpAdapter } from '../core/adapter.js';
 import { Response, Schema, ToolWrapper } from '../core/helper.js';
 import { z } from 'zod';
 import { Deployment } from 'upsun-sdk-node';
+import { ResponseError } from 'upsun-sdk-node/dist/core/runtime.js';
 import { createLogger } from '../core/logger.js';
 
 const log = createLogger('MCP:Tool:route-commands');
@@ -19,12 +20,23 @@ export async function deployedRoutes(
   projectId: string,
   environmentName: string
 ): Promise<Deployment['routes']> {
-  const deployment = await adapter.client.environments.getDeployment(
-    projectId,
-    environmentName,
-    'current'
-  );
-  return deployment.routes;
+  try {
+    const deployment = await adapter.client.environments.getDeployment(
+      projectId,
+      environmentName,
+      'current'
+    );
+    return deployment.routes;
+  } catch (error) {
+    // The API answers 404 with a generic message for an environment that was never deployed.
+    if (error instanceof ResponseError && error.response?.status === 404) {
+      throw new Error(
+        `Environment ${environmentName} of project ${projectId} has no current deployment, or does not exist`,
+        { cause: error }
+      );
+    }
+    throw error;
+  }
 }
 
 /**
