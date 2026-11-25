@@ -144,6 +144,27 @@ describe('Route Command Module', () => {
       });
     });
 
+    // A route definition such as `https://{all}/` resolves to one URL per domain, all with the same id.
+    it('fails and lists the URLs when several routes share the id in route_id', async () => {
+      mockEnvironmentsApi.getDeployment.mockResolvedValue({
+        routes: {
+          ...deployedRoutes,
+          'https://api.example.org/': { ...deployedRoutes['https://api.example.com/'] },
+        },
+      });
+
+      await expect(
+        toolCallbacks['get-route']({
+          project_id: 'test-project-1',
+          environment_name: 'main',
+          route_id: 'api',
+        })
+      ).rejects.toThrow(
+        'Route id api matches 2 URLs: https://api.example.com/, https://api.example.org/. ' +
+          'Pass one of these URLs as route_id.'
+      );
+    });
+
     it('fails when no route matches route_id', async () => {
       await expect(
         toolCallbacks['get-route']({

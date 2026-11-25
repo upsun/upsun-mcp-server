@@ -73,9 +73,21 @@ export function registerRoute(adapter: McpAdapter): void {
       );
       const routes = await deployedRoutes(adapter, project_id, environment_name);
 
-      const match = Object.entries(routes).find(([url, route]) =>
-        route_id ? url === route_id || route.id === route_id : route.primary === true
+      const entries = Object.entries(routes);
+      let match = entries.find(([url, route]) =>
+        route_id ? url === route_id : route.primary === true
       );
+      if (!match && route_id) {
+        // One route definition (for example `https://{all}/`) resolves to one URL per domain, all with the same id.
+        const byId = entries.filter(([, route]) => route.id === route_id);
+        if (byId.length > 1) {
+          throw new Error(
+            `Route id ${route_id} matches ${byId.length} URLs: ${byId.map(([url]) => url).join(', ')}. ` +
+              'Pass one of these URLs as route_id.'
+          );
+        }
+        match = byId[0];
+      }
       if (!match) {
         throw new Error(
           route_id
