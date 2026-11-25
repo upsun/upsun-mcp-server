@@ -1,4 +1,5 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
+import { z } from 'zod';
 import { McpAdapter } from '../../src/core/adapter';
 import { registerCertificate } from '../../src/command/certificate';
 import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
@@ -37,7 +38,14 @@ const mockAdapter: McpAdapter = {
 
 describe('Certificate Command Module', () => {
   let toolCallbacks: Record<string, any> = {};
+  let toolConfigs: Record<string, any> = {};
   const originalEnv = process.env;
+  // Real certificate IDs are 64 lower-case hex characters.
+  const realCertificateId = 'a3f9'.repeat(16);
+
+  async function callThroughInputSchema(tool: string, params: Record<string, unknown>) {
+    return toolCallbacks[tool](z.object(toolConfigs[tool].inputSchema).parse(params));
+  }
 
   beforeEach(() => {
     setupTestEnvironment(jest, originalEnv);
@@ -47,11 +55,13 @@ describe('Certificate Command Module', () => {
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
     toolCallbacks = {};
+    toolConfigs = {};
     (mockAdapter.server.registerTool as any) = jest
       .fn()
       .mockImplementation((name: any, ...args: any[]) => {
         const callback = args[args.length - 1];
         toolCallbacks[name] = callback;
+        toolConfigs[name] = args[0];
         return mockAdapter.server;
       });
     mockClient.certificates.add.mockResolvedValue('certificate-added');
@@ -131,6 +141,17 @@ describe('Certificate Command Module', () => {
     beforeEach(() => {
       registerCertificate(mockAdapter);
     });
+    it('accepts a real certificate ID through the input schema and deletes that certificate', async () => {
+      await callThroughInputSchema('delete-certificate', {
+        project_id: 'abcdefghijklm',
+        certificate_id: realCertificateId,
+      });
+
+      expect(mockClient.certificates.delete).toHaveBeenCalledWith(
+        'abcdefghijklm',
+        realCertificateId
+      );
+    });
     it('should delete a certificate and return the result', async () => {
       const callback = toolCallbacks['delete-certificate'];
       const params = {
@@ -147,6 +168,14 @@ describe('Certificate Command Module', () => {
   describe('get-certificate tool', () => {
     beforeEach(() => {
       registerCertificate(mockAdapter);
+    });
+    it('accepts a real certificate ID through the input schema and gets that certificate', async () => {
+      await callThroughInputSchema('get-certificate', {
+        project_id: 'abcdefghijklm',
+        certificate_id: realCertificateId,
+      });
+
+      expect(mockClient.certificates.get).toHaveBeenCalledWith('abcdefghijklm', realCertificateId);
     });
     it('should get a certificate and return the result', async () => {
       const callback = toolCallbacks['get-certificate'];
