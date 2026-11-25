@@ -187,19 +187,26 @@ describe('Authentication Module', () => {
       expect((await auth.verifier(0).verifyAccessToken(token)).expiresAt).toBe(exp);
     });
 
-    it('flags a token with a non-empty sub as having a user', async () => {
-      const info = await verifier.verifyAccessToken(await auth.sign({ sub: 'user-1' }));
+    it.each([
+      ['api_token', { grant: 'api_token', sub: 'user-1' }],
+      ['authorization_code', { grant: 'authorization_code', sub: 'user-1' }],
+      ['no grant claim', {}],
+    ])('flags a token with grant %s as having a user', async (_name, claims) => {
+      const info = await verifier.verifyAccessToken(await auth.sign(claims));
       expect(info.hasUser).toBe(true);
     });
 
-    // A client_credentials token has no sub: it has no user.
-    it.each([
-      ['missing', undefined],
-      ['empty', ''],
-      ['not a string', 123],
-    ])('flags a token whose sub is %s as having no user', async (_name, sub) => {
-      const info = await verifier.verifyAccessToken(await auth.sign({ sub } as JWTPayload));
+    it('flags a client_credentials token as having no user', async () => {
+      const info = await verifier.verifyAccessToken(
+        await auth.sign({ grant: 'client_credentials' })
+      );
       expect(info.hasUser).toBe(false);
+    });
+
+    // The grant decides, not sub: Upsun Auth may give client_credentials tokens a sub later.
+    it('flags a client_credentials token with a sub as having no user', async () => {
+      const token = await auth.sign({ grant: 'client_credentials', sub: 'dispatch-client' });
+      expect((await verifier.verifyAccessToken(token)).hasUser).toBe(false);
     });
 
     describe('audience', () => {
@@ -423,7 +430,7 @@ describe('Authentication Module', () => {
         clientId: 'claude',
         scopes: ['offline_access'],
         expiresAt: exp - 30,
-        hasUser: false,
+        hasUser: true,
         authType: AuthType.Bearer,
       });
       expect(warn).not.toHaveBeenCalled();

@@ -24,7 +24,7 @@ export interface McpAdapter {
   readonly client: UpsunClient;
 
   /**
-   * Whether the caller's token has a user (a non-empty `sub` claim).
+   * Whether the caller's token has a user (not a `client_credentials` token).
    * False for machine tokens such as client_credentials, and before auth is set.
    */
   readonly hasUser: boolean;

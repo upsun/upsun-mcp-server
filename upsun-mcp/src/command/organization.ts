@@ -140,7 +140,7 @@ export function registerOrganization(adapter: McpAdapter): void {
       log.debug(`List all my organizations`);
       if (!adapter.hasUser) {
         throw new Error(
-          'list-organization needs a user token. This token has no user (empty or missing "sub" claim), for example a client_credentials token.'
+          'list-organization needs a user token. This is a client_credentials token, which has no user.'
         );
       }
       const result = await adapter.client.organizations.listCurrentUserOrgs(

@@ -128,7 +128,7 @@ describe('HttpTransport', () => {
   beforeAll(async () => {
     auth = await createTestAuth();
     jwt = await auth.sign({ sub: 'user-1' });
-    machineJwt = await auth.sign({ cid: 'machine' });
+    machineJwt = await auth.sign({ cid: 'machine', grant: 'client_credentials' });
   });
 
   beforeEach(() => {

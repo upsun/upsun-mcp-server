@@ -51,7 +51,7 @@ export class UpsunMcpServer implements McpAdapter {
   public client!: UpsunClient;
 
   /**
-   * Whether the caller's token has a user (a non-empty `sub` claim).
+   * Whether the caller's token has a user (not a `client_credentials` token).
    * Set by useBearerToken() or useApiKey(); false until then.
    */
   public hasUser = false;

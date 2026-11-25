@@ -242,8 +242,8 @@ export class JwtTokenVerifier {
       // Subtract the clock-skew buffer so the SDK middleware rejects tokens
       // that are about to expire, before the transport writes 200 headers.
       expiresAt: (payload.exp as number) - this.clockSkewSeconds,
-      // A client_credentials token has no `sub`, so it has no user.
-      hasUser: typeof payload.sub === 'string' && payload.sub.length > 0,
+      // Use the grant, not `sub`: Upsun Auth may give client_credentials tokens a `sub` later.
+      hasUser: payload.grant !== 'client_credentials',
       ...(emptyAudience && { emptyAudience: true as const }),
     };
   }
