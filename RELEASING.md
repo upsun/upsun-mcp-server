@@ -52,44 +52,48 @@ gh release create vX.Y.Z --title vX.Y.Z --notes-file notes.md
 
 ## 4. Deploy
 
-The server runs on an Upsun project with two environments: `main` (production,
-`mcp.upsun.com`) and `staging`, a child of `main`. Both use manual deployments:
-a push builds the release, and `upsun environment:deploy` makes it live.
-Production deploys with the rolling strategy, which needs the project's
-maintenance window to be set.
+The server runs on an Upsun project with two environments:
 
-1. Add the project's Git remote once:
+- `main`: production at `https://mcp.upsun.com/`, with Upsun Auth at
+  `auth.upsun.com`. It uses manual deployments: a push builds the release, and
+  `upsun environment:deploy` makes it live. It deploys with the rolling
+  strategy, which needs the project's maintenance window to be set.
+- `staging`: a child of `main` at `https://mcp.upsun.plat.farm/`, with the
+  staging Auth at `auth.upsun.plat.farm`. It uses automatic deployments. The
+  `Deploy staging` workflow pushes each commit of `main` to it after CI passes,
+  with the `UPSUN_CLI_TOKEN` repository secret. Staging is never paused.
+
+1. Make sure that staging runs the release: the staging commit must be the
+   release PR's merge commit or contain it. A `Deploy staging` run can be
+   cancelled or skip its push when a newer commit reaches staging first, so
+   check the staging commit, not the run:
+
+   ```bash
+   git fetch origin
+   git merge-base --is-ancestor <merge-commit> \
+     "$(upsun environment:info -p <project-id> -e staging head_commit)" \
+     && echo "staging runs the release"
+   ```
+
+2. Smoke-test staging: check the OAuth metadata at
+   `/.well-known/oauth-authorization-server`, then connect an MCP client and
+   call the tools the release changed.
+
+3. Add the project's Git remote once:
 
    ```bash
    git remote add upsun "$(upsun project:info -p <project-id> git)"
    ```
 
-2. Deploy the tag to staging and smoke-test it:
+4. Deploy the tag to production without downtime:
 
    ```bash
    git fetch origin --tags
-   upsun environment:resume -p <project-id> -e staging
-   git push upsun vX.Y.Z^{commit}:refs/heads/staging
-   upsun environment:deploy -p <project-id> -e staging
-   ```
-
-   Check the OAuth metadata at `/.well-known/oauth-authorization-server`,
-   then connect an MCP client and call the tools the release changed.
-
-3. Deploy the tag to production without downtime:
-
-   ```bash
    git push upsun vX.Y.Z^{commit}:refs/heads/main
    upsun environment:deploy -p <project-id> -e main --strategy=rolling
    ```
 
    Repeat the checks on `https://mcp.upsun.com/`.
-
-4. Pause staging:
-
-   ```bash
-   upsun environment:pause -p <project-id> -e staging
-   ```
 
 Configuration comes from code defaults in `upsun-mcp/src/core/config.ts`, with
 overrides in Upsun environment variables. Check those variables when a release
