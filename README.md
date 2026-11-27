@@ -24,7 +24,7 @@ You don't need to install or run anything locally unless you're developing or cu
 - **activate-environment**: Activate paused environments
 - **delete-environment**: Permanently delete environments
 - **get-environment-deployment**: List the apps, workers, tasks, services and routes of the current deployment
-- **get-environment-urls**: Get all URLs for an environment
+- **get-environment-urls**: Get the URLs of the current deployment of an environment, with the route type and primary flag of each URL
 - **info-environment**: Get environment details and status
 - **list-environment**: List all environments in a project
 - **merge-environment**: Merge environment changes to parent
@@ -58,8 +58,8 @@ You don't need to install or run anything locally unless you're developing or cu
 - **update-domain**: Set whether a domain is the project default
 
 ### 🛣️ Routing
-- **get-route**: Get the details of a route
-- **list-route**: List all routes for environments
+- **get-route**: Get a route of the current deployment (the primary route by default)
+- **list-route**: List the routes of the current deployment, keyed by URL
 
 ### 🔒 SSL/TLS Certificates
 - **add-certificate**: Add SSL certificates

@@ -1,9 +1,9 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 import { McpAdapter } from '../../src/core/adapter';
 import { registerRoute } from '../../src/command/route';
+import { ResponseError } from 'upsun-sdk-node/dist/core/runtime.js';
 import { setupTestEnvironment, teardownTestEnvironment } from '../helpers/test-env.js';
 
-// Mock the logger module
 const mockLogger = {
   debug: jest.fn(),
   info: jest.fn(),
@@ -15,47 +15,67 @@ jest.mock('../../src/core/logger', () => ({
   createLogger: jest.fn(() => mockLogger),
 }));
 
-const mockRoutesApi = {
-  get: jest.fn(),
-  list: jest.fn(),
+// Shape of `environments.getDeployment(...).routes`: a map keyed by resolved URL.
+const deployedRoutes = {
+  'https://www.example.com/': {
+    id: null,
+    primary: true,
+    type: 'upstream',
+    upstream: 'app:http',
+    productionUrl: 'https://www.example.com/',
+  },
+  'https://api.example.com/': {
+    id: 'api',
+    primary: false,
+    type: 'upstream',
+    upstream: 'api:http',
+    productionUrl: 'https://api.example.com/',
+  },
+  'http://www.example.com/': {
+    id: null,
+    primary: false,
+    type: 'redirect',
+    to: 'https://www.example.com/',
+  },
 };
 
-// Mock the adapter
+const mockEnvironmentsApi = {
+  getDeployment: jest.fn<(...args: unknown[]) => Promise<unknown>>(),
+};
+
 const mockAdapter: McpAdapter = {
   client: {
-    routes: mockRoutesApi,
+    environments: mockEnvironmentsApi,
   },
-  server: {
-    tool: jest.fn(),
-  },
+  server: {},
   isMode: () => true,
 } as any;
 
+const parse = (result: any) => JSON.parse(result.content[0].text);
+
 describe('Route Command Module', () => {
   let toolCallbacks: Record<string, any> = {};
+  let toolConfigs: Record<string, any> = {};
   const originalEnv = process.env;
 
   beforeEach(() => {
     setupTestEnvironment(jest, originalEnv);
-    jest.clearAllMocks() as any;
+    jest.clearAllMocks();
     toolCallbacks = {};
+    toolConfigs = {};
 
-    // Reset logger mocks
-    mockLogger.debug.mockClear();
-    mockLogger.info.mockClear();
-    mockLogger.warn.mockClear();
-    mockLogger.error.mockClear();
-
-    // Setup mock server.registerTool to capture callbacks
     // @ts-ignore
-    mockAdapter.server.registerTool = jest.fn().mockImplementation((name: any, ...args: any[]) => {
-      const callback = args[args.length - 1];
-      toolCallbacks[name] = callback;
-      return mockAdapter.server;
-    }) as any;
+    mockAdapter.server.registerTool = jest
+      .fn()
+      .mockImplementation((name: any, config: any, cb: any) => {
+        toolConfigs[name] = config;
+        toolCallbacks[name] = cb;
+        return mockAdapter.server;
+      }) as any;
 
-    // Register routes to populate toolCallbacks
-    registerRoute(mockAdapter) as any;
+    mockEnvironmentsApi.getDeployment.mockResolvedValue({ routes: deployedRoutes });
+
+    registerRoute(mockAdapter);
   });
 
   afterEach(() => {
@@ -63,379 +83,160 @@ describe('Route Command Module', () => {
     jest.restoreAllMocks();
   });
 
-  describe('registerRoute function', () => {
-    it('should register all route tools', () => {
-      // Don't call registerRoute again since it's already called in beforeEach
-      expect(mockAdapter.server.registerTool).toHaveBeenCalledTimes(2) as any;
+  it('registers get-route and list-route as read-only tools', () => {
+    expect(Object.keys(toolCallbacks)).toEqual(['get-route', 'list-route']);
+    expect(toolConfigs['get-route'].annotations).toEqual({ readOnlyHint: true });
+    expect(toolConfigs['list-route'].annotations).toEqual({ readOnlyHint: true });
+  });
 
-      // Verify all tools are registered
-      expect(toolCallbacks['get-route']).toBeDefined() as any;
-      expect(toolCallbacks['list-route']).toBeDefined() as any;
+  describe('get-route', () => {
+    it('accepts a call without route_id', () => {
+      const { route_id } = toolConfigs['get-route'].inputSchema;
+
+      expect(route_id.safeParse(undefined).success).toBe(true);
     });
 
-    it('should register tools with correct names and descriptions', () => {
-      // Don't call registerRoute again since it's already called in beforeEach
-      const calls = (mockAdapter.server.registerTool as unknown as jest.Mock).mock.calls;
+    it('reads the routes of the current deployment', async () => {
+      await toolCallbacks['get-route']({ project_id: 'test-project-1', environment_name: 'main' });
 
-      expect(calls[0]).toEqual([
-        'get-route',
-        {
-          annotations: { readOnlyHint: true },
-          description: 'Get route URL of upsun project',
-          inputSchema: expect.any(Object),
-        },
-        expect.any(Function),
-      ]) as any;
+      expect(mockEnvironmentsApi.getDeployment).toHaveBeenCalledWith(
+        'test-project-1',
+        'main',
+        'current'
+      );
+    });
 
-      expect(calls[1]).toEqual([
-        'list-route',
-        {
-          annotations: { readOnlyHint: true },
-          description: 'List routes URL of upsun project',
-          inputSchema: expect.any(Object),
+    it('returns the primary route when route_id is omitted', async () => {
+      const result = await toolCallbacks['get-route']({
+        project_id: 'test-project-1',
+        environment_name: 'main',
+      });
+
+      expect(parse(result)).toEqual({
+        url: 'https://www.example.com/',
+        ...deployedRoutes['https://www.example.com/'],
+      });
+    });
+
+    it('returns the route whose URL equals route_id', async () => {
+      const result = await toolCallbacks['get-route']({
+        project_id: 'test-project-1',
+        environment_name: 'main',
+        route_id: 'http://www.example.com/',
+      });
+
+      expect(parse(result)).toEqual({
+        url: 'http://www.example.com/',
+        ...deployedRoutes['http://www.example.com/'],
+      });
+    });
+
+    it('returns the route whose id equals route_id', async () => {
+      const result = await toolCallbacks['get-route']({
+        project_id: 'test-project-1',
+        environment_name: 'main',
+        route_id: 'api',
+      });
+
+      expect(parse(result)).toEqual({
+        url: 'https://api.example.com/',
+        ...deployedRoutes['https://api.example.com/'],
+      });
+    });
+
+    // A route definition such as `https://{all}/` resolves to one URL per domain, all with the same id.
+    it('fails and lists the URLs when several routes share the id in route_id', async () => {
+      mockEnvironmentsApi.getDeployment.mockResolvedValue({
+        routes: {
+          ...deployedRoutes,
+          'https://api.example.org/': { ...deployedRoutes['https://api.example.com/'] },
         },
-        expect.any(Function),
-      ]) as any;
+      });
+
+      await expect(
+        toolCallbacks['get-route']({
+          project_id: 'test-project-1',
+          environment_name: 'main',
+          route_id: 'api',
+        })
+      ).rejects.toThrow(
+        'Route id api matches 2 URLs: https://api.example.com/, https://api.example.org/. ' +
+          'Pass one of these URLs as route_id.'
+      );
+    });
+
+    it('fails when no route matches route_id', async () => {
+      await expect(
+        toolCallbacks['get-route']({
+          project_id: 'test-project-1',
+          environment_name: 'main',
+          route_id: 'https://{default}/',
+        })
+      ).rejects.toThrow('Route not found: https://{default}/');
+    });
+
+    it('fails when route_id is omitted and no route is primary', async () => {
+      mockEnvironmentsApi.getDeployment.mockResolvedValue({
+        routes: { 'http://www.example.com/': deployedRoutes['http://www.example.com/'] },
+      });
+
+      await expect(
+        toolCallbacks['get-route']({ project_id: 'test-project-1', environment_name: 'main' })
+      ).rejects.toThrow('No primary route in Environment: main');
+    });
+
+    it('propagates deployment errors', async () => {
+      mockEnvironmentsApi.getDeployment.mockRejectedValue(new Error('Environment not found'));
+
+      await expect(
+        toolCallbacks['get-route']({ project_id: 'test-project-1', environment_name: 'nope' })
+      ).rejects.toThrow('Environment not found');
     });
   });
 
-  describe('get-route tool', () => {
-    it('should get route with route_id', async () => {
-      const mockRouteData = {
-        id: 'route-123',
-        url: 'https://example.com',
-        upstream: 'app',
-        cache: { enabled: true },
-      };
-
-      // @ts-ignore
-      mockAdapter.client.routes.get = jest.fn().mockResolvedValue(mockRouteData) as any;
-
-      const callback = toolCallbacks['get-route'];
-      const params = {
-        project_id: 'test-project-13',
+  describe('list-route', () => {
+    it('returns the routes of the current deployment keyed by URL', async () => {
+      const result = await toolCallbacks['list-route']({
+        project_id: 'test-project-1',
         environment_name: 'main',
-        route_id: 'route-123',
-      };
+      });
 
-      const result = (await callback(params)) as any;
-
-      expect(mockAdapter.client.routes.get).toHaveBeenCalledWith(
-        'test-project-13',
+      expect(mockEnvironmentsApi.getDeployment).toHaveBeenCalledWith(
+        'test-project-1',
         'main',
-        'route-123'
-      ) as any;
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(mockRouteData, null, 2),
-          },
-        ],
-      }) as any;
-    }) as any;
+        'current'
+      );
+      expect(parse(result)).toEqual(deployedRoutes);
+    });
 
-    it('should get route without route_id (primary route)', async () => {
-      const mockRouteData = {
-        id: 'primary-route',
-        url: 'https://main-abcdef.example.com',
-        upstream: 'app',
-      };
+    it('propagates deployment errors', async () => {
+      mockEnvironmentsApi.getDeployment.mockRejectedValue(new Error('Environment not found'));
 
-      // @ts-ignore
-      mockAdapter.client.routes.get = jest.fn().mockResolvedValue(mockRouteData) as any;
+      await expect(
+        toolCallbacks['list-route']({ project_id: 'test-project-1', environment_name: 'nope' })
+      ).rejects.toThrow('Environment not found');
+    });
 
-      const callback = toolCallbacks['get-route'];
-      const params = {
-        project_id: 'test-project-13',
-        environment_name: 'main',
-      };
+    // The API answers 404 with a generic message when the environment was never deployed.
+    it('names the missing current deployment on a 404', async () => {
+      mockEnvironmentsApi.getDeployment.mockRejectedValue(
+        new ResponseError(new Response('{}', { status: 404 }), 'HTTP 404 Not Found')
+      );
 
-      const result = (await callback(params)) as any;
+      await expect(
+        toolCallbacks['list-route']({ project_id: 'test-project-1', environment_name: 'main' })
+      ).rejects.toThrow(
+        'Environment main of project test-project-1 has no current deployment, or does not exist'
+      );
+    });
 
-      expect(mockAdapter.client.routes.get).toHaveBeenCalledWith(
-        'test-project-13',
-        'main',
-        ''
-      ) as any;
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(mockRouteData, null, 2),
-          },
-        ],
-      }) as any;
-    }) as any;
+    it('propagates other API errors unchanged', async () => {
+      const error = new ResponseError(new Response('{}', { status: 403 }), 'HTTP 403 Forbidden');
+      mockEnvironmentsApi.getDeployment.mockRejectedValue(error);
 
-    it('should handle different environments', async () => {
-      const mockRouteData = {
-        id: 'staging-route',
-        url: 'https://staging-abcdef.example.com',
-        upstream: 'app',
-      };
-
-      // @ts-ignore
-      mockAdapter.client.routes.get = jest.fn().mockResolvedValue(mockRouteData) as any;
-
-      const callback = toolCallbacks['get-route'];
-      const params = {
-        project_id: 'test-project-13',
-        environment_name: 'staging',
-        route_id: 'staging-route',
-      };
-
-      const result = (await callback(params)) as any;
-
-      expect(mockAdapter.client.routes.get).toHaveBeenCalledWith(
-        'test-project-13',
-        'staging',
-        'staging-route'
-      ) as any;
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(mockRouteData, null, 2),
-          },
-        ],
-      }) as any;
-    }) as any;
-
-    it('should handle route with caching configuration', async () => {
-      const mockRouteData = {
-        id: 'cached-route',
-        url: 'https://cached.example.com',
-        upstream: 'app',
-        cache: {
-          enabled: true,
-          ttl: 3600,
-          cookies: ['session_id'],
-        },
-      };
-
-      // @ts-ignore
-      mockAdapter.client.routes.get = jest.fn().mockResolvedValue(mockRouteData) as any;
-
-      const callback = toolCallbacks['get-route'];
-      const params = {
-        project_id: 'test-project-13',
-        environment_name: 'main',
-        route_id: 'cached-route',
-      };
-
-      const result = (await callback(params)) as any;
-
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(mockRouteData, null, 2),
-          },
-        ],
-      }) as any;
-    }) as any;
-  }) as any;
-
-  describe('list-route tool', () => {
-    it('should list all routes for environment', async () => {
-      const mockRoutesData = [
-        {
-          id: 'route-1',
-          url: 'https://main.example.com',
-          upstream: 'app',
-        },
-        {
-          id: 'route-2',
-          url: 'https://api.example.com',
-          upstream: 'api',
-        },
-      ];
-
-      // @ts-ignore
-      mockAdapter.client.routes.list = jest.fn().mockResolvedValue(mockRoutesData) as any;
-
-      const callback = toolCallbacks['list-route'];
-      const params = {
-        project_id: 'test-project-13',
-        environment_name: 'main',
-      };
-
-      const result = (await callback(params)) as any;
-
-      expect(mockAdapter.client.routes.list).toHaveBeenCalledWith('test-project-13', 'main') as any;
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(mockRoutesData, null, 2),
-          },
-        ],
-      }) as any;
-    }) as any;
-
-    it('should handle empty routes list', async () => {
-      // @ts-ignore
-      mockAdapter.client.routes.list = jest.fn().mockResolvedValue([]) as any;
-
-      const callback = toolCallbacks['list-route'];
-      const params = {
-        project_id: 'test-project-13',
-        environment_name: 'empty-env',
-      };
-
-      const result = (await callback(params)) as any;
-
-      expect(mockAdapter.client.routes.list).toHaveBeenCalledWith(
-        'test-project-13',
-        'empty-env'
-      ) as any;
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify([], null, 2),
-          },
-        ],
-      }) as any;
-    }) as any;
-
-    it('should handle production environment routes', async () => {
-      const mockRoutesData = [
-        {
-          id: 'prod-route-1',
-          url: 'https://www.example.com',
-          upstream: 'app',
-          tls: { enabled: true },
-        },
-        {
-          id: 'prod-route-2',
-          url: 'https://api.example.com',
-          upstream: 'api',
-          tls: { enabled: true },
-        },
-      ];
-
-      // @ts-ignore
-      mockAdapter.client.routes.list = jest.fn().mockResolvedValue(mockRoutesData) as any;
-
-      const callback = toolCallbacks['list-route'];
-      const params = {
-        project_id: 'prod-project',
-        environment_name: 'production',
-      };
-
-      const result = (await callback(params)) as any;
-
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(mockRoutesData, null, 2),
-          },
-        ],
-      }) as any;
-    }) as any;
-  }) as any;
-
-  describe('error handling and edge cases', () => {
-    it('should handle API errors for get-route', async () => {
-      const error = new Error('Route not found') as any;
-      // @ts-ignore
-      mockAdapter.client.routes.get = jest.fn().mockRejectedValue(error) as any;
-
-      const callback = toolCallbacks['get-route'];
-      const params = {
-        project_id: 'test-project-13',
-        environment_name: 'main',
-        route_id: 'nonexistent-route',
-      };
-
-      (await expect(callback(params)).rejects.toThrow('Route not found')) as any;
-    }) as any;
-
-    it('should handle API errors for list-route', async () => {
-      const error = new Error('Environment not found') as any;
-      // @ts-ignore
-      mockAdapter.client.routes.list = jest.fn().mockRejectedValue(error) as any;
-
-      const callback = toolCallbacks['list-route'];
-      const params = {
-        project_id: 'test-project-13',
-        environment_name: 'nonexistent-env',
-      };
-
-      (await expect(callback(params)).rejects.toThrow('Environment not found')) as any;
-    }) as any;
-
-    it('should handle null/undefined responses', async () => {
-      // @ts-ignore
-      mockAdapter.client.routes.get = jest.fn().mockResolvedValue(null) as any;
-
-      const callback = toolCallbacks['get-route'];
-      const params = {
-        project_id: 'test-project-13',
-        environment_name: 'main',
-      };
-
-      const result = (await callback(params)) as any;
-
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(null, null, 2),
-          },
-        ],
-      }) as any;
-    }) as any;
-
-    it('should handle complex route configurations', async () => {
-      const complexRoute = {
-        id: 'complex-route',
-        url: 'https://{all}.example.com',
-        upstream: 'app:http',
-        cache: {
-          enabled: true,
-          default_ttl: 3600,
-          cookies: ['*'],
-          headers: ['Accept', 'Accept-Language'],
-        },
-        redirects: {
-          expires: '1d',
-          paths: {
-            '/old-path': '/new-path',
-          },
-        },
-        tls: {
-          strict_transport_security: {
-            enabled: true,
-            include_subdomains: true,
-            preload: true,
-          },
-        },
-      };
-
-      // @ts-ignore
-      mockAdapter.client.routes.get = jest.fn().mockResolvedValue(complexRoute) as any;
-
-      const callback = toolCallbacks['get-route'];
-      const params = {
-        project_id: 'test-project-13',
-        environment_name: 'main',
-        route_id: 'complex-route',
-      };
-
-      const result = (await callback(params)) as any;
-
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(complexRoute, null, 2),
-          },
-        ],
-      }) as any;
-    }) as any;
-  }) as any;
+      await expect(
+        toolCallbacks['list-route']({ project_id: 'test-project-1', environment_name: 'main' })
+      ).rejects.toBe(error);
+    });
+  });
 });
