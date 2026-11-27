@@ -51,6 +51,12 @@ export class UpsunMcpServer implements McpAdapter {
   public client!: UpsunClient;
 
   /**
+   * Whether the caller's token has a user (not a `client_credentials` token).
+   * Set by useBearerToken() or useApiKey(); false until then.
+   */
+  public hasUser = false;
+
+  /**
    * Creates a new UpsunMcpServer instance.
    *
    * Initializes the MCP server with the package name and version, then registers
@@ -89,9 +95,11 @@ export class UpsunMcpServer implements McpAdapter {
   }
 
   /** Sets the Upsun client to authenticate with a Bearer token. */
-  useBearerToken(bearerToken: string): void {
+  useBearerToken(bearerToken: string, hasUser: boolean): void {
     withSpan('mcp-server', 'auth.bearer', () => {
       addSpanAttribute('auth.type', 'bearer');
+      addSpanAttribute('auth.has_user', hasUser);
+      this.hasUser = hasUser;
       this.client = new UpsunClient(this.createConfig());
       this.client.setBearerToken(bearerToken);
     });
@@ -101,6 +109,9 @@ export class UpsunMcpServer implements McpAdapter {
   useApiKey(apiKey: string): void {
     withSpan('mcp-server', 'auth.apikey', () => {
       addSpanAttribute('auth.type', 'apikey');
+      // An API key always gives a user token.
+      addSpanAttribute('auth.has_user', true);
+      this.hasUser = true;
       const cacheKey = createHash('sha256').update(apiKey).digest('hex');
       let client = apiKeyClients.get(cacheKey);
       if (!client) {

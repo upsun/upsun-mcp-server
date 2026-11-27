@@ -31,6 +31,7 @@ const mockAdapter: McpAdapter = {
   server: {
     tool: jest.fn(),
   },
+  hasUser: true,
   isMode: () => true,
 } as any;
 
@@ -86,6 +87,7 @@ describe('Organization Command Module', () => {
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
     toolCallbacks = {};
+    (mockAdapter as { hasUser: boolean }).hasUser = true;
 
     // Setup mock server.registerTool to capture callbacks
     (mockAdapter.server.registerTool as any) = jest
@@ -412,6 +414,16 @@ describe('Organization Command Module', () => {
           },
         ],
       });
+    });
+
+    it('should fail without calling the SDK when the token has no user', async () => {
+      (mockAdapter as { hasUser: boolean }).hasUser = false;
+      const callback = toolCallbacks['list-organization'];
+
+      await expect(callback({})).rejects.toThrow(
+        'list-organization needs a user token. This is a client_credentials token, which has no user.'
+      );
+      expect(mockClient.organizations.listCurrentUserOrgs).not.toHaveBeenCalled();
     });
 
     it('should handle list organizations errors', async () => {

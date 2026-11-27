@@ -30,6 +30,7 @@ describe('GatewayServer', () => {
     mockAdapterFactory = jest.fn().mockImplementation(() => ({
       useApiKey: jest.fn(),
       useBearerToken: jest.fn(),
+      hasUser: false,
     })) as any;
 
     // Create server instance

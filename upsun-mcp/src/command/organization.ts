@@ -138,6 +138,11 @@ export function registerOrganization(adapter: McpAdapter): void {
     },
     ToolWrapper.trace('list-organization', async ({ page_size, page_link }) => {
       log.debug(`List all my organizations`);
+      if (!adapter.hasUser) {
+        throw new Error(
+          'list-organization needs a user token. This is a client_credentials token, which has no user.'
+        );
+      }
       const result = await adapter.client.organizations.listCurrentUserOrgs(
         toSdkPagination({ page_size, page_link })
       );

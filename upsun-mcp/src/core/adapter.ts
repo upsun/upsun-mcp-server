@@ -23,8 +23,14 @@ export interface McpAdapter {
    */
   readonly client: UpsunClient;
 
+  /**
+   * Whether the caller's token has a user (not a `client_credentials` token).
+   * False for machine tokens such as client_credentials, and before auth is set.
+   */
+  readonly hasUser: boolean;
+
   /** Sets the Upsun client to authenticate with a Bearer token. */
-  useBearerToken(bearerToken: string): void;
+  useBearerToken(bearerToken: string, hasUser: boolean): void;
 
   /** Sets the Upsun client to authenticate with an API key. */
   useApiKey(apiKey: string): void;
