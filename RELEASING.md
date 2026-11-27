@@ -63,8 +63,17 @@ The server runs on an Upsun project with two environments:
   `Deploy staging` workflow pushes each commit of `main` to it after CI passes,
   with the `UPSUN_CLI_TOKEN` repository secret. Staging is never paused.
 
-1. Make sure that staging runs the release: the `Deploy staging` run for the
-   release PR's merge commit must succeed.
+1. Make sure that staging runs the release: the staging commit must be the
+   release PR's merge commit or contain it. A `Deploy staging` run can be
+   cancelled or skip its push when a newer commit reaches staging first, so
+   check the staging commit, not the run:
+
+   ```bash
+   git fetch origin
+   git merge-base --is-ancestor <merge-commit> \
+     "$(upsun environment:info -p <project-id> -e staging head_commit)" \
+     && echo "staging runs the release"
+   ```
 
 2. Smoke-test staging: check the OAuth metadata at
    `/.well-known/oauth-authorization-server`, then connect an MCP client and

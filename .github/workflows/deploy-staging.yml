@@ -43,4 +43,22 @@ jobs:
           UPSUN_CLI_TOKEN: ${{ secrets.UPSUN_CLI_TOKEN }}
           UPSUN_CLI_NO_INTERACTION: '1'
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: upsun push "$HEAD_SHA" --target staging --project "$UPSUN_PROJECT" --wait
+        # CI runs of main can finish out of order: a newer commit may already be on staging.
+        run: |
+          staging_head="$(upsun environment:info head_commit --environment staging --project "$UPSUN_PROJECT")"
+          set +e
+          git merge-base --is-ancestor "$HEAD_SHA" "$staging_head"
+          contained=$?
+          set -e
+          case "$contained" in
+            0)
+              echo "::notice::Staging runs $staging_head, which contains $HEAD_SHA: nothing to push."
+              exit 0
+              ;;
+            1) ;;
+            *)
+              echo "::error::Cannot compare $HEAD_SHA with the staging commit $staging_head."
+              exit 1
+              ;;
+          esac
+          upsun push "$HEAD_SHA" --target staging --project "$UPSUN_PROJECT" --wait
