@@ -1,0 +1,46 @@
+name: Deploy staging
+
+on:
+  workflow_run:
+    workflows: [CI/CD Pipeline]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+env:
+  UPSUN_PROJECT: tkizmoe6el7jw
+  UPSUN_CLI_VERSION: 5.19.0
+
+jobs:
+  deploy:
+    name: Push to Upsun staging
+    # workflow_run also fires for pull_request runs whose head branch is named main.
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the tested commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          # Upsun refuses a push from a shallow clone.
+          fetch-depth: 0
+
+      - name: Install the Upsun CLI
+        run: |
+          curl -fsSL "https://raw.githubusercontent.com/upsun/cli/v${UPSUN_CLI_VERSION}/installer.sh" \
+            | VERSION="$UPSUN_CLI_VERSION" INSTALL_DIR="$HOME/.local/bin" bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Push to staging
+        env:
+          UPSUN_CLI_TOKEN: ${{ secrets.UPSUN_CLI_TOKEN }}
+          UPSUN_CLI_NO_INTERACTION: '1'
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: upsun push "$HEAD_SHA" --target staging --project "$UPSUN_PROJECT" --wait
